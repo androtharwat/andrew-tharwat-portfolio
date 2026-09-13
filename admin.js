@@ -1,1 +1,1 @@
-(()=>{const s=document.createElement('script');s.src='/admin/admin.js?v=5';s.defer=true;document.head.appendChild(s);})();
+(()=>{const load=(src,next)=>{const s=document.createElement('script');s.src=src;s.defer=true;s.onload=()=>next&&next();document.head.appendChild(s)};load('/admin/admin.js?v=5',()=>load('/admin/ai-project-assist.js?v=1'));})();
