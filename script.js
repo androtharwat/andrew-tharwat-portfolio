@@ -4,3 +4,4 @@ menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu
 links.forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
 const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.12});document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 const sections=[...document.querySelectorAll('main section[id]')];const spy=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id));}}),{rootMargin:'-35% 0px -55% 0px'});sections.forEach(s=>spy.observe(s));
+(()=>{const s=document.createElement('script');s.src='/site-upgrade.js?v=1';s.defer=true;document.head.appendChild(s)})();
