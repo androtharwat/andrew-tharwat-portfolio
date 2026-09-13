@@ -1,0 +1,70 @@
+(() => {
+  const logo=document.querySelector('.site-header .brand img');
+  if(logo){logo.src='/assets/logo-mark.svg';logo.onerror=null;}
+
+  const explore=document.getElementById('explore');
+  const cfg=window.PORTFOLIO_CONFIG;
+  if(!explore||!cfg||!window.supabase) return;
+
+  const style=document.createElement('style');
+  style.textContent=`
+    .experience-section{position:relative;overflow:hidden;background:linear-gradient(180deg,#06131e 0%,#081b29 55%,#071724 100%);padding:96px 0 110px;border-top:1px solid rgba(255,255,255,.07)}
+    .experience-section:before{content:"";position:absolute;width:540px;height:540px;border-radius:50%;right:-180px;top:80px;background:radial-gradient(circle,rgba(225,6,19,.15),transparent 68%);pointer-events:none}
+    .experience-intro{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:46px;align-items:end;margin-bottom:34px}
+    .experience-intro h2{font-size:clamp(42px,5vw,76px);line-height:.95;margin:10px 0 0;letter-spacing:-3px;color:#f7f9fb}.experience-intro h2 b{color:#e10613}.experience-intro p{margin:0;color:#9bb0bd;line-height:1.8;font-size:14px;max-width:550px}
+    .experience-toolbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:center;padding:16px 0 28px;border-top:1px solid rgba(255,255,255,.09)}
+    .experience-filters{display:flex;gap:8px;flex-wrap:wrap}.experience-filter{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035);color:#91a7b5;padding:9px 13px;border-radius:999px;font:800 9px/1 Montserrat,sans-serif;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;transition:.2s}.experience-filter:hover,.experience-filter.active{background:#e10613;border-color:#e10613;color:white}.experience-count{font-size:9px;letter-spacing:1.6px;color:#708796;text-transform:uppercase;font-weight:800}
+    .experience-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.experience-card{grid-column:span 4;min-height:430px;position:relative;overflow:hidden;border-radius:22px;border:1px solid rgba(255,255,255,.1);background:#0b2436;text-decoration:none;color:white;box-shadow:0 18px 50px rgba(0,0,0,.18);isolation:isolate}.experience-card:nth-child(1),.experience-card:nth-child(6){grid-column:span 8}.experience-card-media{position:absolute;inset:0}.experience-card-media img{width:100%;height:100%;object-fit:cover;transition:transform .55s ease,filter .55s ease;filter:saturate(.9) brightness(.78)}.experience-card:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,15,23,.04) 18%,rgba(3,15,23,.42) 54%,rgba(3,15,23,.98) 100%);z-index:1}.experience-card:hover .experience-card-media img{transform:scale(1.045);filter:saturate(1) brightness(.9)}
+    .experience-card-body{position:absolute;z-index:2;inset:auto 0 0;padding:28px}.experience-card-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}.experience-card-category{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#ff4b58;font-weight:900}.experience-card-index{margin-left:auto;font-size:9px;color:#6f8795;font-weight:800}.experience-card h3{font-size:clamp(20px,2vw,30px);line-height:1.06;margin:0 0 10px;max-width:720px}.experience-card p{font-size:11px;line-height:1.65;color:#b4c4ce;margin:0 0 16px;max-width:680px}.experience-tags{display:flex;gap:6px;flex-wrap:wrap}.experience-tags span{border:1px solid rgba(255,255,255,.12);background:rgba(6,19,30,.6);border-radius:999px;padding:6px 8px;font-size:7px;letter-spacing:.5px;color:#c3d0d7}.experience-open{display:inline-flex;align-items:center;gap:7px;margin-top:16px;font-size:8px;letter-spacing:1px;font-weight:900;color:#fff}.experience-empty{grid-column:1/-1;padding:56px;border:1px dashed rgba(255,255,255,.14);border-radius:20px;color:#89a0ae;text-align:center}
+    .experience-proof{margin-top:34px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.experience-proof article{padding:18px;border-top:1px solid rgba(255,255,255,.1)}.experience-proof strong{display:block;color:#fff;font-size:12px;margin-bottom:6px}.experience-proof span{color:#738b99;font-size:9px;line-height:1.5}
+    @media(max-width:980px){.experience-intro{grid-template-columns:1fr}.experience-card,.experience-card:nth-child(1),.experience-card:nth-child(6){grid-column:span 6}.experience-proof{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:680px){.experience-section{padding:72px 0}.experience-intro h2{letter-spacing:-2px}.experience-card,.experience-card:nth-child(1),.experience-card:nth-child(6){grid-column:1/-1;min-height:390px}.experience-card-body{padding:22px}.experience-proof{grid-template-columns:1fr 1fr}.experience-toolbar{align-items:flex-start;flex-direction:column}}
+  `;
+  document.head.appendChild(style);
+
+  explore.className='experience-section';
+  explore.innerHTML=`
+    <div class="container experience-intro reveal visible">
+      <div><span class="section-kicker light">EXPERIENCE MY WORK</span><h2>REAL PROBLEMS.<br><b>REAL OUTPUTS.</b></h2></div>
+      <p>This is where the different sides of my work meet: field HSE experience, digital systems, design, storytelling and AI. Every project below is based on work I have actually built, developed or actively use.</p>
+    </div>
+    <div class="container experience-toolbar">
+      <div class="experience-filters" id="experience-filters"><button class="experience-filter active" data-cat="all">All Work</button></div>
+      <div class="experience-count" id="experience-count">Loading work…</div>
+    </div>
+    <div class="container experience-grid" id="experience-projects"><div class="experience-empty">Loading real project data…</div></div>
+    <div class="container experience-proof">
+      <article><strong>HSE FIELD EXPERIENCE</strong><span>Construction, port activities, inspections, risk assessment and corrective-action follow-up.</span></article>
+      <article><strong>DIGITALIZATION</strong><span>Data organization, reporting, dashboards, automation and practical web tools.</span></article>
+      <article><strong>VISUAL CREATION</strong><span>Brand systems, graphic design, art direction and communication assets.</span></article>
+      <article><strong>AI & STORYTELLING</strong><span>Awareness films, personalized stories, visual concepts and AI-assisted products.</span></article>
+    </div>`;
+
+  const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
+  const host=document.getElementById('experience-projects');
+  const filterHost=document.getElementById('experience-filters');
+  const count=document.getElementById('experience-count');
+  let projects=[];
+  const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
+  const media=(url='')=>{if(!url)return '/assets/logo-mark.svg';if(/^https?:\/\//i.test(url))return url;return '/'+url.replace(/^\//,'')};
+
+  function render(cat='all'){
+    const rows=cat==='all'?projects:projects.filter(p=>(p.portfolio_categories?.name||'Uncategorized')===cat);
+    count.textContent=`${rows.length} PROJECT${rows.length===1?'':'S'} • LIVE PORTFOLIO DATA`;
+    host.innerHTML=rows.length?rows.map((p,i)=>`<a class="experience-card" href="/projects/${encodeURIComponent(p.slug)}">
+      <div class="experience-card-media"><img src="${esc(media(p.cover_url))}" alt="${esc(p.title)}" loading="lazy"></div>
+      <div class="experience-card-body"><div class="experience-card-top"><span class="experience-card-category">${esc(p.portfolio_categories?.name||'Project')}</span><span class="experience-card-index">${String(i+1).padStart(2,'0')}</span></div><h3>${esc(p.title)}</h3><p>${esc(p.excerpt||p.description||'')}</p><div class="experience-tags">${(p.tags||[]).slice(0,4).map(t=>`<span>${esc(t)}</span>`).join('')}</div><div class="experience-open">OPEN CASE STUDY <span>→</span></div></div>
+    </a>`).join(''):'<div class="experience-empty">No published projects in this category yet.</div>';
+  }
+
+  async function load(){
+    const {data,error}=await sb.from('portfolio_projects').select('title,slug,excerpt,description,cover_url,tags,sort_order,portfolio_categories(name)').eq('status','published').order('sort_order',{ascending:true});
+    if(error){host.innerHTML='<div class="experience-empty">Could not load the live project data right now.</div>';count.textContent='PORTFOLIO DATA UNAVAILABLE';return;}
+    projects=data||[];
+    const cats=[...new Set(projects.map(p=>p.portfolio_categories?.name).filter(Boolean))];
+    cats.forEach(cat=>{const b=document.createElement('button');b.className='experience-filter';b.dataset.cat=cat;b.textContent=cat;filterHost.appendChild(b)});
+    filterHost.addEventListener('click',e=>{const b=e.target.closest('.experience-filter');if(!b)return;filterHost.querySelectorAll('.experience-filter').forEach(x=>x.classList.toggle('active',x===b));render(b.dataset.cat)});
+    render();
+  }
+  load();
+})();
