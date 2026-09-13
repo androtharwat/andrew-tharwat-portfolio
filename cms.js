@@ -5,7 +5,7 @@
 
   const escapeHtml = (v='') => String(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const resolveMedia = (url='') => {
-    if (!url) return 'assets/logo-mark.svg';
+    if (!url) return 'assets/logo-mark.png';
     const clean=url.replace(/^\//,'');
     if(window.PORTFOLIO_ASSETS && window.PORTFOLIO_ASSETS[clean]) return window.PORTFOLIO_ASSETS[clean];
     if (/^https?:\/\//i.test(url)) return url;

@@ -1,33 +1,54 @@
 (() => {
   const cfg=window.PORTFOLIO_CONFIG;
   if(!cfg || !window.supabase) return alert('Supabase configuration is missing.');
-  const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
   const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
-  const state={projects:[],categories:[],settings:{},session:null,editingProject:null,editingCategory:null};
+  const state={projects:[],categories:[],settings:{},editingProject:null,editingCategory:null};
   const authView=$('#auth-view'), adminView=$('#admin-view'), toast=$('#toast');
+  const DEVICE_KEY='andrew_portfolio_device_v2';
+  let device=null, sb=null, pollTimer=null;
   const slugify=s=>String(s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
   const arr=v=>String(v||'').split(',').map(x=>x.trim()).filter(Boolean);
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
-  const resolveMedia=u=>{const raw=u||'';const clean=raw.replace(/^\//,'');if(window.PORTFOLIO_ASSETS&&window.PORTFOLIO_ASSETS[clean])return window.PORTFOLIO_ASSETS[clean];return /^https?:\/\//i.test(raw)?raw:(clean?('../'+clean):'../assets/logo-mark.svg')};
+  const resolveMedia=u=>{const raw=u||'';const clean=raw.replace(/^\//,'');if(window.PORTFOLIO_ASSETS&&window.PORTFOLIO_ASSETS[clean])return window.PORTFOLIO_ASSETS[clean];return /^https?:\/\//i.test(raw)?raw:(clean?('../'+clean):'../assets/logo-mark.png')};
   function notify(msg,type='success'){toast.textContent=msg;toast.className=`toast show ${type}`;setTimeout(()=>toast.className='toast',2600)}
-
+  function makeClient(d){
+    const headers=d?{'x-portfolio-device-id':d.id,'x-portfolio-device-secret':d.secret}:{};
+    return window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{global:{headers},auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  }
+  function randomSecret(){const a=new Uint8Array(32);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+  function randomCode(){const a=new Uint32Array(1);crypto.getRandomValues(a);return String(a[0]%1000000).padStart(6,'0')}
+  async function sha256hex(value){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+  function showTrust(){authView.classList.remove('hidden');adminView.classList.add('hidden');$('#device-start').classList.remove('hidden');$('#pairing-box').classList.add('hidden');$('#device-message').textContent='No email. No password. Approve this browser once and it will open the Control Center automatically every time.'}
+  function showPending(code){authView.classList.remove('hidden');adminView.classList.add('hidden');$('#device-start').classList.add('hidden');$('#pairing-box').classList.remove('hidden');$('#pairing-code').textContent=code||'------';$('#device-message').textContent='This browser is waiting for one-time approval.';startPolling()}
+  async function enterAdmin(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}authView.classList.add('hidden');adminView.classList.remove('hidden');$('#admin-email').textContent='TRUSTED DEVICE';await refreshAll()}
+  async function checkDevice(){
+    if(!device||!sb)return false;
+    const {data,error}=await sb.from('portfolio_trusted_devices').select('status,claim_code,label').eq('device_id',device.id).maybeSingle();
+    if(error||!data)return false;
+    if(data.status==='approved'){await enterAdmin();return true}
+    if(data.status==='pending'){showPending(data.claim_code);return false}
+    localStorage.removeItem(DEVICE_KEY);device=null;sb=null;showTrust();return false;
+  }
+  function startPolling(){if(pollTimer)return;pollTimer=setInterval(async()=>{if(await checkDevice())clearInterval(pollTimer)},3000)}
   async function init(){
-    const {data:{session}}=await sb.auth.getSession();
-    if(session) await enterAdmin(session); else showAuth();
-    sb.auth.onAuthStateChange((_event,session)=>{if(!session) showAuth();});
+    try{device=JSON.parse(localStorage.getItem(DEVICE_KEY)||'null')}catch(_e){device=null}
+    if(!device?.id||!device?.secret){showTrust();return}
+    sb=makeClient(device);
+    const ok=await checkDevice();if(!ok&&$('#pairing-box').classList.contains('hidden'))showTrust();
   }
-  function showAuth(){state.session=null;authView.classList.remove('hidden');adminView.classList.add('hidden')}
-  async function enterAdmin(session){
-    state.session=session;
-    try{await sb.rpc('portfolio_claim_admin');}catch(_e){}
-    const {data:admin}=await sb.from('portfolio_admins').select('user_id,email').eq('user_id',session.user.id).maybeSingle();
-    if(!admin){notify('This account is not authorized as portfolio admin.','error');await sb.auth.signOut();return;}
-    authView.classList.add('hidden');adminView.classList.remove('hidden');$('#admin-email').textContent=admin.email;
-    await refreshAll();
-  }
-  $('#sign-in').addEventListener('click',async()=>{const email=$('#auth-email').value.trim(),password=$('#auth-password').value;const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)return notify(error.message,'error');await enterAdmin(data.session)});
-  $('#sign-up').addEventListener('click',async()=>{const email=$('#auth-email').value.trim(),password=$('#auth-password').value;if(email.toLowerCase()!=='androsarot3@gmail.com')return notify('Use the authorized admin email.','error');if(password.length<8)return notify('Use a password with at least 8 characters.','error');const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:`${location.origin}/admin/`}});if(error)return notify(error.message,'error');if(data.session){await enterAdmin(data.session);notify('Admin account created.')}else notify('Account created. Confirm the email, then sign in.');});
-  $('#sign-out').addEventListener('click',()=>sb.auth.signOut());
+  $('#trust-device').addEventListener('click',async()=>{
+    const btn=$('#trust-device');btn.disabled=true;btn.textContent='CREATING DEVICE…';
+    try{
+      device={id:crypto.randomUUID(),secret:randomSecret(),code:randomCode()};
+      sb=makeClient(device);
+      const secret_hash=await sha256hex(device.secret);
+      const {error}=await sb.from('portfolio_trusted_devices').insert({device_id:device.id,secret_hash,claim_code:device.code,label:navigator.userAgent.includes('Windows')?'Windows browser':'Trusted browser',status:'pending'});
+      if(error){device=null;sb=null;return notify(error.message,'error')}
+      localStorage.setItem(DEVICE_KEY,JSON.stringify(device));
+      showPending(device.code);
+    }finally{btn.disabled=false;btn.textContent='TRUST THIS DEVICE'}
+  });
+  $('#sign-out').addEventListener('click',()=>{localStorage.removeItem(DEVICE_KEY);location.reload()});
 
   $$('#admin-nav button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
   $$('[data-goto]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.goto)));

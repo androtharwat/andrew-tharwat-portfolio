@@ -5,31 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#071a29" />
   <title>Andrew Tharwat — Control Center</title>
-  <link rel="icon" href="/assets/logo-mark.svg" />
+  <link rel="icon" href="/assets/favicon-official.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin.css?v=3" />
+  <link rel="stylesheet" href="/admin.css?v=5" />
 </head>
 <body>
   <div id="toast" class="toast"></div>
   <section id="auth-view" class="auth-shell">
-    <div class="auth-card">
-      <img src="/assets/logo-mark.svg" alt="Andrew Tharwat" />
+    <div class="auth-card device-card">
+      <img src="/assets/logo-mark.png" alt="Andrew Tharwat" />
       <span>ANDREW THARWAT</span>
       <h1>CONTROL CENTER.</h1>
-      <p>This browser can stay trusted. Enter your admin password once, then the Control Center will open automatically on this device.</p>
-      <label>Admin Password<input id="auth-password" type="password" placeholder="Enter or create your admin password" autocomplete="current-password" /></label>
-      <div class="auth-actions">
-        <button id="trust-device" class="primary">TRUST THIS DEVICE</button>
+      <p id="device-message">No email. No password. Approve this browser once and it will open the Control Center automatically every time.</p>
+      <div id="device-start">
+        <button id="trust-device" class="primary device-primary">TRUST THIS DEVICE</button>
+        <small>Your browser will create a private device key that stays only on this device.</small>
       </div>
-      <small>No email link is needed after Supabase email confirmation is disabled. Your secure session stays on this browser until you choose “Forget This Device”.</small>
+      <div id="pairing-box" class="pairing-box hidden">
+        <span>DEVICE APPROVAL CODE</span>
+        <strong id="pairing-code">------</strong>
+        <p>Send this 6-digit code to me here in ChatGPT. Once I approve it, this page will open automatically.</p>
+        <div class="pairing-status"><i></i><b>Waiting for approval…</b></div>
+      </div>
     </div>
   </section>
 
   <section id="admin-view" class="admin-shell hidden">
     <aside class="sidebar">
-      <a class="admin-brand" href="/"><img src="/assets/logo-mark.svg" alt=""><div><b>ANDREW</b><span>CONTROL CENTER</span></div></a>
+      <a class="admin-brand" href="/"><img src="/assets/logo-mark.png" alt=""><div><b>ANDREW</b><span>CONTROL CENTER</span></div></a>
       <nav id="admin-nav">
         <button data-tab="dashboard" class="active">◫ <span>Dashboard</span></button>
         <button data-tab="projects">◆ <span>Projects</span></button>
@@ -122,6 +127,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/config.js"></script>
-  <script src="/admin.js?v=3"></script>
+  <script src="/admin.js?v=5"></script>
 </body>
 </html>

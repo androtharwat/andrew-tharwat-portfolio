@@ -29,7 +29,7 @@
               ${p.github_url?`<a class="btn btn-ghost" target="_blank" rel="noopener" href="${esc(p.github_url)}">GITHUB →</a>`:''}
             </div>
           </div>
-          <div class="project-cover"><img src="${esc(media(p.cover_url||'assets/logo-mark.svg'))}" alt="${esc(p.title)}" /></div>
+          <div class="project-cover"><img src="${esc(media(p.cover_url||'assets/logo-mark.png'))}" alt="${esc(p.title)}" /></div>
         </div>
       </section>
       <section class="project-body">
