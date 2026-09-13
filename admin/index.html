@@ -5,33 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#071a29" />
   <title>Andrew Tharwat — Control Center</title>
-  <link rel="icon" href="../assets/logo-mark.svg" />
+  <link rel="icon" href="/assets/logo-mark.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="/admin.css?v=3" />
 </head>
 <body>
   <div id="toast" class="toast"></div>
   <section id="auth-view" class="auth-shell">
     <div class="auth-card">
-      <img src="../assets/logo-mark.svg" alt="Andrew Tharwat" />
+      <img src="/assets/logo-mark.svg" alt="Andrew Tharwat" />
       <span>ANDREW THARWAT</span>
       <h1>CONTROL CENTER.</h1>
-      <p>Manage projects, media, categories, website content and publishing.</p>
-      <label>Email<input id="auth-email" type="email" value="androsarot3@gmail.com" autocomplete="email" /></label>
-      <label>Password<input id="auth-password" type="password" placeholder="Your password" autocomplete="current-password" /></label>
+      <p>This browser can stay trusted. Enter your admin password once, then the Control Center will open automatically on this device.</p>
+      <label>Admin Password<input id="auth-password" type="password" placeholder="Enter or create your admin password" autocomplete="current-password" /></label>
       <div class="auth-actions">
-        <button id="sign-in" class="primary">SIGN IN</button>
-        <button id="sign-up" class="secondary">FIRST-TIME SETUP</button>
+        <button id="trust-device" class="primary">TRUST THIS DEVICE</button>
       </div>
-      <small>First time? Create the account with your email, confirm it from your inbox if Supabase asks, then sign in.</small>
+      <small>No email link is needed after Supabase email confirmation is disabled. Your secure session stays on this browser until you choose “Forget This Device”.</small>
     </div>
   </section>
 
   <section id="admin-view" class="admin-shell hidden">
     <aside class="sidebar">
-      <a class="admin-brand" href="/"><img src="../assets/logo-mark.svg" alt=""><div><b>ANDREW</b><span>CONTROL CENTER</span></div></a>
+      <a class="admin-brand" href="/"><img src="/assets/logo-mark.svg" alt=""><div><b>ANDREW</b><span>CONTROL CENTER</span></div></a>
       <nav id="admin-nav">
         <button data-tab="dashboard" class="active">◫ <span>Dashboard</span></button>
         <button data-tab="projects">◆ <span>Projects</span></button>
@@ -41,7 +39,7 @@
       </nav>
       <div class="sidebar-foot">
         <a href="/" target="_blank">View Website ↗</a>
-        <button id="sign-out">Sign Out</button>
+        <button id="sign-out">Forget This Device</button>
       </div>
     </aside>
 
@@ -123,7 +121,7 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../config.js"></script>
-  <script src="admin.js"></script>
+  <script src="/config.js"></script>
+  <script src="/admin.js?v=3"></script>
 </body>
 </html>
