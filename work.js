@@ -33,6 +33,7 @@
       document.getElementById('work-count').textContent=projects.length;document.getElementById('work-categories').textContent=cats.length;
       filters.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{active=b.dataset.filter;filters.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));render()}));search?.addEventListener('input',render);render();
     }
+    const interaction=document.createElement('script');interaction.src='/interaction-contact.js?v=1';document.head.appendChild(interaction);
     load();
   });
 })();
