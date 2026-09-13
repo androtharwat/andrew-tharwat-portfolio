@@ -1,1 +1,1 @@
-(()=>{const load=(src,next)=>{const s=document.createElement('script');s.src=src;s.defer=true;s.onload=()=>next&&next();document.head.appendChild(s)};load('/admin/admin.js?v=5',()=>load('/admin/ai-project-assist.js?v=1'));})();
+(()=>{const load=(src,next)=>{const s=document.createElement('script');s.src=src;s.defer=true;s.onload=()=>next&&next();document.head.appendChild(s)};load('/admin/admin.js?v=5',()=>load('/admin/ai-project-assist.js?v=1',()=>load('/admin/page-access-control.js?v=1')));})();
