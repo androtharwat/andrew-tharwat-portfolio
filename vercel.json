@@ -1,1 +1,7 @@
-{"cleanUrls":true,"trailingSlash":false}
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/projects/:slug", "destination": "/project.html?slug=:slug" }
+  ]
+}

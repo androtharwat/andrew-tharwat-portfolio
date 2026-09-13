@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#071a29" />
+  <title>Andrew Tharwat — Control Center</title>
+  <link rel="icon" href="../assets/logo-mark.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+  <section id="auth-view" class="auth-shell">
+    <div class="auth-card">
+      <img src="../assets/logo-mark.svg" alt="Andrew Tharwat" />
+      <span>ANDREW THARWAT</span>
+      <h1>CONTROL CENTER.</h1>
+      <p>Manage projects, media, categories, website content and publishing.</p>
+      <label>Email<input id="auth-email" type="email" value="androsarot3@gmail.com" autocomplete="email" /></label>
+      <label>Password<input id="auth-password" type="password" placeholder="Your password" autocomplete="current-password" /></label>
+      <div class="auth-actions">
+        <button id="sign-in" class="primary">SIGN IN</button>
+        <button id="sign-up" class="secondary">FIRST-TIME SETUP</button>
+      </div>
+      <small>First time? Create the account with your email, confirm it from your inbox if Supabase asks, then sign in.</small>
+    </div>
+  </section>
+
+  <section id="admin-view" class="admin-shell hidden">
+    <aside class="sidebar">
+      <a class="admin-brand" href="/"><img src="../assets/logo-mark.svg" alt=""><div><b>ANDREW</b><span>CONTROL CENTER</span></div></a>
+      <nav id="admin-nav">
+        <button data-tab="dashboard" class="active">◫ <span>Dashboard</span></button>
+        <button data-tab="projects">◆ <span>Projects</span></button>
+        <button data-tab="categories">◈ <span>Categories</span></button>
+        <button data-tab="content">✎ <span>Site Content</span></button>
+        <button data-tab="media">▣ <span>Media Library</span></button>
+      </nav>
+      <div class="sidebar-foot">
+        <a href="/" target="_blank">View Website ↗</a>
+        <button id="sign-out">Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar"><div><span class="eyebrow">PORTFOLIO CMS</span><h1 id="page-title">Dashboard</h1></div><div class="top-actions"><span id="admin-email"></span><button id="quick-add" class="primary">+ NEW PROJECT</button></div></header>
+
+      <section class="tab-panel active" data-panel="dashboard">
+        <div class="metric-grid">
+          <article><span>Projects</span><strong id="m-projects">0</strong><small>Total portfolio items</small></article>
+          <article><span>Published</span><strong id="m-published">0</strong><small>Visible on website</small></article>
+          <article><span>Drafts</span><strong id="m-drafts">0</strong><small>Work in progress</small></article>
+          <article><span>Categories</span><strong id="m-categories">0</strong><small>Creative worlds</small></article>
+        </div>
+        <div class="panel-card"><div class="panel-head"><div><span>RECENT CONTENT</span><h2>Latest Projects</h2></div><button class="secondary" data-goto="projects">Manage Projects</button></div><div id="recent-projects" class="recent-list"></div></div>
+      </section>
+
+      <section class="tab-panel" data-panel="projects">
+        <div class="toolbar"><input id="project-search" placeholder="Search projects..." /><select id="project-filter"><option value="all">All status</option><option value="published">Published</option><option value="draft">Draft</option></select><button id="add-project" class="primary">+ ADD PROJECT</button></div>
+        <div id="projects-list" class="projects-list"></div>
+      </section>
+
+      <section class="tab-panel" data-panel="categories">
+        <div class="panel-card"><div class="panel-head"><div><span>STRUCTURE</span><h2>Categories / Worlds</h2></div><button id="add-category" class="primary">+ ADD CATEGORY</button></div><div id="categories-list" class="categories-list"></div></div>
+      </section>
+
+      <section class="tab-panel" data-panel="content">
+        <form id="settings-form" class="settings-grid">
+          <div class="panel-card"><span class="card-kicker">HERO</span><h2>Main Message</h2><label>Eyebrow<input name="hero.eyebrow"></label><label>Title<textarea name="hero.title" rows="3"></textarea></label><label>Subtitle<textarea name="hero.subtitle" rows="4"></textarea></label></div>
+          <div class="panel-card"><span class="card-kicker">ABOUT</span><h2>Your Story</h2><label>Title<input name="about.title"></label><label>Body<textarea name="about.body" rows="7"></textarea></label></div>
+          <div class="panel-card"><span class="card-kicker">STATS</span><h2>Numbers</h2><div class="two-col"><label>Years<input name="stats.years"></label><label>Projects<input name="stats.projects"></label><label>Worlds<input name="stats.worlds"></label><label>Purpose<input name="stats.purpose"></label></div></div>
+          <div class="panel-card"><span class="card-kicker">CONTACT</span><h2>Links</h2><label>Email<input name="contact.email"></label><label>WhatsApp<input name="contact.whatsapp"></label><label>LinkedIn<input name="contact.linkedin"></label><label>Instagram — Personal<input name="contact.instagram_personal"></label><label>Instagram — DO Stories<input name="contact.instagram_do_stories"></label><label>Instagram — DO Document<input name="contact.instagram_do_document"></label></div>
+          <div class="save-bar"><button type="submit" class="primary">SAVE WEBSITE CONTENT</button></div>
+        </form>
+      </section>
+
+      <section class="tab-panel" data-panel="media">
+        <div class="panel-card"><div class="panel-head"><div><span>ASSET LIBRARY</span><h2>Media</h2></div><label class="upload-btn">UPLOAD MEDIA<input id="media-upload" type="file" accept="image/*,video/mp4,video/webm" multiple hidden></label></div><div class="upload-progress hidden" id="upload-progress">Uploading...</div><div id="media-grid" class="media-library"></div></div>
+      </section>
+    </main>
+  </section>
+
+  <dialog id="project-dialog" class="dialog">
+    <form id="project-form" method="dialog">
+      <div class="dialog-head"><div><span>PROJECT EDITOR</span><h2 id="project-dialog-title">New Project</h2></div><button type="button" data-close="project-dialog">×</button></div>
+      <input type="hidden" name="id">
+      <div class="form-grid">
+        <label>Project Title<input name="title" required></label>
+        <label>Slug<input name="slug" required placeholder="my-project"></label>
+        <label>Category<select name="category_id"></select></label>
+        <label>Status<select name="status"><option value="draft">Draft</option><option value="published">Published</option></select></label>
+        <label class="wide">Short Description<textarea name="excerpt" rows="3"></textarea></label>
+        <label class="wide">Full Description<textarea name="description" rows="5"></textarea></label>
+        <label>Challenge<textarea name="challenge" rows="5"></textarea></label>
+        <label>Solution<textarea name="solution" rows="5"></textarea></label>
+        <label class="wide">Result / Impact<textarea name="result" rows="4"></textarea></label>
+        <label>Cover Image URL<input name="cover_url" placeholder="Upload below or paste URL"></label>
+        <label>Upload Cover<input id="cover-upload" type="file" accept="image/*"></label>
+        <label>Video URL<input name="video_url"></label>
+        <label>Live Project URL<input name="project_url"></label>
+        <label>GitHub URL<input name="github_url"></label>
+        <label>Sort Order<input name="sort_order" type="number" value="0"></label>
+        <label class="wide">Tags <small>comma separated</small><input name="tags" placeholder="Safety, AI Video, Storytelling"></label>
+        <label class="wide">Tools <small>comma separated</small><input name="tools" placeholder="HSE, AI, Web"></label>
+        <label class="check"><input name="featured" type="checkbox"> Feature on homepage</label>
+        <label class="wide">Project Gallery <small>images/videos can be added after saving</small><input id="gallery-upload" type="file" accept="image/*,video/mp4,video/webm" multiple></label>
+      </div>
+      <div id="project-media-preview" class="project-media-preview"></div>
+      <div class="dialog-actions"><button type="button" class="danger hidden" id="delete-project">DELETE</button><span></span><button type="button" class="secondary" data-close="project-dialog">CANCEL</button><button type="submit" class="primary">SAVE PROJECT</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="category-dialog" class="dialog small-dialog">
+    <form id="category-form" method="dialog">
+      <div class="dialog-head"><div><span>CATEGORY</span><h2 id="category-dialog-title">New Category</h2></div><button type="button" data-close="category-dialog">×</button></div>
+      <input type="hidden" name="id">
+      <div class="form-grid one-col"><label>Name<input name="name" required></label><label>Slug<input name="slug" required></label><label>Description<textarea name="description" rows="4"></textarea></label><label>Color<input name="color" type="color" value="#e10613"></label><label>Sort Order<input name="sort_order" type="number" value="0"></label><label class="check"><input name="is_active" type="checkbox" checked> Active</label></div>
+      <div class="dialog-actions"><button type="button" class="danger hidden" id="delete-category">DELETE</button><span></span><button type="button" class="secondary" data-close="category-dialog">CANCEL</button><button type="submit" class="primary">SAVE CATEGORY</button></div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

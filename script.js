@@ -1,8 +1,3 @@
-const assetMap={'assets/logo-mark.webp':'assets/logo-mark.svg','assets/logo-video.webp':'assets/logo-video.svg','assets/brand-board-1.webp':'assets/logo-video.svg','assets/brand-board-3.webp':'assets/logo-video.svg'};
-document.querySelectorAll('img').forEach(img=>{const src=img.getAttribute('src');if(assetMap[src])img.src=assetMap[src];});
-const favicon=document.querySelector('link[rel="icon"]');if(favicon)favicon.href='assets/logo-mark.svg';
-document.querySelectorAll('.wi-safety,.ps-hse').forEach(el=>el.style.backgroundImage="linear-gradient(135deg,rgba(225,6,19,.12),transparent),url('assets/logo-video.svg')");
-const creativeBg=document.querySelector('.wi-creative');if(creativeBg)creativeBg.style.backgroundImage="url('assets/logo-mark.svg')";
 const header=document.querySelector('.site-header');const menu=document.querySelector('.menu-btn');const nav=document.querySelector('.main-nav');const links=[...document.querySelectorAll('.main-nav a')];
 window.addEventListener('scroll',()=>header.classList.toggle('scrolled',scrollY>20));
 menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
