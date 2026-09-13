@@ -1,0 +1,7 @@
+{
+  "name":"andrew-tharwat-personal-brand",
+  "version":"1.0.0",
+  "private":true,
+  "scripts":{"start":"serve -s . -l 3000"},
+  "devDependencies":{"serve":"^14.2.4"}
+}
