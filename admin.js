@@ -1,1 +1,1 @@
-(()=>{const load=(src,next)=>{const s=document.createElement('script');s.src=src;s.defer=true;if(next)s.onload=next;document.head.appendChild(s)};load('/admin/device-admin.js?v=2',()=>load('/admin/trusted-devices.js?v=1'));})();
+(()=>{const load=(src,next)=>{const s=document.createElement('script');s.src=src;s.defer=true;if(next)s.onload=next;document.head.appendChild(s)};load('/admin/device-admin.js?v=2',()=>load('/admin/trusted-devices.js?v=1',()=>load('/admin/media-guide.js?v=1')));})();
