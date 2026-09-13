@@ -10,14 +10,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="assets/extracted/hero-portrait3.webp" fetchpriority="high" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="visual-overrides.css?v=3" />
 </head>
 <body>
   <div class="noise"></div>
 
   <header class="site-header" id="top">
     <a class="brand" href="#home" aria-label="Andrew Tharwat home">
-      <img src="assets/logo-mark.png" alt="Andrew Tharwat logo" />
+      <img src="assets/app-icon-official.png" alt="Andrew Tharwat logo" width="50" height="50" decoding="async" />
       <div class="brand-copy">
         <strong>ANDREW THARWAT</strong>
         <span>SAFETY • CREATIVITY • IMPACT</span>
@@ -63,7 +65,7 @@
         </div>
 
         <div class="hero-visual reveal delay-1">
-          <img src="assets/svg-extracted/hero-portrait3.svg" alt="Andrew Tharwat hero visual" />
+          <img src="assets/extracted/hero-portrait3.webp" alt="Andrew Tharwat hero visual" width="480" height="266" loading="eager" decoding="async" fetchpriority="high" />
         </div>
       </div>
       <div class="hero-sidecopy">SAFETY<br>CREATIVITY<br>TECHNOLOGY<br>PEOPLE<br><b>A BRIGHTER<br>TOMORROW</b></div>
@@ -97,10 +99,10 @@
       </div>
 
       <div class="container image-grid image-grid-4">
-        <a class="image-card reveal" href="#explore"><img src="assets/svg-extracted/world-safety.svg" alt="Safety world card" /></a>
-        <a class="image-card reveal delay-1" href="#explore"><img src="assets/svg-extracted/world-digital.svg" alt="Digital world card" /></a>
-        <a class="image-card reveal delay-2" href="#explore"><img src="assets/svg-extracted/world-creative.svg" alt="Creative world card" /></a>
-        <a class="image-card reveal delay-3" href="#explore"><img src="assets/svg-extracted/world-stories.svg" alt="Stories and AI world card" /></a>
+        <a class="image-card reveal" href="#explore"><img src="assets/extracted/world-safety.webp" alt="Safety world card" loading="lazy" decoding="async" /></a>
+        <a class="image-card reveal delay-1" href="#explore"><img src="assets/extracted/world-digital.webp" alt="Digital world card" loading="lazy" decoding="async" /></a>
+        <a class="image-card reveal delay-2" href="#explore"><img src="assets/extracted/world-creative.webp" alt="Creative world card" loading="lazy" decoding="async" /></a>
+        <a class="image-card reveal delay-3" href="#explore"><img src="assets/extracted/world-stories.webp" alt="Stories and AI world card" loading="lazy" decoding="async" /></a>
       </div>
     </section>
 
@@ -136,11 +138,11 @@
       </div>
 
       <div class="container image-grid image-grid-5" id="featured-projects">
-        <a class="image-card reveal" href="/projects/hse-awareness-series"><img src="assets/svg-extracted/featured-hse.svg" alt="HSE awareness series" /></a>
-        <a class="image-card reveal delay-1" href="/projects/hse-digital-tools"><img src="assets/svg-extracted/featured-digital.svg" alt="HSE digital tools" /></a>
-        <a class="image-card reveal delay-2" href="/projects/do-personalized-stories"><img src="assets/svg-extracted/featured-do.svg" alt="DO personalized stories" /></a>
-        <a class="image-card reveal delay-3" href="/projects/magic-of-string-art"><img src="assets/svg-extracted/featured-string.svg" alt="Magic of string art" /></a>
-        <a class="image-card reveal delay-4" href="/projects/brand-identity-projects"><img src="assets/svg-extracted/featured-brand.svg" alt="Brand identity projects" /></a>
+        <a class="image-card reveal" href="/projects/hse-awareness-series"><img src="assets/extracted/featured-hse.webp" alt="HSE awareness series" loading="lazy" decoding="async" /></a>
+        <a class="image-card reveal delay-1" href="/projects/hse-digital-tools"><img src="assets/extracted/featured-digital.webp" alt="HSE digital tools" loading="lazy" decoding="async" /></a>
+        <a class="image-card reveal delay-2" href="/projects/do-personalized-stories"><img src="assets/extracted/featured-do.webp" alt="DO personalized stories" loading="lazy" decoding="async" /></a>
+        <a class="image-card reveal delay-3" href="/projects/magic-of-string-art"><img src="assets/extracted/featured-string.webp" alt="Magic of string art" loading="lazy" decoding="async" /></a>
+        <a class="image-card reveal delay-4" href="/projects/brand-identity-projects"><img src="assets/extracted/featured-brand.webp" alt="Brand identity projects" loading="lazy" decoding="async" /></a>
       </div>
     </section>
 
@@ -154,10 +156,10 @@
       </div>
 
       <div class="container focus-image-grid">
-        <a class="wide-image-card reveal" href="#contact"><img src="assets/svg-extracted/world-safety.svg" alt="Safety focus section" /></a>
-        <a class="wide-image-card reveal delay-1" href="#contact"><img src="assets/svg-extracted/world-digital.svg" alt="Digital focus section" /></a>
-        <a class="wide-image-card reveal delay-2" href="#contact"><img src="assets/svg-extracted/world-creative.svg" alt="Creative focus section" /></a>
-        <a class="wide-image-card reveal delay-3" href="#contact"><img src="assets/svg-extracted/world-stories.svg" alt="AI focus section" /></a>
+        <a class="wide-image-card reveal" href="#contact"><img src="assets/extracted/world-safety.webp" alt="Safety focus section" loading="lazy" decoding="async" /></a>
+        <a class="wide-image-card reveal delay-1" href="#contact"><img src="assets/extracted/world-digital.webp" alt="Digital focus section" loading="lazy" decoding="async" /></a>
+        <a class="wide-image-card reveal delay-2" href="#contact"><img src="assets/extracted/world-creative.webp" alt="Creative focus section" loading="lazy" decoding="async" /></a>
+        <a class="wide-image-card reveal delay-3" href="#contact"><img src="assets/extracted/world-stories.webp" alt="AI focus section" loading="lazy" decoding="async" /></a>
       </div>
     </section>
 
@@ -175,7 +177,7 @@
     </section>
 
     <section class="cta-section" id="contact">
-      <div class="cta-bg"><img src="assets/svg-extracted/cta-port.svg" alt="Port skyline background" /></div>
+      <div class="cta-bg"><img src="assets/extracted/cta-port.webp" alt="Port skyline background" loading="lazy" decoding="async" /></div>
       <div class="container cta-layout">
         <div class="cta-left reveal">
           <span class="section-kicker">SAFER IDEAS</span>
@@ -219,9 +221,7 @@
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="script.js"></script>
-  <script src="cms.js"></script>
+  <script src="script.js?v=6"></script>
 </body>
 </html>
