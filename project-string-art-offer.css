@@ -1,0 +1,44 @@
+/* Final String Art slider card: service offer + direct WhatsApp order. */
+.string-art-project .gallery-slide-service{cursor:default;grid-template-rows:auto auto}
+.string-art-project .portrait-offer{position:relative;isolation:isolate;min-height:min(72vh,690px);display:grid;place-items:center;overflow:hidden;padding:44px;background:radial-gradient(circle at 16% 18%,rgba(225,6,19,.24),transparent 26%),radial-gradient(circle at 84% 82%,rgba(33,112,157,.22),transparent 30%),linear-gradient(135deg,#04111b 0%,#092b40 52%,#061722 100%)}
+.string-art-project .portrait-offer:before{content:"";position:absolute;inset:-30%;z-index:-2;background:repeating-linear-gradient(28deg,transparent 0 64px,rgba(255,255,255,.026) 65px,transparent 66px 128px);transform:rotate(-3deg)}
+.string-art-project .portrait-offer-glow{position:absolute;width:360px;height:360px;border-radius:50%;right:-80px;top:-100px;background:rgba(225,6,19,.13);filter:blur(18px);z-index:-1}
+.string-art-project .portrait-offer-content{width:min(100%,850px);text-align:right;font-family:Tahoma,Arial,sans-serif;color:#fff}
+.string-art-project .portrait-offer-kicker{display:inline-flex;padding:8px 12px;border-radius:999px;background:rgba(225,6,19,.14);border:1px solid rgba(255,55,70,.34);color:#ff5664;font-size:12px;font-weight:800;margin-bottom:18px}
+.string-art-project .portrait-offer h3{margin:0;font-size:clamp(34px,5vw,62px);line-height:1.05;letter-spacing:-1px;color:#fff}
+.string-art-project .portrait-offer h3 b{color:#ff2d40;font-weight:900}
+.string-art-project .portrait-offer-price{direction:ltr;display:flex;align-items:center;justify-content:flex-end;gap:13px;flex-wrap:wrap;margin:22px 0 12px;font-family:Montserrat,Arial,sans-serif}
+.string-art-project .portrait-offer-price strong{font-size:clamp(46px,6vw,74px);line-height:.9;color:#fff;letter-spacing:-3px}
+.string-art-project .portrait-offer-price del{font-size:20px;color:#718896;text-decoration-thickness:2px}
+.string-art-project .portrait-offer-price span{padding:9px 12px;border-radius:10px;background:#fff;color:#0e2f46;font-size:10px;font-weight:900;letter-spacing:.6px}
+.string-art-project .portrait-offer-intro{margin:0 0 22px;color:#c1d0d8;font-size:14px;line-height:1.9;max-width:760px;margin-left:auto}
+.string-art-project .portrait-offer-steps{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin:20px 0 26px}
+.string-art-project .portrait-offer-steps span{display:flex;align-items:center;justify-content:flex-start;gap:10px;text-align:right;padding:13px 14px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(255,255,255,.035);color:#d7e1e6;font-size:12px;line-height:1.6}
+.string-art-project .portrait-offer-steps i{font-style:normal;flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(225,6,19,.16);border:1px solid rgba(255,62,77,.25);color:#ff5260;font:900 9px/1 Montserrat,Arial,sans-serif}
+.string-art-project .portrait-offer-contact{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-start}
+.string-art-project .portrait-whatsapp{display:flex;align-items:center;justify-content:space-between;gap:28px;min-width:min(100%,520px);text-decoration:none;padding:17px 20px;border-radius:15px;background:linear-gradient(135deg,#e10613,#ff3043);color:#fff;box-shadow:0 16px 36px rgba(225,6,19,.24);transition:transform .2s ease,box-shadow .2s ease}
+.string-art-project .portrait-whatsapp:hover{transform:translateY(-2px);box-shadow:0 20px 42px rgba(225,6,19,.32)}
+.string-art-project .portrait-whatsapp span{font-size:13px;font-weight:900}
+.string-art-project .portrait-whatsapp b{direction:ltr;font:800 12px/1 Montserrat,Arial,sans-serif;white-space:nowrap}
+.string-art-project .portrait-offer-contact small{display:block;color:#78909e;font-size:10px;line-height:1.6}
+
+@media(max-width:760px){
+  .string-art-project .portrait-offer{min-height:620px;padding:30px 22px}
+  .string-art-project .portrait-offer-steps{grid-template-columns:1fr}
+  .string-art-project .portrait-offer h3{font-size:38px}
+  .string-art-project .portrait-offer-price strong{font-size:58px}
+  .string-art-project .portrait-offer-contact{display:block}
+  .string-art-project .portrait-whatsapp{width:100%;min-width:0;gap:12px;margin-bottom:10px}
+}
+@media(max-width:480px){
+  .string-art-project .portrait-offer{min-height:680px;padding:24px 17px}
+  .string-art-project .portrait-offer-kicker{font-size:10px}
+  .string-art-project .portrait-offer h3{font-size:33px}
+  .string-art-project .portrait-offer-price{margin-top:17px}
+  .string-art-project .portrait-offer-price strong{font-size:52px}
+  .string-art-project .portrait-offer-price del{font-size:17px}
+  .string-art-project .portrait-offer-intro{font-size:12px;line-height:1.75}
+  .string-art-project .portrait-offer-steps span{font-size:11px;padding:11px 12px}
+  .string-art-project .portrait-whatsapp{padding:15px 14px;flex-direction:column;align-items:flex-start}
+  .string-art-project .portrait-whatsapp span{font-size:12px}
+}
