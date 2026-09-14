@@ -1,4 +1,6 @@
 (() => {
+  if(!document.querySelector('link[href*="i18n.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/i18n.css?v=1';document.head.appendChild(l)}
+  if(!document.querySelector('script[src*="i18n.js"]')){const s=document.createElement('script');s.src='/i18n.js?v=1';s.defer=true;document.head.appendChild(s)}
   function ensureVisuals(next){
     if(!document.querySelector('link[href*="visual-overrides.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/visual-overrides.css?v=3';document.head.appendChild(l)}
     if(window.PORTFOLIO_COVER_SPRITE){next();return}
@@ -33,6 +35,7 @@
       document.getElementById('work-count').textContent=projects.length;document.getElementById('work-categories').textContent=cats.length;
       filters.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{active=b.dataset.filter;filters.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));render()}));search?.addEventListener('input',render);render();
     }
+    document.addEventListener('portfolio:languagechange',()=>render());
     const interaction=document.createElement('script');interaction.src='/interaction-contact-v2.js?v=4';interaction.defer=true;document.head.appendChild(interaction);
     load();
   });
