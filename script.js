@@ -1,4 +1,5 @@
 (()=>{if(!document.querySelector('link[href*="i18n.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/i18n.css?v=2';document.head.appendChild(l)}if(!document.querySelector('script[src*="i18n.js"]')){const s=document.createElement('script');s.src='/i18n.js?v=3';s.defer=true;document.head.appendChild(s)}})();
+(()=>{if(!document.querySelector('link[href*="identity-ecosystem.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/identity-ecosystem.css?v=1';document.head.appendChild(l)}const s=document.createElement('script');s.src='/identity-ecosystem.js?v=1';s.defer=true;document.head.appendChild(s)})();
 const header=document.querySelector('.site-header');const menu=document.querySelector('.menu-btn');const nav=document.querySelector('.main-nav');const links=[...document.querySelectorAll('.main-nav a')];
 window.addEventListener('scroll',()=>header?.classList.toggle('scrolled',scrollY>20),{passive:true});
 menu?.addEventListener('click',()=>{const open=nav?.classList.toggle('open');menu.setAttribute('aria-expanded',String(!!open));});
