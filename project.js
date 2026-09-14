@@ -19,16 +19,77 @@
     const stringArt=p.slug==='magic-of-string-art';
     const title=stringArt?'SELECTED ARTWORKS.':'PROJECT GALLERY.';
     const kicker=stringArt?'HANDCRAFTED COLLECTION':'VISUAL ARCHIVE';
-    const note=stringArt?'The film comes first, followed by the finished artworks in their original proportions — no cropping.':'Images and video from the project.';
+    const note=stringArt?'Swipe on mobile or use the arrows to move through the film and artworks. Every image keeps its original proportions — no cropping.':'Images and video from the project.';
+
+    if(stringArt){
+      const slides=items.map((m,i)=>{
+        const url=esc(media(m.url));
+        const alt=esc(m.alt_text||p.title);
+        const number=String(i+1).padStart(2,'0');
+        if(m.media_type==='video'){
+          return `<article class="gallery-slide gallery-slide-video" data-slide-index="${i}"><div class="gallery-slide-stage"><video controls playsinline preload="metadata" src="${url}"></video><span class="slide-kind">VIDEO</span></div><div class="slide-caption"><span>${number} / ${String(items.length).padStart(2,'0')}</span><strong>PROCESS / MOTION</strong></div></article>`;
+        }
+        return `<figure class="gallery-slide gallery-slide-image" data-slide-index="${i}" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" aria-label="Open artwork ${i+1}"><div class="gallery-slide-stage"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="slide-kind">ARTWORK</span></div><figcaption class="slide-caption"><span>${number} / ${String(items.length).padStart(2,'0')}</span><strong>HANDCRAFTED PORTRAIT</strong></figcaption></figure>`;
+      }).join('');
+      const dots=items.map((_,i)=>`<button type="button" class="gallery-dot${i===0?' active':''}" data-gallery-dot="${i}" aria-label="Go to slide ${i+1}"></button>`).join('');
+      return `<section class="gallery art-gallery carousel-gallery"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${items.length} PIECE${items.length===1?'':'S'}</span></div><div class="gallery-slider-shell"><button type="button" class="gallery-arrow gallery-prev" aria-label="Previous artwork">←</button><div class="gallery-slider-track" tabindex="0">${slides}</div><button type="button" class="gallery-arrow gallery-next" aria-label="Next artwork">→</button></div><div class="gallery-slider-footer"><div class="gallery-dots">${dots}</div><div class="gallery-progress"><strong id="gallery-current">01</strong><span>/ ${String(items.length).padStart(2,'0')}</span></div></div><div class="gallery-swipe-hint">SWIPE / DRAG • OR USE ARROWS</div></section>`;
+    }
+
     const cards=items.map((m,i)=>{
       const url=esc(media(m.url));
       const alt=esc(m.alt_text||p.title);
-      if(m.media_type==='video'){
-        return `<article class="media-item media-video media-${i+1}"><div class="media-frame"><video controls playsinline preload="metadata" src="${url}"></video><span class="media-type">VIDEO</span></div></article>`;
-      }
+      if(m.media_type==='video') return `<article class="media-item media-video media-${i+1}"><div class="media-frame"><video controls playsinline preload="metadata" src="${url}"></video><span class="media-type">VIDEO</span></div></article>`;
       return `<figure class="media-item media-image media-${i+1}" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" aria-label="Open artwork ${i+1}"><div class="media-frame"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="media-type">VIEW</span><span class="media-index">${String(i+1).padStart(2,'0')}</span></div></figure>`;
     }).join('');
-    return `<section class="gallery ${stringArt?'art-gallery':''}"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${items.length} PIECE${items.length===1?'':'S'}</span></div><div class="media-grid">${cards}</div></section>`;
+    return `<section class="gallery"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${items.length} PIECE${items.length===1?'':'S'}</span></div><div class="media-grid">${cards}</div></section>`;
+  }
+
+  function installGallerySlider(){
+    const gallery=document.querySelector('.carousel-gallery');
+    if(!gallery || gallery.dataset.sliderReady==='1')return;
+    gallery.dataset.sliderReady='1';
+    const track=gallery.querySelector('.gallery-slider-track');
+    const slides=[...gallery.querySelectorAll('.gallery-slide')];
+    const dots=[...gallery.querySelectorAll('.gallery-dot')];
+    const current=gallery.querySelector('#gallery-current');
+    const prev=gallery.querySelector('.gallery-prev');
+    const next=gallery.querySelector('.gallery-next');
+    let active=0,raf=0;
+
+    const setActive=index=>{
+      active=Math.max(0,Math.min(slides.length-1,index));
+      dots.forEach((d,i)=>d.classList.toggle('active',i===active));
+      if(current)current.textContent=String(active+1).padStart(2,'0');
+      if(prev)prev.disabled=active===0;
+      if(next)next.disabled=active===slides.length-1;
+    };
+    const go=index=>{
+      const slide=slides[Math.max(0,Math.min(slides.length-1,index))];
+      if(!slide)return;
+      track.scrollTo({left:slide.offsetLeft,behavior:'smooth'});
+      setActive(Number(slide.dataset.slideIndex||0));
+    };
+
+    prev?.addEventListener('click',()=>go(active-1));
+    next?.addEventListener('click',()=>go(active+1));
+    dots.forEach(d=>d.addEventListener('click',()=>go(Number(d.dataset.galleryDot||0))));
+    track.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){e.preventDefault();go(active+1)}else if(e.key==='ArrowLeft'){e.preventDefault();go(active-1)}});
+    track.addEventListener('scroll',()=>{
+      if(raf)cancelAnimationFrame(raf);
+      raf=requestAnimationFrame(()=>{
+        let nearest=0,best=Infinity;
+        slides.forEach((s,i)=>{const dist=Math.abs(s.offsetLeft-track.scrollLeft);if(dist<best){best=dist;nearest=i}});
+        setActive(nearest);
+      });
+    },{passive:true});
+
+    // Mouse / pen drag on desktop. Native touch scrolling remains in charge on phones.
+    let down=false,startX=0,startLeft=0,moved=false;
+    track.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.target.closest('video,button'))return;down=true;moved=false;startX=e.clientX;startLeft=track.scrollLeft;track.classList.add('dragging');track.setPointerCapture?.(e.pointerId)});
+    track.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-startX;if(Math.abs(dx)>4)moved=true;track.scrollLeft=startLeft-dx});
+    const endDrag=e=>{if(!down)return;down=false;track.classList.remove('dragging');try{track.releasePointerCapture?.(e.pointerId)}catch(_e){};if(moved){let nearest=0,best=Infinity;slides.forEach((s,i)=>{const dist=Math.abs(s.offsetLeft-track.scrollLeft);if(dist<best){best=dist;nearest=i}});go(nearest)}};
+    track.addEventListener('pointerup',endDrag);track.addEventListener('pointercancel',endDrag);
+    setActive(0);
   }
 
   function installLightbox(){
@@ -42,7 +103,7 @@
     const img=box.querySelector('img');
     const close=()=>{box.classList.remove('open');box.setAttribute('aria-hidden','true');document.body.classList.remove('lightbox-open');setTimeout(()=>{img.src=''},220)};
     const open=(src,alt)=>{img.src=src;img.alt=alt||'';box.classList.add('open');box.setAttribute('aria-hidden','false');document.body.classList.add('lightbox-open')};
-    document.addEventListener('click',e=>{const item=e.target.closest('[data-lightbox-src]');if(item)open(item.dataset.lightboxSrc,item.dataset.lightboxAlt)});
+    document.addEventListener('click',e=>{const item=e.target.closest('[data-lightbox-src]');if(item && !item.closest('.gallery-slider-track.dragging'))open(item.dataset.lightboxSrc,item.dataset.lightboxAlt)});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')close();if((e.key==='Enter'||e.key===' ')&&document.activeElement?.matches?.('[data-lightbox-src]')){e.preventDefault();const item=document.activeElement;open(item.dataset.lightboxSrc,item.dataset.lightboxAlt)}});
     box.querySelector('.lightbox-close').addEventListener('click',close);
     box.addEventListener('click',e=>{if(e.target===box||e.target.classList.contains('lightbox-stage'))close()});
@@ -99,6 +160,7 @@
           ${galleryMarkup(mediaItems,p)}
         </div>
       </section>`;
+    if(isStringArt)installGallerySlider();
     if(mediaItems.some(m=>m.media_type!=='video'))installLightbox();
   }
   function fail(msg){root.innerHTML=`<section class="project-error"><h1>${esc(msg)}</h1><p>This project is either not published yet or its public page is currently disabled.</p><a class="btn btn-primary" href="/work">BACK TO WORK</a></section>`;}
