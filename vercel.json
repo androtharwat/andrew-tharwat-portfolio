@@ -2,6 +2,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
+    { "source": "/share/:media", "destination": "/api/share?media=:media" },
     { "source": "/projects/:slug", "destination": "/project?slug=:slug" }
   ]
 }
