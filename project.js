@@ -19,7 +19,7 @@
     const stringArt=p.slug==='magic-of-string-art';
     const title=stringArt?'SELECTED ARTWORKS.':'PROJECT GALLERY.';
     const kicker=stringArt?'HANDCRAFTED COLLECTION':'VISUAL ARCHIVE';
-    const note=stringArt?'A closer look at the portraits, thread geometry and handcrafted detail behind the work.':'Images and video from the project.';
+    const note=stringArt?'The film comes first, followed by the finished artworks in their original proportions — no cropping.':'Images and video from the project.';
     const cards=items.map((m,i)=>{
       const url=esc(media(m.url));
       const alt=esc(m.alt_text||p.title);
@@ -60,9 +60,17 @@
     if(error||!p){fail('Project page is not available yet');return;}
 
     document.title=`${p.title} — Andrew Tharwat`;
-    document.body.classList.toggle('string-art-project',p.slug==='magic-of-string-art');
+    const isStringArt=p.slug==='magic-of-string-art';
+    document.body.classList.toggle('string-art-project',isStringArt);
     const tags=[...(p.tags||[]),...(p.tools||[])];
-    const mediaItems=(p.portfolio_project_media||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    let mediaItems=(p.portfolio_project_media||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    if(isStringArt){
+      mediaItems=mediaItems.sort((a,b)=>{
+        const typeA=a.media_type==='video'?0:1;
+        const typeB=b.media_type==='video'?0:1;
+        return typeA-typeB || (a.sort_order||0)-(b.sort_order||0);
+      });
+    }
     root.innerHTML=`
       <section class="project-hero">
         <div class="container project-hero-grid">
