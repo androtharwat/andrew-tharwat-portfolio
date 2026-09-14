@@ -1,0 +1,19 @@
+/* Compact share trigger + animated share drawer */
+.media-share{position:relative!important;padding:0!important;border:0!important;margin:12px 0 14px!important;background:transparent!important}
+.media-share-trigger{appearance:none;border:1px solid #d7e1e7;background:#fff;color:#0e2f46;min-height:40px;padding:0 15px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:9px;font:900 9px/1 Montserrat,Arial,sans-serif;letter-spacing:.45px;cursor:pointer;box-shadow:0 5px 16px rgba(8,28,43,.06);transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}
+.media-share-trigger:hover{transform:translateY(-1px);border-color:#aebfc9;box-shadow:0 8px 20px rgba(8,28,43,.1)}
+.media-share-trigger[aria-expanded="true"]{background:#0e2f46;color:#fff;border-color:#0e2f46;box-shadow:0 10px 24px rgba(14,47,70,.18)}
+.media-share-trigger-icon{font-size:14px;line-height:1}
+.media-share-trigger-chevron{font-size:12px;line-height:1;transition:transform .24s ease}
+.media-share-trigger[aria-expanded="true"] .media-share-trigger-chevron{transform:rotate(180deg)}
+.media-share-sheet{display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-6px);pointer-events:none;transition:grid-template-rows .28s cubic-bezier(.2,.75,.25,1),opacity .22s ease,transform .28s ease;margin-top:0}
+.media-share-sheet-inner{min-height:0;overflow:hidden}
+.media-share.open .media-share-sheet{grid-template-rows:1fr;opacity:1;transform:translateY(0);pointer-events:auto;margin-top:10px}
+.media-share-panel{padding:14px;border:1px solid #dce5ea;border-radius:16px;background:linear-gradient(180deg,#fff 0%,#f7fafb 100%);box-shadow:0 14px 36px rgba(8,28,43,.09)}
+.media-share.open .media-share-head{margin-bottom:10px}
+.media-share.open .media-share-actions{display:flex!important}
+.media-share.open .media-share-hint,.media-share.open .media-share-status{display:block!important}
+.media-share:not(.open) .media-share-head,.media-share:not(.open) .media-share-actions,.media-share:not(.open) .media-share-hint,.media-share:not(.open) .media-share-status{visibility:hidden}
+html[dir="rtl"] .media-share-trigger{font-family:Alexandria,Tahoma,Arial,sans-serif;letter-spacing:0}
+@media(max-width:720px){.media-share-trigger{width:100%;min-height:44px}.media-share.open .media-share-actions{display:grid!important;grid-template-columns:1fr 1fr}.media-share-panel{padding:12px}.media-share.open .media-share-native{grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){.media-share-sheet,.media-share-trigger,.media-share-trigger-chevron{transition:none!important}}
