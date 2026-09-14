@@ -1,0 +1,179 @@
+/* SCCT2 HSE Awareness Series — editorial media library.
+   Every uploaded image/video keeps its natural aspect ratio. */
+.hse-awareness-project .gallery{
+  margin-top:92px;
+  padding-top:58px;
+}
+.hse-awareness-project .gallery-head{
+  align-items:flex-end;
+  margin-bottom:34px;
+  padding-bottom:22px;
+  border-bottom:1px solid #dfe7ec;
+}
+.hse-awareness-project .gallery-head>div{max-width:820px}
+.hse-awareness-project .gallery-head h2{
+  font-size:clamp(34px,4vw,56px);
+  line-height:1.02;
+  letter-spacing:-1.6px;
+}
+.hse-awareness-project .gallery-head p{
+  max-width:720px;
+  font-size:13px;
+  line-height:1.9;
+}
+
+/* One clear editorial sequence instead of a cropped mosaic. */
+.hse-awareness-project .media-grid{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:34px!important;
+  width:min(100%,1120px);
+  margin:0 auto;
+}
+.hse-awareness-project .media-item{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:auto!important;
+  margin:0!important;
+  overflow:visible!important;
+  border-radius:24px;
+  background:#fff;
+  border:1px solid #dce5ea;
+  box-shadow:0 22px 55px rgba(8,28,43,.09);
+}
+.hse-awareness-project .media-frame{
+  position:relative;
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:auto!important;
+  overflow:hidden!important;
+  border-radius:23px;
+  background:#06131e;
+}
+.hse-awareness-project .media-with-story .media-frame{
+  border-radius:23px 23px 0 0!important;
+}
+.hse-awareness-project .media-item img,
+.hse-awareness-project .media-item video{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  margin:0!important;
+  background:#06131e;
+  transform:none!important;
+  filter:none!important;
+}
+.hse-awareness-project .media-image .media-frame:after{display:none!important}
+.hse-awareness-project .media-image:hover img{transform:none!important;filter:none!important}
+
+/* Keep portrait/square assets elegant without stretching them edge-to-edge. */
+.hse-awareness-project .media-image .media-frame{
+  display:grid!important;
+  place-items:center;
+  background:linear-gradient(135deg,#071923,#0b2c42);
+}
+.hse-awareness-project .media-image img{
+  max-width:100%!important;
+}
+
+.hse-awareness-project .media-type{
+  top:16px;
+  right:16px;
+  padding:8px 11px;
+  background:rgba(4,16,26,.86);
+  border:1px solid rgba(255,255,255,.15);
+  box-shadow:0 8px 24px rgba(0,0,0,.2);
+}
+.hse-awareness-project .media-index{display:none}
+.hse-series-order{
+  position:absolute;
+  z-index:4;
+  left:16px;
+  top:16px;
+  display:inline-flex;
+  align-items:center;
+  min-height:32px;
+  padding:0 11px;
+  border-radius:999px;
+  background:rgba(225,6,19,.92);
+  border:1px solid rgba(255,255,255,.16);
+  color:#fff;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);
+  font:900 8px/1 Montserrat,Arial,sans-serif;
+  letter-spacing:1.2px;
+  pointer-events:none;
+  backdrop-filter:blur(8px);
+}
+
+/* The brief and viewer interaction are part of the same content card. */
+.hse-awareness-project .media-story{
+  border:0!important;
+  border-top:1px solid #e1e8ed!important;
+  border-radius:0 0 23px 23px!important;
+  padding:24px 26px 26px!important;
+  background:linear-gradient(180deg,#fff 0%,#f7fafb 100%)!important;
+}
+.hse-awareness-project .media-story-copy{margin-bottom:18px;gap:9px}
+.hse-awareness-project .media-story-title{
+  font-size:18px;
+  line-height:1.45;
+  color:#0e2f46;
+}
+.hse-awareness-project .media-story-brief{
+  max-width:900px;
+  font-size:12px;
+  line-height:1.9;
+  color:#5f7481;
+}
+.hse-awareness-project .media-engage{
+  padding-top:16px;
+}
+
+html[dir="rtl"] .hse-awareness-project .gallery-head,
+html[dir="rtl"] .hse-awareness-project .media-story{text-align:right}
+html[dir="rtl"] .hse-awareness-project .media-story-title{
+  font-family:Alexandria,Tahoma,Arial,sans-serif;
+  font-size:18px;
+  line-height:1.7;
+}
+html[dir="rtl"] .hse-awareness-project .media-story-brief{
+  font-family:Alexandria,Tahoma,Arial,sans-serif;
+  font-size:12px;
+  line-height:2;
+}
+html[dir="rtl"] .hse-awareness-project .hse-series-order{
+  left:auto;
+  right:16px;
+  font-family:Alexandria,Tahoma,Arial,sans-serif;
+  letter-spacing:0;
+}
+html[dir="rtl"] .hse-awareness-project .media-type{
+  right:auto;
+  left:16px;
+}
+
+@media(max-width:760px){
+  .hse-awareness-project .gallery{margin-top:64px;padding-top:42px}
+  .hse-awareness-project .gallery-head{margin-bottom:22px;padding-bottom:18px}
+  .hse-awareness-project .gallery-head h2{font-size:34px;line-height:1.18}
+  .hse-awareness-project .media-grid{gap:22px!important}
+  .hse-awareness-project .media-item{border-radius:18px}
+  .hse-awareness-project .media-frame{border-radius:17px}
+  .hse-awareness-project .media-with-story .media-frame{border-radius:17px 17px 0 0!important}
+  .hse-awareness-project .media-story{padding:18px!important;border-radius:0 0 17px 17px!important}
+  .hse-awareness-project .media-story-title{font-size:16px}
+  .hse-awareness-project .media-story-brief{font-size:11px}
+  .hse-series-order{left:10px;top:10px;min-height:29px;padding:0 9px;font-size:7px}
+  .hse-awareness-project .media-type{right:10px;top:10px}
+  html[dir="rtl"] .hse-awareness-project .hse-series-order{right:10px}
+  html[dir="rtl"] .hse-awareness-project .media-type{left:10px}
+}
