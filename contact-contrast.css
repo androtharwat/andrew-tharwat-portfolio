@@ -1,0 +1,81 @@
+/* Contact section contrast polish — keeps the brand navy/red while making white copy readable over the photographic background. */
+.cta-section.contact-upgraded{
+  isolation:isolate;
+}
+.cta-section.contact-upgraded:after{
+  background:linear-gradient(135deg,rgba(3,15,23,.72),rgba(8,34,52,.66) 55%,rgba(4,18,29,.74))!important;
+}
+.cta-section.contact-upgraded .cta-bg{
+  opacity:.34!important;
+  filter:saturate(.82) contrast(1.04);
+}
+.cta-section.contact-upgraded .contact-shell{
+  position:relative;
+  z-index:3;
+}
+.cta-section.contact-upgraded .section-kicker{
+  color:#ff3242!important;
+  text-shadow:0 2px 12px rgba(0,0,0,.28);
+}
+.cta-section.contact-upgraded .contact-heading h2{
+  color:#f8fbfd!important;
+  text-shadow:0 2px 4px rgba(2,12,20,.52),0 10px 30px rgba(0,0,0,.30);
+}
+.cta-section.contact-upgraded .contact-heading h2 b{
+  color:#ff2437!important;
+  text-shadow:0 2px 5px rgba(58,0,8,.30),0 10px 26px rgba(90,0,12,.16);
+}
+.cta-section.contact-upgraded .contact-heading p{
+  color:#d6e2e9!important;
+  text-shadow:0 1px 6px rgba(0,0,0,.26);
+}
+.cta-section.contact-upgraded .contact-mail{
+  color:#fff!important;
+  background:rgba(255,255,255,.075)!important;
+  border-color:rgba(255,255,255,.30)!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.12);
+}
+.cta-section.contact-upgraded .contact-mail:hover{
+  background:rgba(255,255,255,.12)!important;
+  border-color:rgba(255,255,255,.46)!important;
+}
+.cta-section.contact-upgraded .contact-social-card{
+  color:#f5f9fb!important;
+  background:rgba(5,25,38,.56)!important;
+  border-color:rgba(255,255,255,.13)!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.10);
+  backdrop-filter:blur(10px);
+}
+.cta-section.contact-upgraded .contact-social-card strong{
+  color:#fff!important;
+  text-shadow:0 1px 6px rgba(0,0,0,.24);
+}
+.cta-section.contact-upgraded .contact-social-card span span{
+  color:#b9cbd5!important;
+}
+.cta-section.contact-upgraded .contact-direct-box{
+  background:rgba(4,22,34,.72)!important;
+  border-color:rgba(255,255,255,.14)!important;
+  box-shadow:0 16px 34px rgba(0,0,0,.16);
+  backdrop-filter:blur(12px);
+}
+.cta-section.contact-upgraded .contact-direct-box h3,
+.cta-section.contact-upgraded .contact-direct-row a b{
+  color:#fff!important;
+  text-shadow:0 1px 6px rgba(0,0,0,.28);
+}
+.cta-section.contact-upgraded .contact-direct-box p{
+  color:#b9cbd5!important;
+}
+.cta-section.contact-upgraded .contact-direct-row a{
+  color:#eef5f8!important;
+}
+.cta-section.contact-upgraded .contact-direct-row a span{
+  color:#ff3a4a!important;
+}
+
+@media(max-width:820px){
+  .cta-section.contact-upgraded:after{
+    background:linear-gradient(180deg,rgba(3,15,23,.76),rgba(8,34,52,.70))!important;
+  }
+}
