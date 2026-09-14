@@ -19,20 +19,29 @@
     const stringArt=p.slug==='magic-of-string-art';
     const title=stringArt?'SELECTED ARTWORKS.':'PROJECT GALLERY.';
     const kicker=stringArt?'HANDCRAFTED COLLECTION':'VISUAL ARCHIVE';
-    const note=stringArt?'Swipe on mobile or use the arrows to move through the film and artworks. Every image keeps its original proportions — no cropping.':'Images and video from the project.';
+    const note=stringArt?'Swipe on mobile or use the arrows to move through the film and artworks. The final slide lets you order your own portrait.':'Images and video from the project.';
 
     if(stringArt){
+      const total=items.length+1;
       const slides=items.map((m,i)=>{
         const url=esc(media(m.url));
         const alt=esc(m.alt_text||p.title);
         const number=String(i+1).padStart(2,'0');
         if(m.media_type==='video'){
-          return `<article class="gallery-slide gallery-slide-video" data-slide-index="${i}"><div class="gallery-slide-stage"><video controls playsinline preload="metadata" src="${url}"></video><span class="slide-kind">VIDEO</span></div><div class="slide-caption"><span>${number} / ${String(items.length).padStart(2,'0')}</span><strong>PROCESS / MOTION</strong></div></article>`;
+          return `<article class="gallery-slide gallery-slide-video" data-slide-index="${i}"><div class="gallery-slide-stage"><video controls playsinline preload="metadata" src="${url}"></video><span class="slide-kind">VIDEO</span></div><div class="slide-caption"><span>${number} / ${String(total).padStart(2,'0')}</span><strong>PROCESS / MOTION</strong></div></article>`;
         }
-        return `<figure class="gallery-slide gallery-slide-image" data-slide-index="${i}" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" aria-label="Open artwork ${i+1}"><div class="gallery-slide-stage"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="slide-kind">ARTWORK</span></div><figcaption class="slide-caption"><span>${number} / ${String(items.length).padStart(2,'0')}</span><strong>HANDCRAFTED PORTRAIT</strong></figcaption></figure>`;
+        return `<figure class="gallery-slide gallery-slide-image" data-slide-index="${i}" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" aria-label="Open artwork ${i+1}"><div class="gallery-slide-stage"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="slide-kind">ARTWORK</span></div><figcaption class="slide-caption"><span>${number} / ${String(total).padStart(2,'0')}</span><strong>HANDCRAFTED PORTRAIT</strong></figcaption></figure>`;
       }).join('');
-      const dots=items.map((_,i)=>`<button type="button" class="gallery-dot${i===0?' active':''}" data-gallery-dot="${i}" aria-label="Go to slide ${i+1}"></button>`).join('');
-      return `<section class="gallery art-gallery carousel-gallery"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${items.length} PIECE${items.length===1?'':'S'}</span></div><div class="gallery-slider-shell"><button type="button" class="gallery-arrow gallery-prev" aria-label="Previous artwork">←</button><div class="gallery-slider-track" tabindex="0">${slides}</div><button type="button" class="gallery-arrow gallery-next" aria-label="Next artwork">→</button></div><div class="gallery-slider-footer"><div class="gallery-dots">${dots}</div><div class="gallery-progress"><strong id="gallery-current">01</strong><span>/ ${String(items.length).padStart(2,'0')}</span></div></div><div class="gallery-swipe-hint">SWIPE / DRAG • OR USE ARROWS</div></section>`;
+
+      const waText=encodeURIComponent('مرحبًا أندرو، أرغب في طلب بورتريه String Art ملون مقاس 60 سم بسعر العرض 350 دولار. أود إرسال الصورة والبدء في مراجعة التصميم معك.');
+      const waHref=`https://wa.me/201505414444?text=${waText}`;
+      const orderIndex=items.length;
+      const orderNumber=String(total).padStart(2,'0');
+      const orderSlide=`<article class="gallery-slide gallery-slide-service" data-slide-index="${orderIndex}"><div class="portrait-offer" dir="rtl"><div class="portrait-offer-glow"></div><div class="portrait-offer-content"><span class="portrait-offer-kicker">عرض لفترة محدودة</span><h3>اطلب بورتريه<br><b>String Art ملون</b></h3><div class="portrait-offer-price"><strong>$350</strong><del>$550</del><span>مقاس 60 سم</span></div><p class="portrait-offer-intro">قطعة فنية تُجهّز خصيصًا لك من صورتك، بداية من معالجة الصورة وحتى مراجعة التصميم معك قبل بدء التنفيذ.</p><div class="portrait-offer-steps"><span><i>01</i> ترسل الصورة المناسبة للبورتريه</span><span><i>02</i> تتم معالجة الصورة وتجهيز التصميم ومراجعته معك</span><span><i>03</i> بعد اعتماد التصميم يتم دفع مبلغ تأمين لبدء التنفيذ</span><span><i>04</i> يتم تجهيز العمل ثم تنسيق الشحن والاستلام معك</span></div><div class="portrait-offer-contact"><a href="${waHref}" target="_blank" rel="noopener" class="portrait-whatsapp"><span>اطلب البورتريه الآن عبر واتساب</span><b>+20 150 541 4444</b></a><small>بمجرد الضغط هتفتح لك رسالة طلب جاهزة على واتساب.</small></div></div></div><div class="slide-caption"><span>${orderNumber} / ${orderNumber}</span><strong>ORDER YOUR PORTRAIT</strong></div></article>`;
+
+      const allSlides=slides+orderSlide;
+      const dots=Array.from({length:total},(_,i)=>`<button type="button" class="gallery-dot${i===0?' active':''}" data-gallery-dot="${i}" aria-label="Go to slide ${i+1}"></button>`).join('');
+      return `<section class="gallery art-gallery carousel-gallery"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${items.length} ARTWORK${items.length===1?'':'S'} + ORDER</span></div><div class="gallery-slider-shell"><button type="button" class="gallery-arrow gallery-prev" aria-label="Previous artwork">←</button><div class="gallery-slider-track" tabindex="0">${allSlides}</div><button type="button" class="gallery-arrow gallery-next" aria-label="Next artwork">→</button></div><div class="gallery-slider-footer"><div class="gallery-dots">${dots}</div><div class="gallery-progress"><strong id="gallery-current">01</strong><span>/ ${String(total).padStart(2,'0')}</span></div></div><div class="gallery-swipe-hint">SWIPE / DRAG • OR USE ARROWS</div></section>`;
     }
 
     const cards=items.map((m,i)=>{
@@ -83,9 +92,8 @@
       });
     },{passive:true});
 
-    // Mouse / pen drag on desktop. Native touch scrolling remains in charge on phones.
     let down=false,startX=0,startLeft=0,moved=false;
-    track.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.target.closest('video,button'))return;down=true;moved=false;startX=e.clientX;startLeft=track.scrollLeft;track.classList.add('dragging');track.setPointerCapture?.(e.pointerId)});
+    track.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.target.closest('video,button,a'))return;down=true;moved=false;startX=e.clientX;startLeft=track.scrollLeft;track.classList.add('dragging');track.setPointerCapture?.(e.pointerId)});
     track.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-startX;if(Math.abs(dx)>4)moved=true;track.scrollLeft=startLeft-dx});
     const endDrag=e=>{if(!down)return;down=false;track.classList.remove('dragging');try{track.releasePointerCapture?.(e.pointerId)}catch(_e){};if(moved){let nearest=0,best=Infinity;slides.forEach((s,i)=>{const dist=Math.abs(s.offsetLeft-track.scrollLeft);if(dist<best){best=dist;nearest=i}});go(nearest)}};
     track.addEventListener('pointerup',endDrag);track.addEventListener('pointercancel',endDrag);
