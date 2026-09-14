@@ -1,0 +1,10 @@
+/* Secondary CTA on the final String Art service slide. */
+.string-art-project .portrait-facebook{display:flex;align-items:center;gap:12px;min-width:min(100%,520px);text-decoration:none;padding:14px 16px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);color:#fff;transition:transform .2s ease,border-color .2s ease,background .2s ease}
+.string-art-project .portrait-facebook:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.26);background:rgba(255,255,255,.085)}
+.string-art-project .portrait-facebook-icon{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#fff;color:#0e2f46;font:900 20px/1 Arial,sans-serif;text-transform:lowercase}
+.string-art-project .portrait-facebook-copy{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;text-align:right}
+.string-art-project .portrait-facebook-copy strong{font-size:12px;font-weight:900;color:#fff;line-height:1.35}
+.string-art-project .portrait-facebook-copy b{direction:ltr;font:700 9px/1.2 Montserrat,Arial,sans-serif;color:#8fa6b4;letter-spacing:.4px;text-align:right}
+.string-art-project .portrait-facebook-arrow{font:900 17px/1 Montserrat,Arial,sans-serif;color:#ff3043}
+@media(max-width:760px){.string-art-project .portrait-facebook{width:100%;min-width:0;margin:0 0 10px}}
+@media(max-width:480px){.string-art-project .portrait-facebook{padding:13px 14px}.string-art-project .portrait-facebook-copy strong{font-size:11px}}
