@@ -1,0 +1,89 @@
+/* String Art gallery: preserve every uploaded asset's original aspect ratio and show it as a clean vertical portfolio sequence. */
+.string-art-project .art-gallery .media-grid{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:24px!important;
+  max-width:1100px;
+  margin:0 auto;
+}
+.string-art-project .art-gallery .media-item{
+  display:block!important;
+  width:100%!important;
+  min-height:0!important;
+  height:auto!important;
+  aspect-ratio:auto!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  border-radius:20px;
+  overflow:hidden;
+  background:#071923;
+}
+.string-art-project .art-gallery .media-frame{
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:auto!important;
+  overflow:hidden;
+  display:block;
+}
+.string-art-project .art-gallery .media-item img,
+.string-art-project .art-gallery .media-item video{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  aspect-ratio:auto!important;
+  background:#071923;
+}
+.string-art-project .art-gallery .media-video{
+  max-width:760px;
+  margin:0 auto 8px!important;
+  background:#030b11;
+}
+.string-art-project .art-gallery .media-video video{
+  object-fit:contain!important;
+  background:#030b11;
+}
+.string-art-project .art-gallery .media-image{
+  max-width:1100px;
+  margin:0 auto!important;
+}
+.string-art-project .art-gallery .media-image:hover img{
+  transform:none!important;
+  filter:none!important;
+}
+.string-art-project .art-gallery .media-image .media-frame:after{
+  height:18%;
+}
+.string-art-project .art-gallery .media-video:after{
+  content:"PROCESS / MOTION";
+  position:absolute;
+  left:15px;
+  bottom:15px;
+  z-index:4;
+  color:#fff;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:1.6px;
+  background:rgba(4,16,26,.72);
+  padding:8px 10px;
+  border-radius:999px;
+  pointer-events:none;
+}
+@media(max-width:620px){
+  .string-art-project .art-gallery .media-grid{gap:16px!important}
+  .string-art-project .art-gallery .media-item,
+  .string-art-project .art-gallery .media-video,
+  .string-art-project .art-gallery .media-image{
+    width:100%!important;
+    max-width:none!important;
+    aspect-ratio:auto!important;
+  }
+  .string-art-project .art-gallery .media-item img,
+  .string-art-project .art-gallery .media-item video{
+    height:auto!important;
+    object-fit:contain!important;
+  }
+}
