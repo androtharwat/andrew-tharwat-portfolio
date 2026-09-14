@@ -19,14 +19,14 @@
     const result=clean(blocks[2].querySelector('p'));
     const labels=ar?{
       kicker:'من الفكرة إلى التنفيذ',titleA:'من التحدي',titleB:'إلى أثر حقيقي',intro:'بدل عرض المشروع كمعلومات منفصلة، هذا هو مسار العمل الحقيقي: نفهم المشكلة، نفكر في الطريقة، نبني الحل، ثم نقيس القيمة التي صنعها.',
-      s1:'01 / افهم',h1:'التحدي الحقيقي',s2:'02 / فكّر',h2:'السياق وطريقة التفكير',s3:'03 / ابنِ',h3:'تحويل الفكرة إلى تنفيذ',s4:'04 / الأثر',h4:'ما الذي تغيّر؟',signature:'PROBLEM SOLVING THROUGH CREATIVITY',brand:'ANDREW THARWAT · SAFETY × CREATIVITY × TECHNOLOGY'
+      s1:'افهم',h1:'التحدي الحقيقي',s2:'فكّر',h2:'السياق وطريقة التفكير',s3:'ابنِ',h3:'تحويل الفكرة إلى تنفيذ',s4:'الأثر',h4:'ما الذي تغيّر؟',signature:'PROBLEM SOLVING THROUGH CREATIVITY',brand:'ANDREW THARWAT · SAFETY × CREATIVITY × TECHNOLOGY'
     }:{
       kicker:'FROM IDEA TO EXECUTION',titleA:'FROM CHALLENGE',titleB:'TO REAL IMPACT.',intro:'Instead of treating a project as disconnected facts, this is the real working path: understand the problem, shape the thinking, build the solution, then measure the value it creates.',
-      s1:'01 / UNDERSTAND',h1:'THE REAL CHALLENGE',s2:'02 / THINK',h2:'CONTEXT & THINKING',s3:'03 / BUILD',h3:'TURNING THE IDEA REAL',s4:'04 / IMPACT',h4:'WHAT CHANGED?',signature:'PROBLEM SOLVING THROUGH CREATIVITY',brand:'ANDREW THARWAT · SAFETY × CREATIVITY × TECHNOLOGY'
+      s1:'UNDERSTAND',h1:'THE REAL CHALLENGE',s2:'THINK',h2:'CONTEXT & THINKING',s3:'BUILD',h3:'TURNING THE IDEA REAL',s4:'IMPACT',h4:'WHAT CHANGED?',signature:'PROBLEM SOLVING THROUGH CREATIVITY',brand:'ANDREW THARWAT · SAFETY × CREATIVITY × TECHNOLOGY'
     };
     const section=document.createElement('section');section.className='identity-project-journey';section.dir=ar?'rtl':'ltr';section.setAttribute('data-i18n-skip','1');
-    const step=(no,cls,small,title,text)=>`<article class="journey-step"><div class="journey-step-top"><span class="journey-number">${no}</span><span class="journey-icon">${icons[cls]}</span></div><small>${small}</small><h3>${title}</h3><p>${text||'—'}</p><span class="journey-arrow">→</span></article>`;
-    section.innerHTML=`<div class="journey-head"><div><span class="journey-kicker">${labels.kicker}</span><h2>${labels.titleA}<br><span>${labels.titleB}</span></h2></div><p>${labels.intro}</p></div><div class="journey-rail">${step('01','challenge',labels.s1,labels.h1,challenge)}${step('02','think',labels.s2,labels.h2,overview)}${step('03','build',labels.s3,labels.h3,solution)}${step('04','impact',labels.s4,labels.h4,result)}</div><div class="journey-signature"><strong>${labels.signature.replace('CREATIVITY','<b>CREATIVITY</b>')}</strong><span>${labels.brand}</span></div>`;
+    const step=(cls,small,title,text)=>`<article class="journey-step journey-${cls}"><div class="journey-step-top icon-only"><span class="journey-icon">${icons[cls]}</span></div><small>${small}</small><h3>${title}</h3><p>${text||'—'}</p><span class="journey-arrow">→</span></article>`;
+    section.innerHTML=`<div class="journey-head"><div><span class="journey-kicker">${labels.kicker}</span><h2>${labels.titleA}<br><span>${labels.titleB}</span></h2></div><p>${labels.intro}</p></div><div class="journey-rail">${step('challenge',labels.s1,labels.h1,challenge)}${step('think',labels.s2,labels.h2,overview)}${step('build',labels.s3,labels.h3,solution)}${step('impact',labels.s4,labels.h4,result)}</div><div class="journey-signature"><strong>${labels.signature.replace('CREATIVITY','<b>CREATIVITY</b>')}</strong><span>${labels.brand}</span></div>`;
     copy.replaceWith(section);grid.remove();return true;
   }
   let raf=0;const schedule=()=>{if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>upgrade())};
