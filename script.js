@@ -1,4 +1,4 @@
-(()=>{if(!document.querySelector('link[href*="i18n.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/i18n.css?v=1';document.head.appendChild(l)}if(!document.querySelector('script[src*="i18n.js"]')){const s=document.createElement('script');s.src='/i18n.js?v=1';s.defer=true;document.head.appendChild(s)}})();
+(()=>{if(!document.querySelector('link[href*="i18n.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/i18n.css?v=2';document.head.appendChild(l)}if(!document.querySelector('script[src*="i18n.js"]')){const s=document.createElement('script');s.src='/i18n.js?v=3';s.defer=true;document.head.appendChild(s)}})();
 const header=document.querySelector('.site-header');const menu=document.querySelector('.menu-btn');const nav=document.querySelector('.main-nav');const links=[...document.querySelectorAll('.main-nav a')];
 window.addEventListener('scroll',()=>header?.classList.toggle('scrolled',scrollY>20),{passive:true});
 menu?.addEventListener('click',()=>{const open=nav?.classList.toggle('open');menu.setAttribute('aria-expanded',String(!!open));});
@@ -10,7 +10,7 @@ const primary=document.querySelector('.hero-actions .btn-primary');if(primary)pr
   const load=(src,onload)=>{if(document.querySelector(`script[src="${src}"]`)){onload?.();return}const s=document.createElement('script');s.src=src;s.defer=true;s.onload=()=>onload?.();document.head.appendChild(s)};
   const boot=()=>load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',()=>{
     load('/cover-sprite.js?v=1');
-    load('/cms.js?v=3');
+    load('/cms.js?v=4');
     load('/interaction-contact-v2.js?v=4');
     const explore=document.getElementById('explore');let loaded=false;const loadExplore=()=>{if(loaded)return;loaded=true;load('/site-upgrade.js?v=4')};
     if(explore&&'IntersectionObserver'in window){const obs=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){obs.disconnect();loadExplore()}},{rootMargin:'1000px 0px'});obs.observe(explore)}else loadExplore();
