@@ -1,5 +1,5 @@
 const SUPABASE_URL=process.env.SUPABASE_URL||'https://sivyynuhluhvjcdicwxn.supabase.co';
-const SUPABASE_KEY=process.env.SUPABASE_ANON_KEY||'sb_publishable_NfXucVBg2vgFJZLMZFod7Q_EyFjgX7G';
+const SUPABASE_KEY=process.env.SUPABASE_ANON_KEY||'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InNpdnl5bnVobHVodmpjZGljd3huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxMTE3OTEsImV4cCI6MjEwNDY4Nzc5MX0.qhAhuxnfAGZTtnkDkiynZIqKd_mEVsLiu65mdmJXTGU';
 const SITE='https://andrew-tharwat-portfolio.vercel.app';
 
 const esc=(v='')=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
