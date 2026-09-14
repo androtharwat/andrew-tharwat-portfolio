@@ -10,6 +10,7 @@ const primary=document.querySelector('.hero-actions .btn-primary');if(primary)pr
 (()=>{
   const load=(src,onload)=>{if(document.querySelector(`script[src="${src}"]`)){onload?.();return}const s=document.createElement('script');s.src=src;s.defer=true;s.onload=()=>onload?.();document.head.appendChild(s)};
   const boot=()=>load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',()=>{
+    load('/content-runtime.js?v=1');
     load('/cover-sprite.js?v=1');
     load('/cms.js?v=4');
     load('/interaction-contact-v2.js?v=4',()=>load('/i18n-runtime-fix.js?v=1'));
