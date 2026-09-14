@@ -7,7 +7,6 @@
     const DEVICE_KEY='andrew_portfolio_device_v2';
     const field=name=>form.elements[name];
     const val=name=>field(name)?.value||'';
-    const esc=(v='')=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
     const style=document.createElement('style');
     style.textContent=`
@@ -25,7 +24,7 @@
     panel.innerHTML=`
       <div class="ai-project-head"><div><strong>✨ AI PROJECT AUTOFILL</strong><span>اكتب وصف بسيط للمشروع بالعربي أو الإنجليزي، والـAI يجهز لك بيانات الـCase Study. راجعها قبل الحفظ.</span></div><b class="ai-badge">AI ASSIST</b></div>
       <textarea id="ai-project-brief" placeholder="مثال: عملت سلسلة فيديوهات HSE لمشروع ميناء في شرق بورسعيد، مبنية على مخاطر حقيقية من الموقع وNEBOSH، والهدف توعية العمال والمشرفين والمديرين... اكتب أي تفاصيل حقيقية تعرفها."></textarea>
-      <div class="ai-project-actions"><button id="ai-fill-project" type="button">GENERATE & FILL FIELDS</button><small>هيملأ: Title, Slug, Category, Short/Full Description, Challenge, Solution, Impact, Tags, Tools. الروابط والصور لن يتم اختراعها.</small><span id="ai-project-status" class="ai-project-status">Ready</span></div>`;
+      <div class="ai-project-actions"><button id="ai-fill-project" type="button">GENERATE & FILL FIELDS</button><small>هيملأ المحتوى فقط. حالة المشروع Published/Draft لن يغيرها الـAI.</small><span id="ai-project-status" class="ai-project-status">Ready</span></div>`;
 
     form.insertBefore(panel,form.firstChild);
 
@@ -47,6 +46,7 @@
       if(!device?.id||!device?.secret){setStatus('Trusted device not found','err');return}
       const hasCurrent=Object.values(currentData()).some(v=>String(v||'').trim());
       if(!brief.value.trim()&&!hasCurrent){setStatus('اكتب وصف بسيط للمشروع الأول','err');brief.focus();return}
+      const preservedStatus=field('status')?.value||'draft';
       btn.disabled=true;btn.textContent='AI IS WRITING…';setStatus('Generating project data…');
       try{
         const res=await fetch(`${cfg.supabaseUrl}/functions/v1/portfolio-ai-project`,{
@@ -60,12 +60,13 @@
         setField('title',d.title);setField('slug',d.slug);setCategory(d.category);setField('excerpt',d.excerpt);setField('description',d.description);setField('challenge',d.challenge);setField('solution',d.solution);setField('result',d.result);setField('tags',d.tags);setField('tools',d.tools);
         if(d.video_url)setField('video_url',d.video_url);if(d.project_url)setField('project_url',d.project_url);if(d.github_url)setField('github_url',d.github_url);
         if(field('featured'))field('featured').checked=!!d.featured;
-        // New projects stay Draft for review, but AI edits must never silently
-        // downgrade an already-published project back to Draft.
-        if(field('status') && !val('id')) field('status').value='draft';
-        setStatus(`Filled with ${body.model||'AI'} — review then Save Project`,'ok');
+        // Never let AI alter publication state. New projects are already initialized
+        // as Draft by the admin form; edited projects retain Published/Draft exactly.
+        if(field('status'))field('status').value=preservedStatus;
+        setStatus(`Filled with ${body.model||'AI'} — status preserved as ${preservedStatus.toUpperCase()}`,'ok');
         form.querySelector('[name="title"]')?.scrollIntoView({behavior:'smooth',block:'center'});
       }catch(err){
+        if(field('status'))field('status').value=preservedStatus;
         const msg=String(err?.message||err);
         setStatus(msg,'err');
         if(msg.includes('GEMINI_API_KEY')) alert('AI Autofill is installed. Add GEMINI_API_KEY once in Supabase Edge Function secrets, then this button will work directly.');
