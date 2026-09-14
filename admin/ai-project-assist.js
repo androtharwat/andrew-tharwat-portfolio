@@ -60,7 +60,9 @@
         setField('title',d.title);setField('slug',d.slug);setCategory(d.category);setField('excerpt',d.excerpt);setField('description',d.description);setField('challenge',d.challenge);setField('solution',d.solution);setField('result',d.result);setField('tags',d.tags);setField('tools',d.tools);
         if(d.video_url)setField('video_url',d.video_url);if(d.project_url)setField('project_url',d.project_url);if(d.github_url)setField('github_url',d.github_url);
         if(field('featured'))field('featured').checked=!!d.featured;
-        if(field('status'))field('status').value='draft';
+        // New projects stay Draft for review, but AI edits must never silently
+        // downgrade an already-published project back to Draft.
+        if(field('status') && !val('id')) field('status').value='draft';
         setStatus(`Filled with ${body.model||'AI'} — review then Save Project`,'ok');
         form.querySelector('[name="title"]')?.scrollIntoView({behavior:'smooth',block:'center'});
       }catch(err){
