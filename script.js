@@ -11,7 +11,7 @@ const primary=document.querySelector('.hero-actions .btn-primary');if(primary)pr
   const boot=()=>load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',()=>{
     load('/cover-sprite.js?v=1');
     load('/cms.js?v=4');
-    load('/interaction-contact-v2.js?v=4');
+    load('/interaction-contact-v2.js?v=4',()=>load('/i18n-runtime-fix.js?v=1'));
     const explore=document.getElementById('explore');let loaded=false;const loadExplore=()=>{if(loaded)return;loaded=true;load('/site-upgrade.js?v=4',()=>load('/site-upgrade-i18n.js?v=1'))};
     if(explore&&'IntersectionObserver'in window){const obs=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){obs.disconnect();loadExplore()}},{rootMargin:'1000px 0px'});obs.observe(explore)}else loadExplore();
   });
