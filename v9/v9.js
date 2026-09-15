@@ -5,7 +5,7 @@
   const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const media=(url='')=>{if(!url)return'/assets/logo-mark.png';if(/^https?:\/\//i.test(url))return url;return'/'+url.replace(/^\//,'')};
-  const defaults={work:{columns:4,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['type','goal','team','scope','contact'],hidden:[]}};
+  const defaults={work:{columns:3,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['type','goal','team','scope','contact'],hidden:[]}};
   const state={lang:'en',projects:[],settings:{},layout:structuredClone(defaults),filter:'all',query:'',brief:{type:'',goal:'',audience:'',success:'',disciplines:[],timeline:'',budget:'Not specified',stage:'Idea only',name:'',email:'',phone:'',company:''},briefIndex:0};
 
   const roleData={
@@ -62,7 +62,7 @@
   $('#lang-toggle').addEventListener('click',()=>setLang(state.lang==='en'?'ar':'en'));
 
   function renderAll(){
-    document.documentElement.style.setProperty('--grid-cols',Math.max(2,Math.min(4,Number(state.layout.work.columns)||4)));
+    document.documentElement.style.setProperty('--grid-cols',Math.max(2,Math.min(4,Number(state.layout.work.columns)||3));
     document.documentElement.style.setProperty('--founder',(Number(state.layout.team.founderWidth)||38)+'%');
     renderFilters();renderWork();renderRoles();renderBrief();
   }
@@ -83,15 +83,31 @@
   function projectCard(p,index){
     const size=state.layout.work.sizes?.[p.slug]||'normal',cat=state.lang==='ar'?categoryAr(p.portfolio_categories?.name):categoryEn(p.portfolio_categories?.name);
     const tags=(state.lang==='ar'&&p.tags_ar?.length?p.tags_ar:p.tags||[]).slice(0,3).join(' · ');
-    return `<a class="project-card ${size!=='normal'?'size-'+esc(size):''}" href="/projects/${encodeURIComponent(p.slug)}"><div class="project-media"><img src="${esc(media(p.cover_url))}" alt="${esc(local(p,'title'))}" loading="lazy"><span class="project-index">${String(index+2).padStart(2,'0')}</span></div><div class="project-body"><small>${esc(cat)}</small><h3>${esc(local(p,'title'))}</h3><p>${esc(local(p,'excerpt')||local(p,'description')||tags)}</p><div class="project-foot"><span>${esc(tags||'CASE STUDY')}</span><b>↗</b></div></div></a>`;
+    return `<a class="project-card ${size!=='normal'?'size-'+esc(size):''}" href="/projects/${encodeURIComponent(p.slug)}" aria-label="${esc(local(p,'title'))}"><div class="project-media"><img src="${esc(media(p.cover_url))}" alt="${esc(local(p,'title'))}" loading="lazy"><span class="project-index">${String(index+1).padStart(2,'0')}</span></div><div class="project-body"><small>${esc(cat)}</small><h3>${esc(local(p,'title'))}</h3><p>${esc(local(p,'excerpt')||local(p,'description')||tags)}</p><div class="project-foot"><span>${esc(tags||'CASE STUDY')}</span><b>↗</b></div></div></a>`;
   }
   function categoryAr(name=''){return({Safety:'السلامة والصحة المهنية',Digital:'الحلول الرقمية',Creative:'الإبداع والتصميم','Stories & AI':'الذكاء الاصطناعي والسرد'}[name]||name||'مشروع')}
   function renderWork(){
-    const all=orderedProjects();const featured=all.find(p=>p.featured)||all[0];
+    const all=orderedProjects();
+    const defaultView=state.filter==='all'&&!state.query;
+    const featured=defaultView?(all.find(p=>p.featured)||all[0]):null;
     const f=$('#featured-project');
-    if(featured){const cat=state.lang==='ar'?categoryAr(featured.portfolio_categories?.name):categoryEn(featured.portfolio_categories?.name);const tags=(state.lang==='ar'&&featured.tags_ar?.length?featured.tags_ar:featured.tags||[]).slice(0,5);f.classList.remove('skeleton');f.innerHTML=`<div class="featured-media"><img src="${esc(media(featured.cover_url))}" alt="${esc(local(featured,'title'))}"><span class="featured-word">${esc((featured.slug||'V9').split('-')[0].toUpperCase())}</span></div><div class="featured-copy"><div><small>FEATURED CASE STUDY · ${esc(cat.toUpperCase())}</small><h3>${esc(local(featured,'title'))}</h3><p>${esc(local(featured,'excerpt')||local(featured,'description')||'Selected studio project.')}</p><div class="featured-tags">${tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div></div><a class="btn primary" href="/projects/${encodeURIComponent(featured.slug)}">${state.lang==='ar'?'عرض دراسة الحالة ←':'VIEW CASE STUDY →'}</a></div>`}
-    else{f.classList.remove('skeleton');f.innerHTML='<div class="featured-copy"><h3>No published projects yet.</h3></div>'}
-    const rows=all.filter(p=>p!==featured&&projectPasses(p));$('#project-grid').innerHTML=rows.map(projectCard).join('');$('#project-empty').classList.toggle('hidden',rows.length>0||!!featured);
+
+    if(featured){
+      const cat=state.lang==='ar'?categoryAr(featured.portfolio_categories?.name):categoryEn(featured.portfolio_categories?.name);
+      const tags=(state.lang==='ar'&&featured.tags_ar?.length?featured.tags_ar:featured.tags||[]).slice(0,5);
+      f.classList.remove('hidden','skeleton');
+      f.innerHTML=`<div class="featured-media"><img src="${esc(media(featured.cover_url))}" alt="${esc(local(featured,'title'))}"><span class="featured-word">${esc((featured.slug||'V9').split('-')[0].toUpperCase())}</span></div><div class="featured-copy"><div><small>FEATURED CASE STUDY · ${esc(cat.toUpperCase())}</small><h3>${esc(local(featured,'title'))}</h3><p>${esc(local(featured,'excerpt')||local(featured,'description')||'Selected studio project.')}</p><div class="featured-tags">${tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div></div><a class="btn primary" href="/projects/${encodeURIComponent(featured.slug)}">${state.lang==='ar'?'عرض دراسة الحالة ←':'VIEW CASE STUDY →'}</a></div>`;
+    }else{
+      f.classList.add('hidden');
+      f.classList.remove('skeleton');
+      f.innerHTML='';
+    }
+
+    const rows=all.filter(p=>(!featured||p!==featured)&&projectPasses(p));
+    const offset=featured?1:0;
+    $('#project-grid').innerHTML=rows.map((p,i)=>projectCard(p,i+offset)).join('');
+    $('#project-empty').textContent=state.lang==='ar'?'لا توجد مشاريع مطابقة.':'No matching projects.';
+    $('#project-empty').classList.toggle('hidden',rows.length>0||!!featured);
   }
 
   function renderRoles(){
