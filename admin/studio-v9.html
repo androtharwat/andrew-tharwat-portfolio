@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/admin/studio-v9.css?v=2" />
   <link rel="stylesheet" href="/admin/studio-v9-proposals.css?v=1" />
+  <link rel="stylesheet" href="/admin/studio-v9-payments.css?v=1" />
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -103,9 +104,9 @@
       <section class="app-view active" data-view="dashboard">
         <section class="kpi-grid" aria-label="Studio metrics">
           <button class="kpi-card" type="button" data-go="leads"><span class="kpi-label">NEW LEADS</span><strong id="kpi-leads">1</strong><small><i class="trend-up">+1</i> awaiting review</small></button>
-          <button class="kpi-card" type="button" data-go="projects"><span class="kpi-label">ACTIVE PROJECTS</span><strong id="kpi-projects">1</strong><small>1 currently in development</small></button>
+          <button class="kpi-card" type="button" data-go="projects"><span class="kpi-label">ACTIVE PROJECTS</span><strong id="kpi-projects">0</strong><small>Created after deposit confirmation</small></button>
           <button class="kpi-card" type="button" data-go="waiting"><span class="kpi-label">WAITING FOR CLIENT</span><strong id="kpi-waiting">0</strong><small>No blocked approvals</small></button>
-          <button class="kpi-card" type="button" data-go="payments"><span class="kpi-label">PAYMENTS DUE</span><strong id="kpi-payments">1</strong><small>EGP 10,000 remaining</small></button>
+          <button class="kpi-card" type="button" data-go="payments"><span class="kpi-label">PAYMENTS DUE</span><strong id="kpi-payments">0</strong><small>Created after proposal acceptance</small></button>
         </section>
 
         <section class="dashboard-grid primary-grid">
@@ -131,7 +132,7 @@
 
         <section class="dashboard-grid insights-grid">
           <article class="panel pipeline-panel"><div class="panel-head"><div><p class="overline">SALES</p><h2>Pipeline</h2></div><button class="text-button" type="button" data-go="leads">Open pipeline</button></div><div id="pipeline-bars" class="pipeline-bars"></div></article>
-          <article class="panel revenue-panel"><div class="panel-head"><div><p class="overline">THIS MONTH</p><h2>Revenue Snapshot</h2></div><span class="status-badge neutral">EGP</span></div><div class="revenue-total"><small>CONFIRMED REVENUE</small><strong id="revenue-confirmed">20,000</strong></div><div class="revenue-split"><div><span>Collected</span><strong id="revenue-collected">10,000</strong><small>50% of confirmed</small></div><div><span>Outstanding</span><strong id="revenue-outstanding">10,000</strong><small>1 pending payment</small></div></div><div class="revenue-track"><i id="revenue-progress"></i></div></article>
+          <article class="panel revenue-panel"><div class="panel-head"><div><p class="overline">THIS MONTH</p><h2>Revenue Snapshot</h2></div><span class="status-badge neutral">EGP</span></div><div class="revenue-total"><small>CONFIRMED REVENUE</small><strong id="revenue-confirmed">0</strong></div><div class="revenue-split"><div><span>Collected</span><strong id="revenue-collected">0</strong><small>Confirmed payments</small></div><div><span>Outstanding</span><strong id="revenue-outstanding">0</strong><small>Accepted commercial value due</small></div></div><div class="revenue-track"><i id="revenue-progress"></i></div></article>
         </section>
 
         <section class="panel activity-panel"><div class="panel-head"><div><p class="overline">SYSTEM RECORD</p><h2>Recent Activity</h2></div><button class="text-button" type="button" data-go="activity">Full activity</button></div><div id="activity-list" class="activity-list"></div></section>
@@ -217,7 +218,7 @@
         <button type="button" data-command="project"><b>New Project</b><small>Create a client project</small><i>→</i></button>
         <button type="button" data-command="proposal"><b>New Proposal</b><small>Prepare scope and pricing</small><i>→</i></button>
       </div>
-      <p class="dialog-note">Leads and Proposal Builder are executable in this sandbox. Client conversion remains locked until the deposit slice.</p>
+      <p class="dialog-note">Leads, Proposals and Deposit Conversion are executable in this sandbox. Project Operations is the next slice.</p>
     </form>
   </dialog>
 
@@ -233,5 +234,6 @@
   <script src="/config.js"></script>
   <script src="/admin/studio-v9.js?v=2"></script>
   <script src="/admin/studio-v9-proposals.js?v=1"></script>
+  <script src="/admin/studio-v9-payments.js?v=1"></script>
 </body>
 </html>
