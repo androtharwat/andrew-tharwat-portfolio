@@ -13,6 +13,13 @@
     document.head.appendChild(finalCss);
   }
 
+  // Public V9 → Studio OS handoff. Loaded here so the core public renderer stays isolated.
+  if(!document.querySelector('script[src*="v9-lead-submit.js"]')){
+    const leadBridge=document.createElement('script');
+    leadBridge.src='/v9/v9-lead-submit.js?v=1';
+    document.body.appendChild(leadBridge);
+  }
+
   function applyOfficialBrandAssets(){
     const headerLogo=$('.site-header .brand img');
     if(headerLogo){
