@@ -9,12 +9,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/v9-admin.css?v=1" />
+  <link rel="stylesheet" href="/admin/v9-admin.css?v=2" />
 </head>
 <body>
   <div id="toast" class="toast"></div>
   <section id="gate" class="gate">
-    <div class="gate-card"><img src="/assets/app-icon-official.png" alt="Andrew Tharwat" /><span>ANDREW THARWAT STUDIO · V9</span><h1>V9 CONTROL CENTER.</h1><p id="gate-message">Checking this browser against your existing trusted-device access…</p><a href="/admin/" class="secondary">OPEN MAIN CONTROL CENTER</a></div>
+    <div class="gate-card">
+      <img src="/assets/app-icon-official.png" alt="Andrew Tharwat" />
+      <span>ANDREW THARWAT STUDIO · V9</span>
+      <h1>V9 CONTROL CENTER.</h1>
+      <p id="gate-message">Checking this browser against the portfolio Trusted Device system…</p>
+      <div id="trust-start" class="trust-start hidden"><button id="trust-preview" type="button" class="primary">TRUST THIS V9 BROWSER</button><small>This creates a private browser key and a one-time approval code. No password is added.</small></div>
+      <div id="pairing-box" class="pairing-box hidden"><small>V9 DEVICE APPROVAL CODE</small><strong id="pairing-code">------</strong><p>Send this 6-digit code here in ChatGPT. After approval, this Control Center opens automatically.</p><div class="waiting"><i></i><b>Waiting for approval…</b></div></div>
+      <a href="/v9/" class="secondary">BACK TO V9 PREVIEW</a>
+    </div>
   </section>
 
   <section id="app" class="shell hidden">
@@ -48,6 +56,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/config.js"></script>
-  <script src="/admin/v9-admin.js?v=1"></script>
+  <script src="/admin/v9-admin.js?v=2"></script>
 </body>
 </html>
