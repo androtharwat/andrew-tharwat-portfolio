@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#04121c" />
+  <title>Andrew Tharwat Studio V9 — Control Center</title>
+  <link rel="icon" href="/assets/favicon-official.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/v9-admin.css?v=1" />
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+  <section id="gate" class="gate">
+    <div class="gate-card"><img src="/assets/app-icon-official.png" alt="Andrew Tharwat" /><span>ANDREW THARWAT STUDIO · V9</span><h1>V9 CONTROL CENTER.</h1><p id="gate-message">Checking this browser against your existing trusted-device access…</p><a href="/admin/" class="secondary">OPEN MAIN CONTROL CENTER</a></div>
+  </section>
+
+  <section id="app" class="shell hidden">
+    <aside class="sidebar">
+      <a class="brand" href="/v9/" target="_blank"><img src="/assets/app-icon-official.png" alt="" /><div><b>ANDREW</b><span>STUDIO V9</span></div></a>
+      <nav id="nav"><button class="active" data-panel="overview">◫ <span>Overview</span></button><button data-panel="work">◆ <span>Work Layout</span></button><button data-panel="team">◎ <span>Team Layout</span></button><button data-panel="brief">✎ <span>Project Brief</span></button></nav>
+      <div class="sidebar-foot"><a href="/v9/" target="_blank">Open V9 Preview ↗</a><a href="/admin/">Main CMS</a></div>
+    </aside>
+
+    <main class="main">
+      <header><div><span class="eyebrow">V9 DEVELOPMENT BRANCH</span><h1 id="page-title">Overview</h1></div><div class="header-actions"><span id="save-state">Loaded</span><button id="save-all" class="primary">SAVE V9 SETTINGS</button></div></header>
+
+      <section class="panel active" data-panel="overview">
+        <div class="metrics"><article><span>Published Projects</span><strong id="metric-projects">0</strong><small>Read from current portfolio CMS</small></article><article><span>Work Columns</span><strong id="metric-columns">4</strong><small>Desktop V9 grid</small></article><article><span>Team Roles</span><strong id="metric-roles">6</strong><small>Visible specialist roles</small></article><article><span>Brief Steps</span><strong id="metric-steps">5</strong><small>Visible project brief steps</small></article></div>
+        <div class="card"><span class="card-kicker">SAFE DEVELOPMENT</span><h2>V9 is isolated from the live homepage.</h2><p>The current website stays on <b>main</b>. This control center only manages the V9 preview settings stored under <code>portfolio_site_settings → v9_layout</code>.</p><div class="overview-actions"><a class="primary link" href="/v9/" target="_blank">OPEN V9 PREVIEW →</a><a class="secondary link" href="/admin/">OPEN MAIN CMS</a></div></div>
+      </section>
+
+      <section class="panel" data-panel="work">
+        <div class="card"><div class="card-head"><div><span class="card-kicker">WORK V9</span><h2>Project presentation</h2></div><label>Desktop columns<select id="work-columns"><option value="2">2 columns</option><option value="3">3 columns</option><option value="4">4 columns</option></select></label></div><p class="muted">Drag projects to reorder them. Choose a display size or hide an item from the V9 homepage without deleting it from the portfolio.</p><div id="work-list" class="sortable-list"></div></div>
+      </section>
+
+      <section class="panel" data-panel="team">
+        <div class="card"><div class="card-head"><div><span class="card-kicker">TEAM V9</span><h2>Founder & specialist network</h2></div><label>Founder width<select id="founder-width"><option value="32">32 / 68</option><option value="38">38 / 62</option><option value="44">44 / 56</option></select></label></div><p class="muted">Reorder specialist roles and hide roles that should not appear publicly.</p><div id="team-list" class="sortable-list"></div></div>
+      </section>
+
+      <section class="panel" data-panel="brief">
+        <div class="card"><span class="card-kicker">PROJECT BRIEF V9</span><h2>Brief builder steps</h2><p class="muted">Change the order of the visitor brief or temporarily hide a step. At least one step must stay visible.</p><div id="brief-list" class="sortable-list"></div></div>
+      </section>
+    </main>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/admin/v9-admin.js?v=1"></script>
+</body>
+</html>
