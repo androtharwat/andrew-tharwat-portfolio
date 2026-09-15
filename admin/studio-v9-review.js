@@ -19,3 +19,12 @@
   document.addEventListener('click',e=>{const publish=e.target.closest('#publish-review');const complete=e.target.closest('[data-complete-revision]');const tab=e.target.closest('[data-project-tab="approvals"],[data-project-tab="revisions"]');if(publish){e.preventDefault();publishReview()}if(complete){e.preventDefault();completeRevision(complete.dataset.completeRevision)}if(tab)setTimeout(render,0)},true);
   window.addEventListener('hashchange',()=>setTimeout(render,50));window.addEventListener('storage',syncFromClient);const app=$('#app');if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden'))setTimeout(render,80)}).observe(app,{attributes:true,attributeFilter:['class']});
 })();
+
+(() => {
+  if (document.querySelector('script[data-studio-live-db]')) return;
+  const script = document.createElement('script');
+  script.src = '/admin/studio-v9-live-db.js?v=1';
+  script.async = false;
+  script.dataset.studioLiveDb = 'true';
+  document.head.appendChild(script);
+})();
