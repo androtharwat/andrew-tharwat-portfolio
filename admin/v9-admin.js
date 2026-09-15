@@ -3,9 +3,9 @@
   if(!cfg||!window.supabase)return;
   const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
   const DEVICE_KEY='andrew_portfolio_device_v2';
-  const defaults={work:{columns:4,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['type','goal','team','scope','contact'],hidden:[]}};
+  const defaults={work:{columns:3,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['type','goal','team','scope','contact'],hidden:[]}};
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
-  const briefNames={type:'PROJECT TYPE',goal:'GOAL',team:'DISCIPLINES',scope:'SCOPE & TIMING',contact:'CONTACT'};
+  const briefNames={type:'PROJECT TYPE',goal:'GOAL',team:'EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
   const state={device:null,sb:null,projects:[],layout:structuredClone(defaults),dirty:false,poll:null};
   const clone=o=>JSON.parse(JSON.stringify(o));
   function notify(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
@@ -67,7 +67,7 @@
 
   function projectMap(){return new Map(state.projects.map(p=>[p.slug,p]))}
   function renderWork(){
-    $('#work-columns').value=String(state.layout.work.columns||4);
+    $('#work-columns').value=String(state.layout.work.columns||3);
     const map=projectMap();$('#work-list').innerHTML=state.layout.work.order.map((slug,i)=>{const p=map.get(slug);if(!p)return'';const hidden=state.layout.work.hidden.includes(slug),size=state.layout.work.sizes?.[slug]||'normal';return `<div class="sort-item ${hidden?'hidden-item':''}" draggable="true" data-kind="work" data-key="${slug}"><button class="drag-handle" title="Drag">⋮⋮</button><div class="sort-copy"><b>${String(i+1).padStart(2,'0')} · ${escapeHtml(p.title)}</b><small>${escapeHtml(p.portfolio_categories?.name||'Uncategorized')} · /${escapeHtml(slug)}</small></div><div class="sort-actions"><select data-size="${slug}"><option value="compact" ${size==='compact'?'selected':''}>S</option><option value="normal" ${size==='normal'?'selected':''}>M</option><option value="wide" ${size==='wide'?'selected':''}>WIDE</option><option value="large" ${size==='large'?'selected':''}>XL</option></select><button data-up="work:${slug}" title="Move up">↑</button><button data-toggle="work:${slug}" title="Show / hide">${hidden?'○':'●'}</button></div></div>`}).join('');bindSortables();
   }
   $('#work-columns').addEventListener('change',e=>{state.layout.work.columns=Number(e.target.value);markDirty();renderMetrics()});
