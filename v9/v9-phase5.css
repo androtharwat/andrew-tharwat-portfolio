@@ -1,0 +1,99 @@
+/* V9 Phase 5 — Start a Project
+   Problem-first brief enhancements layered over the locked visual system. */
+
+.brief-builder:before{
+  content:"START WITH THE CHALLENGE";
+  display:block;
+  padding:13px 30px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  background:linear-gradient(90deg,rgba(239,35,60,.08),rgba(255,255,255,.012));
+  color:#ff6575;
+  font-size:9px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.13em
+}
+body[data-lang=ar] .brief-builder:before{
+  content:"ابدأ بالتحدي";
+  letter-spacing:0;
+  text-align:right
+}
+
+.phase5-guidance{
+  margin:-10px 0 20px;
+  padding-left:13px;
+  border-left:2px solid rgba(239,35,60,.45);
+  color:#7f97a3;
+  font-size:11px;
+  line-height:1.65
+}
+body[data-lang=ar] .phase5-guidance{
+  padding-left:0;
+  padding-right:13px;
+  border-left:0;
+  border-right:2px solid rgba(239,35,60,.45)
+}
+
+.brief-step[data-key="goal"] textarea{
+  min-height:156px
+}
+.brief-step[data-key="goal"] .field:first-child label{
+  color:#d3dde2
+}
+.brief-step[data-key="goal"] .field:first-child textarea{
+  border-color:rgba(239,35,60,.24);
+  background:linear-gradient(180deg,#082335,#071e2c)
+}
+
+.brief-progress button{
+  position:relative
+}
+.brief-progress button.active:after{
+  content:"";
+  position:absolute;
+  left:18%;
+  right:18%;
+  bottom:0;
+  height:2px;
+  background:var(--red)
+}
+
+.brief-summary.review-focus{
+  border-color:rgba(239,35,60,.46);
+  box-shadow:0 0 0 1px rgba(239,35,60,.12),var(--shadow-soft)
+}
+.brief-summary.review-focus:before{
+  content:"REVIEW BEFORE SENDING";
+  display:block;
+  margin:-2px 0 12px;
+  color:#ff6575;
+  font-size:8px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.11em
+}
+body[data-lang=ar] .brief-summary.review-focus:before{
+  content:"راجع البريف قبل الإرسال";
+  letter-spacing:0
+}
+
+.brief-validation{
+  margin:12px 0 0;
+  padding:10px 11px;
+  border:1px solid rgba(239,35,60,.28);
+  border-radius:10px;
+  background:rgba(239,35,60,.07);
+  color:#ffc3ca;
+  font-size:10px;
+  line-height:1.55
+}
+
+.brief-summary .summary-note{
+  line-height:1.55
+}
+
+@media(max-width:760px){
+  .brief-builder:before{padding:12px 23px}
+  .phase5-guidance{font-size:10px;margin-top:-7px}
+  .brief-step[data-key="goal"] textarea{min-height:170px}
+}
