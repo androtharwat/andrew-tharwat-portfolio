@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/admin/studio-v9.css?v=2" />
+  <link rel="stylesheet" href="/admin/studio-v9-proposals.css?v=1" />
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -216,7 +217,7 @@
         <button type="button" data-command="project"><b>New Project</b><small>Create a client project</small><i>→</i></button>
         <button type="button" data-command="proposal"><b>New Proposal</b><small>Prepare scope and pricing</small><i>→</i></button>
       </div>
-      <p class="dialog-note">Only the Leads workflow is executable in this slice. Other creation flows remain intentionally locked.</p>
+      <p class="dialog-note">Leads and Proposal Builder are executable in this sandbox. Client conversion remains locked until the deposit slice.</p>
     </form>
   </dialog>
 
@@ -231,5 +232,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/config.js"></script>
   <script src="/admin/studio-v9.js?v=2"></script>
+  <script src="/admin/studio-v9-proposals.js?v=1"></script>
 </body>
 </html>
