@@ -3,9 +3,9 @@
   if(!cfg||!window.supabase)return;
   const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
   const DEVICE_KEY='andrew_portfolio_device_v2';
-  const defaults={work:{columns:3,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['type','goal','team','scope','contact'],hidden:[]}};
+  const defaults={work:{columns:3,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['goal','type','team','scope','contact'],hidden:[]}};
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
-  const briefNames={type:'PROJECT TYPE',goal:'GOAL',team:'EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
+  const briefNames={goal:'CHALLENGE & OUTCOME',type:'STARTING POINT',team:'POSSIBLE EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
   const state={device:null,sb:null,projects:[],layout:structuredClone(defaults),dirty:false,poll:null};
   const clone=o=>JSON.parse(JSON.stringify(o));
   function notify(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
