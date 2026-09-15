@@ -5,6 +5,14 @@
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
   const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
+  function applyOfficialBrandAssets(){
+    const headerLogo=$('.site-header .brand img');
+    if(headerLogo){
+      headerLogo.src='/assets/logo-mark-official.png';
+      headerLogo.alt='Andrew Tharwat Studio';
+    }
+  }
+
   function restoreLanguage(){
     let saved='en';
     try{saved=localStorage.getItem(LANG_KEY)||localStorage.getItem(PORTFOLIO_LANG_KEY)||'en'}catch(_e){}
@@ -122,6 +130,7 @@
   });
   langToggle?.addEventListener('click',()=>setTimeout(localizeSmallA11y,0));
 
+  applyOfficialBrandAssets();
   restoreLanguage();
   installProgress();
   installActiveNav();
