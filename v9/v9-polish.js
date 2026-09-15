@@ -5,6 +5,14 @@
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
   const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
+  // Keep final public-release refinements loaded in preview/development too.
+  if(!document.querySelector('link[href*="v9-final.css"]')){
+    const finalCss=document.createElement('link');
+    finalCss.rel='stylesheet';
+    finalCss.href='/v9/v9-final.css?v=1';
+    document.head.appendChild(finalCss);
+  }
+
   function applyOfficialBrandAssets(){
     const headerLogo=$('.site-header .brand img');
     if(headerLogo){
