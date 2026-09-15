@@ -2,6 +2,24 @@
 .discipline-grid .number{display:none!important}
 .discipline-grid h3{margin-top:24px}
 
+/* Official mark visibility on the dark V9 header */
+.site-header .brand img{
+  width:48px;
+  height:48px;
+  object-fit:contain;
+  padding:6px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.18);
+  background:linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,.07));
+  box-shadow:0 10px 28px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.12)
+}
+
 @media(max-width:760px){
   .discipline-grid h3{margin-top:20px}
+  .site-header .brand img{
+    width:42px;
+    height:42px;
+    padding:5px;
+    border-radius:12px
+  }
 }
