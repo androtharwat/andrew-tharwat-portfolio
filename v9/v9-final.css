@@ -1,0 +1,7 @@
+/* V9 final public release adjustments */
+.discipline-grid .number{display:none!important}
+.discipline-grid h3{margin-top:24px}
+
+@media(max-width:760px){
+  .discipline-grid h3{margin-top:20px}
+}
