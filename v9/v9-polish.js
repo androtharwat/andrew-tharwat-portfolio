@@ -1,0 +1,124 @@
+(() => {
+  const LANG_KEY='andrew_v9_public_lang';
+  const $=(s,r=document)=>r.querySelector(s);
+  const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+  const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  function restoreLanguage(){
+    let saved='en';
+    try{saved=localStorage.getItem(LANG_KEY)||'en'}catch(_e){}
+    if(saved==='ar'&&document.body.dataset.lang!=='ar')document.getElementById('lang-toggle')?.click();
+  }
+
+  function persistLanguage(){
+    try{localStorage.setItem(LANG_KEY,document.body.dataset.lang==='ar'?'ar':'en')}catch(_e){}
+  }
+
+  const langToggle=$('#lang-toggle');
+  langToggle?.addEventListener('click',()=>setTimeout(persistLanguage,0));
+
+  function installProgress(){
+    if($('.v9-scroll-progress'))return;
+    const bar=document.createElement('div');
+    bar.className='v9-scroll-progress';
+    bar.setAttribute('aria-hidden','true');
+    bar.innerHTML='<i></i>';
+    document.body.appendChild(bar);
+    const fill=bar.firstElementChild;
+    let raf=0;
+    const update=()=>{
+      raf=0;
+      const max=Math.max(1,document.documentElement.scrollHeight-window.innerHeight);
+      const p=Math.min(1,Math.max(0,window.scrollY/max));
+      fill.style.transform=`scaleX(${p})`;
+      document.querySelector('.site-header')?.classList.toggle('is-scrolled',window.scrollY>18);
+    };
+    window.addEventListener('scroll',()=>{if(!raf)raf=requestAnimationFrame(update)},{passive:true});
+    window.addEventListener('resize',update,{passive:true});
+    update();
+  }
+
+  function installActiveNav(){
+    const links=$$('#main-nav a[href^="#"]');
+    if(!links.length)return;
+    const byId=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+    const sections=[...byId.keys()].map(id=>document.getElementById(id)).filter(Boolean);
+    const setActive=id=>links.forEach(a=>a.classList.toggle('is-active',a===byId.get(id)));
+    const observer=new IntersectionObserver(entries=>{
+      const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+      if(visible)setActive(visible.target.id);
+    },{rootMargin:'-28% 0px -58% 0px',threshold:[0,.15,.35,.6]});
+    sections.forEach(s=>observer.observe(s));
+  }
+
+  function revealTargets(){
+    const targets=[
+      '.studio-intro-copy','.studio-principles','.section-head',
+      '.discipline-grid article','.featured-project','.project-card',
+      '.team-model article','.founder-card','.specialist-panel','.brief-shell'
+    ];
+    const nodes=targets.flatMap(s=>$$(s)).filter(el=>!el.dataset.revealBound);
+    nodes.forEach((el,i)=>{
+      el.dataset.revealBound='1';
+      el.classList.add('v9-reveal');
+      el.dataset.revealDelay=String(i%4);
+    });
+    if(reduceMotion){nodes.forEach(el=>el.classList.add('is-visible'));return}
+    const observer=new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){entry.target.classList.add('is-visible');observer.unobserve(entry.target)}
+      });
+    },{rootMargin:'0px 0px -8% 0px',threshold:.08});
+    nodes.forEach(el=>observer.observe(el));
+  }
+
+  function enhanceRoleCards(){
+    $$('.role-card[data-role]').forEach(card=>{
+      if(card.dataset.a11yBound)return;
+      card.dataset.a11yBound='1';
+      card.setAttribute('role','button');
+      card.setAttribute('tabindex','0');
+      card.setAttribute('aria-pressed',card.classList.contains('selected')?'true':'false');
+      const sync=()=>card.setAttribute('aria-pressed',card.classList.contains('selected')?'true':'false');
+      card.addEventListener('click',()=>setTimeout(sync,0));
+      card.addEventListener('keydown',e=>{
+        if(e.key!=='Enter'&&e.key!==' ')return;
+        e.preventDefault();
+        card.click();
+      });
+    });
+  }
+
+  function enhanceFilters(){
+    $$('#project-filters button[data-filter]').forEach(btn=>{
+      btn.setAttribute('aria-pressed',btn.classList.contains('active')?'true':'false');
+      if(btn.dataset.a11yBound)return;
+      btn.dataset.a11yBound='1';
+      btn.addEventListener('click',()=>setTimeout(()=>enhanceFilters(),0));
+    });
+  }
+
+  function localizeSmallA11y(){
+    const ar=document.body.dataset.lang==='ar';
+    $('#lang-toggle')?.setAttribute('aria-label',ar?'تغيير اللغة':'Change language');
+    $('.brand')?.setAttribute('aria-label',ar?'العودة إلى بداية Andrew Tharwat Studio':'Andrew Tharwat Studio home');
+  }
+
+  function refreshDynamic(){
+    revealTargets();
+    enhanceRoleCards();
+    enhanceFilters();
+    localizeSmallA11y();
+  }
+
+  ['project-grid','featured-project','role-grid','project-filters','brief-steps'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)new MutationObserver(()=>requestAnimationFrame(refreshDynamic)).observe(el,{childList:true,subtree:true});
+  });
+  langToggle?.addEventListener('click',()=>setTimeout(localizeSmallA11y,0));
+
+  restoreLanguage();
+  installProgress();
+  installActiveNav();
+  refreshDynamic();
+})();
