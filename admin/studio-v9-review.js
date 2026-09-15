@@ -21,18 +21,11 @@
 })();
 
 (() => {
-  if (!document.querySelector('script[data-studio-live-db]')) {
-    const script = document.createElement('script');
-    script.src = '/admin/studio-v9-live-db.js?v=1';
-    script.async = false;
-    script.dataset.studioLiveDb = 'true';
-    document.head.appendChild(script);
-  }
-  if (!document.querySelector('script[data-studio-files-live]')) {
-    const files = document.createElement('script');
-    files.src = '/admin/studio-v9-files-live.js?v=1';
-    files.async = false;
-    files.dataset.studioFilesLive = 'true';
-    document.head.appendChild(files);
-  }
+  const load = (src, attr) => {
+    if (document.querySelector(`script[${attr}]`)) return;
+    const script = document.createElement('script'); script.src = src; script.async = false; script.setAttribute(attr,'true'); document.head.appendChild(script);
+  };
+  load('/admin/studio-v9-live-db.js?v=1','data-studio-live-db');
+  load('/admin/studio-v9-files-live.js?v=1','data-studio-files-live');
+  load('/admin/studio-v9-final-payment-live.js?v=1','data-studio-final-payment-live');
 })();
