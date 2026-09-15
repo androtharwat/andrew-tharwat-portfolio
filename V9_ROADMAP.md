@@ -111,7 +111,7 @@ Completed evidence:
 
 # Phase 3 — Work / Case Studies
 
-Status: **NEXT**
+Status: **COMPLETE**
 
 Goal:
 Make real projects the proof of the studio positioning.
@@ -133,9 +133,22 @@ Acceptance criteria:
 - Project cards remain visually strong with real project titles and media.
 - Admin changes persist via `v9_layout`.
 
+Completed evidence:
+- The section reads directly from published `portfolio_projects` data.
+- HSE Awareness Series is the default flagship case study.
+- The default V9 selection is curated independently from the CMS publish state; the older overlapping DO Document Smart Capture case remains in CMS but is hidden from Selected Work by default.
+- The default desktop composition uses three columns with stored WIDE / M sizing to create complete editorial rows rather than equal cards.
+- Filtering and search now hide the flagship presentation and show only matching results, so a fixed featured banner no longer conflicts with the selected filter.
+- Admin ordering, visibility, card sizing and 2 / 3 / 4 column controls persist through `portfolio_site_settings.v9_layout`.
+- Public and Admin fallbacks are aligned to the same three-column default.
+- Real project-title layout QA at 1440px and 390px passed without horizontal overflow; long titles remain within one or two lines depending on viewport.
+- Vercel CI build passed after the Work behavior and Admin alignment changes.
+
 ---
 
 # Phase 4 — Team Model
+
+Status: **NEXT**
 
 Goal:
 Explain the studio operating model without pretending to be a large fixed agency.
