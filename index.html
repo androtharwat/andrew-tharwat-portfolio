@@ -2,102 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#081c2b" />
-  <meta name="description" content="Andrew Tharwat — HSE Professional, Digital Creator, Visual Artist & AI Creative. Ideas into systems, stories and visual experiences." />
-  <title>Andrew Tharwat — Safety × Creativity × Technology</title>
-  <link rel="icon" href="assets/favicon-official.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="assets/extracted/hero-portrait3.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="visual-overrides.css?v=3" />
-  <link rel="stylesheet" href="i18n.css?v=3" />
-  <link rel="stylesheet" href="contact-contrast.css?v=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#04121c" />
+  <meta name="robots" content="index,follow" />
+  <title>Andrew Tharwat Studio</title>
+  <link rel="canonical" href="/v9/" />
+  <meta http-equiv="refresh" content="0;url=/v9/" />
+  <script>
+    (function(){
+      var target='/v9/'+(location.hash||'');
+      location.replace(target);
+    })();
+  </script>
 </head>
-<body>
-  <div class="noise"></div>
-
-  <header class="site-header" id="top">
-    <a class="brand" href="#home" aria-label="Andrew Tharwat home">
-      <img src="assets/app-icon-official.png" alt="Andrew Tharwat logo" width="50" height="50" decoding="async" />
-      <div class="brand-copy">
-        <strong>ANDREW THARWAT</strong>
-        <span>SAFETY • CREATIVITY • IMPACT</span>
-      </div>
-    </a>
-
-    <button class="menu-btn" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
-    <nav class="main-nav" aria-label="Main navigation">
-      <a href="#home">Home</a><a href="#about">About</a><a href="#worlds">Worlds</a><a href="#featured">Projects</a><a href="#explore">Explore</a><a href="#contact">Contact</a>
-    </nav>
-    <a class="header-cta" href="#contact">Let's Talk <span>→</span></a>
-  </header>
-
-  <main>
-    <section class="hero" id="home">
-      <div class="hero-grid"></div><div class="hero-blur hero-blur-a"></div><div class="hero-blur hero-blur-b"></div>
-      <div class="container hero-layout">
-        <div class="hero-copy reveal">
-          <div class="eyebrow" id="hero-eyebrow">SAFETY ENGINEER • DIGITAL CREATOR • VISUAL ARTIST • AI EXPLORER</div>
-          <h1 id="hero-title">I TURN IDEAS INTO <span>SYSTEMS, STORIES &amp;</span> VISUAL EXPERIENCES.</h1>
-          <p id="hero-subtitle">From safer workplaces and digital systems to brands, stories and AI-powered visual experiences — I build ideas that solve real problems and create a brighter tomorrow.</p>
-          <div class="hero-actions"><a class="btn btn-primary" href="#worlds">EXPLORE MY WORK <span>→</span></a><a class="btn btn-ghost" href="#featured"><span class="play">▶</span> WATCH SHOWREEL</a></div>
-          <div class="hero-stats"><div><strong id="stat-years">6+</strong><span>Years Experience</span></div><div><strong id="stat-projects">50+</strong><span>Projects Delivered</span></div><div><strong id="stat-worlds">4</strong><span>Creative Worlds</span></div><div><strong id="stat-purpose">1</strong><span>Purpose: Real Impact</span></div></div>
-        </div>
-        <div class="hero-visual reveal delay-1"><img src="assets/extracted/hero-portrait3.webp" alt="Andrew Tharwat hero visual" width="480" height="266" loading="eager" decoding="async" fetchpriority="high" /></div>
-      </div>
-      <div class="hero-sidecopy">SAFETY<br>CREATIVITY<br>TECHNOLOGY<br>PEOPLE<br><b>A BRIGHTER<br>TOMORROW</b></div>
-    </section>
-
-    <section class="about-strip" id="about">
-      <div class="container split-heading reveal"><div><span class="section-kicker">WHO I AM</span><h2 id="about-title">ONE MIND.<br><b>MANY WAYS TO CREATE.</b></h2></div><p id="about-body">What looks like different fields to others is one process to me: understanding a problem, creating an idea, and turning it into something real.</p></div>
-      <div class="container expertise-grid">
-        <article class="expertise-card reveal"><div class="icon">✓</div><h3>SAFETY</h3><p>People<br>Environments<br>Real Impact</p></article>
-        <article class="expertise-card reveal delay-1"><div class="icon">⚙</div><h3>TECHNOLOGY</h3><p>Digital Solutions<br>Automation<br>Data</p></article>
-        <article class="expertise-card reveal delay-2"><div class="icon">✒</div><h3>DESIGN</h3><p>Visual Ideas<br>Brands<br>Creative Concepts</p></article>
-        <article class="expertise-card reveal delay-3"><div class="icon">📖</div><h3>STORIES</h3><p>Ideas<br>Characters<br>Meaningful Content</p></article>
-        <article class="expertise-card reveal delay-4"><div class="icon">✦</div><h3>AI</h3><p>Bigger Possibilities<br>Faster Creation<br>Real Solutions</p></article>
-      </div>
-    </section>
-
-    <section class="worlds-section" id="worlds">
-      <div class="container section-head reveal compact"><div><span class="section-kicker light">MY WORLDS</span><h2>IDEAS IN <b>ACTION.</b></h2></div><p>Real-world experience. Creative thinking. Tangible impact.</p></div>
-      <div class="container image-grid image-grid-4">
-        <a class="image-card reveal" href="#explore"><img src="assets/extracted/world-safety.webp" alt="Safety world card" loading="lazy" decoding="async" /></a>
-        <a class="image-card reveal delay-1" href="#explore"><img src="assets/extracted/world-digital.webp" alt="Digital world card" loading="lazy" decoding="async" /></a>
-        <a class="image-card reveal delay-2" href="#explore"><img src="assets/extracted/world-creative.webp" alt="Creative world card" loading="lazy" decoding="async" /></a>
-        <a class="image-card reveal delay-3" href="#explore"><img src="assets/extracted/world-stories.webp" alt="Stories and AI world card" loading="lazy" decoding="async" /></a>
-      </div>
-    </section>
-
-    <section class="solutions-strip">
-      <div class="container split-heading reveal slim"><div><span class="section-kicker">HOW I THINK</span><h2>I DON'T JUST DESIGN.<br><b>I BUILD SOLUTIONS.</b></h2></div><p>Different challenges. One approach. Real results.</p></div>
-      <div class="container flow-row reveal"><div class="flow-card"><span>⚠</span><p>A Safety Problem</p><b>→ Digital HSE Tool</b></div><div class="flow-card"><span>▦</span><p>A Message</p><b>→ Awareness Film</b></div><div class="flow-card"><span>✦</span><p>An Idea</p><b>→ Brand Identity</b></div><div class="flow-card"><span>📸</span><p>A Child's Photo</p><b>→ Personalized Story</b></div><div class="flow-card"><span>▥</span><p>Raw Data</p><b>→ Actionable Dashboard</b></div><div class="flow-card"><span>&lt;/&gt;</span><p>A Concept</p><b>→ Website</b></div></div>
-    </section>
-
-    <section class="featured-section" id="featured">
-      <div class="container section-head reveal"><div><span class="section-kicker light">FEATURED WORK</span><h2>REAL PROJECTS.<br><b>REAL IMPACT.</b></h2></div><div class="section-actions"><p>A selection of projects that reflect different sides of my journey.</p><a class="btn btn-ghost small" href="#explore">VIEW ALL PROJECTS <span>→</span></a></div></div>
-      <div class="container image-grid image-grid-5" id="featured-projects">
-        <a class="image-card reveal" href="/projects/hse-awareness-series"><img src="assets/extracted/featured-hse.webp" alt="HSE awareness series" loading="lazy" decoding="async" /></a><a class="image-card reveal delay-1" href="/projects/hse-digital-tools"><img src="assets/extracted/featured-digital.webp" alt="HSE digital tools" loading="lazy" decoding="async" /></a><a class="image-card reveal delay-2" href="/projects/do-personalized-stories"><img src="assets/extracted/featured-do.webp" alt="DO personalized stories" loading="lazy" decoding="async" /></a><a class="image-card reveal delay-3" href="/projects/magic-of-string-art"><img src="assets/extracted/featured-string.webp" alt="Magic of string art" loading="lazy" decoding="async" /></a><a class="image-card reveal delay-4" href="/projects/brand-identity-projects"><img src="assets/extracted/featured-brand.webp" alt="Brand identity projects" loading="lazy" decoding="async" /></a>
-      </div>
-    </section>
-
-    <section class="explore-section" id="explore">
-      <div class="container section-head reveal compact"><div><span class="section-kicker light">EXPLORE MORE</span><h2>DEEPER INTO THE <b>BRAND WORLD.</b></h2></div><p>Extracted visual sections from the approved art direction — now integrated into the website experience.</p></div>
-      <div class="container focus-image-grid"><a class="wide-image-card reveal" href="#contact"><img src="assets/extracted/world-safety.webp" alt="Safety focus section" loading="lazy" decoding="async" /></a><a class="wide-image-card reveal delay-1" href="#contact"><img src="assets/extracted/world-digital.webp" alt="Digital focus section" loading="lazy" decoding="async" /></a><a class="wide-image-card reveal delay-2" href="#contact"><img src="assets/extracted/world-creative.webp" alt="Creative focus section" loading="lazy" decoding="async" /></a><a class="wide-image-card reveal delay-3" href="#contact"><img src="assets/extracted/world-stories.webp" alt="AI focus section" loading="lazy" decoding="async" /></a></div>
-    </section>
-
-    <section class="process-section"><div class="container reveal"><span class="section-kicker">MY APPROACH</span><h2>THINK. CREATE. BUILD. <b>IMPROVE.</b></h2></div><div class="container process-grid"><article class="reveal"><strong>01</strong><h3>THINK.</h3><p>Understand the problem and context before execution.</p></article><article class="reveal delay-1"><strong>02</strong><h3>CREATE.</h3><p>Turn ideas into concepts, visuals and experiences.</p></article><article class="reveal delay-2"><strong>03</strong><h3>BUILD.</h3><p>Make the idea tangible, useful and testable.</p></article><article class="reveal delay-3"><strong>04</strong><h3>IMPROVE.</h3><p>Refine the result until it becomes stronger and smarter.</p></article></div></section>
-
-    <section class="cta-section" id="contact"><div class="cta-bg"><img src="assets/extracted/cta-port.webp" alt="Port skyline background" loading="lazy" decoding="async" /></div><div class="container cta-layout"><div class="cta-left reveal"><span class="section-kicker">SAFER IDEAS</span><h2>GOT AN IDEA?<br><b>LET'S MAKE IT REAL.</b></h2></div><div class="cta-middle reveal delay-1"><p>New project, collaboration or just want to say hello? I'd love to hear from you.</p><div class="contact-direct"><a href="https://wa.me/201505414444" data-contact="whatsapp" target="_blank" rel="noopener">WhatsApp: +20 150 541 4444</a><a href="mailto:androsarot3@gmail.com" data-contact="email">androsarot3@gmail.com</a></div><div class="cta-actions"><a class="btn btn-primary" href="mailto:androsarot3@gmail.com" data-contact="email-cta">Start a Project <span>→</span></a><div class="socials" aria-label="Social links"><a href="https://www.linkedin.com/in/andrew-tharwat-1a54b91b5?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener" data-social="linkedin" aria-label="LinkedIn" title="LinkedIn">in</a><a href="https://www.instagram.com/andrew.thrwattt?stkn=Y2YxOGF4bWlwa2pk" target="_blank" rel="noopener" data-social="instagram_personal" aria-label="Personal Instagram" title="Personal Instagram">ig</a><a href="https://www.instagram.com/do.storyes?stkn=NjZ2bWR5enQxOGd4" target="_blank" rel="noopener" data-social="instagram_do_stories" aria-label="DO Stories Instagram" title="DO Stories">ds</a><a href="https://www.instagram.com/do.decoment?stkn=cWRoaWdtdmE2cTZi" target="_blank" rel="noopener" data-social="instagram_do_document" aria-label="DO Document Instagram" title="DO Document">dd</a><a href="https://wa.me/201505414444" target="_blank" rel="noopener" data-social="whatsapp" aria-label="WhatsApp" title="WhatsApp">wa</a><a href="mailto:androsarot3@gmail.com" data-social="email" aria-label="Email" title="Email">@</a></div></div></div><div class="cta-right reveal delay-2"><div class="signature">Andrew Tharwat</div><small>SAFETY × CREATIVITY × TECHNOLOGY × PEOPLE</small></div></div></section>
+<body style="margin:0;background:#04121c;color:#fff;font-family:Arial,sans-serif">
+  <main style="min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center">
+    <div>
+      <strong>ANDREW THARWAT STUDIO</strong>
+      <p style="opacity:.7">Loading the new studio experience…</p>
+      <a href="/v9/" style="color:#fff">Continue</a>
+    </div>
   </main>
-
-  <footer class="site-footer"><div class="container footer-grid"><p>© 2026 Andrew Tharwat. All rights reserved.</p><nav><a href="#home">Home</a><a href="#about">About</a><a href="#worlds">Worlds</a><a href="#featured">Projects</a><a href="#contact">Contact</a><a href="/admin/">Admin</a></nav><p>SAFER IDEAS. <b>REAL IMPACT.</b></p></div></footer>
-
-  <script src="config.js"></script>
-  <script src="i18n.js?v=3"></script>
-  <script src="script.js?v=7"></script>
 </body>
 </html>
