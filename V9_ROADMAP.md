@@ -43,7 +43,7 @@ Acceptance criteria:
 
 # Phase 1 — Visual Foundation
 
-Status: **NEXT**
+Status: **COMPLETE**
 
 Goal:
 Create one coherent V9 visual system before polishing individual sections.
@@ -64,11 +64,21 @@ Acceptance criteria:
 - Mobile and Arabic are designed, not patched later.
 - Visual language feels like an engineering/creative studio, not a generic agency template.
 
-No new major sections are added in this phase.
+Completed evidence:
+- `V9_VISUAL_SYSTEM.md` is the locked visual reference.
+- Readability and spacing were rebuilt from prototype sizing into production-oriented sizing.
+- Responsive header and mobile navigation behavior are implemented.
+- Reduced-motion behavior is supported.
+- Local Chromium composition review was completed at 1440px desktop and 390px mobile with no horizontal overflow detected.
+- Vercel CI build passed after the visual-system changes.
+
+Final deployed-browser verification remains part of Phase 7 because the current Vercel connector does not have permission to open the protected preview deployment.
 
 ---
 
 # Phase 2 — Studio & Capabilities
+
+Status: **COMPLETE**
 
 Goal:
 Explain what Andrew Tharwat Studio is before showing what it offers.
@@ -88,9 +98,20 @@ Acceptance criteria:
 - The page does not read like four disconnected service businesses.
 - Copy passes `V9_BRAND_LANGUAGE.md` review.
 
+Completed evidence:
+- Hero uses the locked studio positioning rather than a list of services.
+- Decorative prototype metrics were replaced by the locked `THINK. CREATE. BUILD. IMPROVE.` process.
+- A concise Studio statement now bridges positioning and capabilities.
+- The Studio principles use only approved brand language.
+- Capabilities are framed as tools assembled around the problem, not four separate businesses.
+- Mobile and desktop local composition review passed without horizontal overflow.
+- Vercel CI build passed after the Phase 2 implementation.
+
 ---
 
 # Phase 3 — Work / Case Studies
+
+Status: **NEXT**
 
 Goal:
 Make real projects the proof of the studio positioning.
