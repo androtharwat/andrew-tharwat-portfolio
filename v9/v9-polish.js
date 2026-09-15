@@ -1,17 +1,22 @@
 (() => {
   const LANG_KEY='andrew_v9_public_lang';
+  const PORTFOLIO_LANG_KEY='andrew_portfolio_lang';
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
   const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   function restoreLanguage(){
     let saved='en';
-    try{saved=localStorage.getItem(LANG_KEY)||'en'}catch(_e){}
+    try{saved=localStorage.getItem(LANG_KEY)||localStorage.getItem(PORTFOLIO_LANG_KEY)||'en'}catch(_e){}
     if(saved==='ar'&&document.body.dataset.lang!=='ar')document.getElementById('lang-toggle')?.click();
   }
 
   function persistLanguage(){
-    try{localStorage.setItem(LANG_KEY,document.body.dataset.lang==='ar'?'ar':'en')}catch(_e){}
+    const current=document.body.dataset.lang==='ar'?'ar':'en';
+    try{
+      localStorage.setItem(LANG_KEY,current);
+      localStorage.setItem(PORTFOLIO_LANG_KEY,current);
+    }catch(_e){}
   }
 
   const langToggle=$('#lang-toggle');
