@@ -1,0 +1,206 @@
+/* V9 Phase 4 — Team Model
+   Builds on V9_VISUAL_SYSTEM.md without redefining the global foundation. */
+
+.team-model{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:1px;
+  margin-top:38px;
+  border:1px solid var(--line);
+  border-radius:20px;
+  overflow:hidden;
+  background:rgba(255,255,255,.08)
+}
+.team-model article{
+  min-height:150px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:16px;
+  padding:22px;
+  background:rgba(6,24,36,.96)
+}
+.team-model article>span{
+  color:rgba(255,255,255,.14);
+  font-size:28px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:-.05em
+}
+.team-model b{
+  display:block;
+  color:#f6f9fa;
+  font-size:11px;
+  line-height:1.3;
+  letter-spacing:.10em
+}
+.team-model p{
+  margin:9px 0 0;
+  color:#8299a6;
+  font-size:12px;
+  line-height:1.65
+}
+
+.team-grid{margin-top:16px}
+
+.founder-card:before{
+  content:"STUDIO DIRECTION";
+  position:absolute;
+  z-index:3;
+  top:22px;
+  left:22px;
+  padding:8px 10px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:999px;
+  background:rgba(3,16,24,.62);
+  backdrop-filter:blur(12px);
+  color:#dbe4e9;
+  font-size:9px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.12em
+}
+.founder-focus{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:16px
+}
+.founder-focus span{
+  display:inline-flex;
+  align-items:center;
+  min-height:29px;
+  padding:0 9px;
+  border:1px solid rgba(239,35,60,.25);
+  border-radius:999px;
+  background:rgba(239,35,60,.07);
+  color:#d5dfe4;
+  font-size:8px;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:.06em
+}
+
+.specialist-panel{
+  position:relative;
+  overflow:hidden
+}
+.specialist-panel:after{
+  content:"";
+  position:absolute;
+  width:240px;
+  height:240px;
+  right:-120px;
+  top:-120px;
+  border:1px solid rgba(239,35,60,.08);
+  border-radius:50%;
+  pointer-events:none
+}
+.specialist-panel>h3{max-width:620px}
+.specialist-panel>p{max-width:760px}
+
+.role-card{
+  cursor:pointer;
+  user-select:none
+}
+.role-card:before{
+  content:"EXPERTISE";
+  position:absolute;
+  left:17px;
+  bottom:14px;
+  color:rgba(255,255,255,.12);
+  font-size:8px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.12em
+}
+.role-card p{padding-bottom:25px}
+.role-card.selected:before{color:rgba(239,35,60,.55)}
+
+.team-selection{
+  display:grid;
+  grid-template-columns:minmax(220px,.82fr) minmax(0,1.18fr);
+  gap:18px;
+  align-items:center;
+  padding:20px;
+  margin-top:14px
+}
+.team-selection-head b{
+  display:block;
+  font-size:10px;
+  line-height:1.35;
+  letter-spacing:.08em
+}
+.team-selection-head small{
+  display:block;
+  margin-top:7px;
+  max-width:420px;
+  color:#718996;
+  font-size:10px;
+  line-height:1.55
+}
+.team-selection>div:last-child{
+  margin-top:0;
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:7px;
+  flex-wrap:wrap
+}
+.team-selection>div:last-child span{
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid rgba(239,35,60,.24);
+  background:rgba(239,35,60,.07);
+  color:#bdc8ce;
+  font-size:10px
+}
+.network-note{
+  margin:14px 0 0;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.07);
+  color:#607985;
+  font-size:9px;
+  line-height:1.5;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase
+}
+
+body[data-lang=ar] .founder-card:before{
+  left:auto;
+  right:22px;
+  content:"توجيه الاستوديو";
+  letter-spacing:0
+}
+body[data-lang=ar] .role-card:before{
+  left:auto;
+  right:17px;
+  content:"خبرة";
+  letter-spacing:0
+}
+body[data-lang=ar] .team-model,
+body[data-lang=ar] .team-selection{text-align:right}
+body[data-lang=ar] .team-selection>div:last-child{justify-content:flex-start}
+body[data-lang=ar] .network-note{letter-spacing:0}
+
+@media(max-width:1050px){
+  .team-model{grid-template-columns:1fr}
+  .team-model article{min-height:0}
+  .team-selection{grid-template-columns:1fr}
+}
+
+@media(max-width:760px){
+  .team-model{margin-top:30px;border-radius:18px}
+  .team-model article{padding:18px}
+  .team-model article>span{font-size:24px}
+  .team-grid{margin-top:12px}
+  .founder-card:before{top:16px;left:16px}
+  body[data-lang=ar] .founder-card:before{right:16px}
+  .founder-focus{gap:6px}
+  .founder-focus span{font-size:7.5px}
+  .team-selection{padding:17px;gap:14px}
+  .network-note{font-size:8px}
+}

@@ -1,0 +1,76 @@
+/* V9 Phase 2 — Studio & Capabilities layer
+   Extends V9_VISUAL_SYSTEM.md without redefining the core design system. */
+
+.menu-toggle{display:none;position:relative;width:42px!important;padding:0!important;border-radius:50%!important}
+.menu-toggle span{position:absolute;left:12px;right:12px;height:2px;background:#fff;border-radius:2px;transition:transform .22s var(--ease),top .22s var(--ease)}
+.menu-toggle span:first-child{top:15px}
+.menu-toggle span:last-child{top:23px}
+.menu-toggle[aria-expanded="true"] span:first-child{top:19px;transform:rotate(45deg)}
+.menu-toggle[aria-expanded="true"] span:last-child{top:19px;transform:rotate(-45deg)}
+
+/* Hero method strip replaces decorative prototype metrics. */
+.process-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;margin-top:32px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.07)}
+.process-strip>div{min-height:88px;padding:18px 17px;background:rgba(6,24,36,.9);position:relative}
+.process-strip>div:before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--red);opacity:0;transition:opacity .22s var(--ease)}
+.process-strip>div:hover:before{opacity:1}
+.process-strip b{display:block;font-size:13px;line-height:1.1;letter-spacing:.02em}
+.process-strip small{display:block;margin-top:9px;color:#758d99;font-size:9px;line-height:1.4;letter-spacing:.08em;font-weight:800}
+
+/* Studio statement — one concise bridge between positioning and capabilities. */
+.studio-intro{position:relative;overflow:hidden;padding:clamp(76px,8vw,118px) 0;background:linear-gradient(180deg,#04131e,#061824)}
+.studio-intro:before{content:"";position:absolute;left:var(--gutter);right:var(--gutter);top:0;height:1px;background:linear-gradient(90deg,transparent,var(--red-line),transparent)}
+.studio-intro-grid{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,.92fr) minmax(420px,1.08fr);gap:clamp(54px,7vw,110px);align-items:center}
+.studio-intro-copy h2{font-size:clamp(52px,5.6vw,88px);line-height:.92;letter-spacing:-.055em;margin:20px 0 25px;font-weight:900}
+.studio-intro-copy h2 span{color:var(--red)}
+.studio-intro-copy>p{max-width:720px;color:#a1b2bb;font-size:16px;line-height:1.85;margin:0}
+.studio-principles{display:grid;border-top:1px solid var(--line)}
+.studio-principles article{display:grid;grid-template-columns:54px minmax(0,1fr);gap:20px;padding:25px 0;border-bottom:1px solid var(--line);transition:padding-left .25s var(--ease)}
+.studio-principles article:hover{padding-left:9px}
+.studio-principles article>span{font-size:11px;color:var(--red-bright);font-weight:900;letter-spacing:.12em;padding-top:3px}
+.studio-principles b{display:block;font-size:17px;line-height:1.35;letter-spacing:-.015em}
+.studio-principles p{margin:8px 0 0;max-width:640px;color:#7f96a2;font-size:13px;line-height:1.7}
+
+/* Capabilities should read as one system, not four unrelated service cards. */
+#capabilities .discipline-grid{counter-reset:capability}
+#capabilities .discipline-grid article{background:linear-gradient(180deg,rgba(8,31,46,.84),rgba(5,22,33,.98))}
+#capabilities .discipline-grid article:nth-child(2n){background:linear-gradient(180deg,rgba(9,34,49,.72),rgba(5,22,33,.98))}
+#capabilities .discipline-grid article:before{content:"";position:absolute;inset:auto 24px 0;height:1px;background:linear-gradient(90deg,var(--red-line),transparent);opacity:.35}
+#capabilities .discipline-grid h3{max-width:220px}
+#capabilities .discipline-grid p{max-width:300px}
+
+body[data-lang=ar] .studio-intro-copy{text-align:right}
+body[data-lang=ar] .studio-principles article{grid-template-columns:minmax(0,1fr) 54px}
+body[data-lang=ar] .studio-principles article>span{grid-column:2;grid-row:1;text-align:left}
+body[data-lang=ar] .studio-principles article>div{grid-column:1;grid-row:1;text-align:right}
+body[data-lang=ar] .studio-principles article:hover{padding-left:0;padding-right:9px}
+
+@media(max-width:1180px){
+  .menu-toggle{display:inline-flex!important;align-items:center;justify-content:center}
+  .main-nav{display:flex;position:fixed;top:78px;left:var(--gutter);right:var(--gutter);padding:16px;flex-direction:column;align-items:stretch;gap:0;border:1px solid var(--line-strong);border-radius:18px;background:rgba(3,16,24,.98);box-shadow:var(--shadow);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-10px);transition:opacity .22s var(--ease),transform .22s var(--ease),visibility .22s var(--ease)}
+  .main-nav.open{opacity:1;visibility:visible;pointer-events:auto;transform:none}
+  .main-nav a{padding:15px 13px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
+  .main-nav a:last-child{border-bottom:0}
+  .main-nav a:after{display:none}
+  body.nav-open{overflow:hidden}
+  .studio-intro-grid{grid-template-columns:1fr;gap:46px}
+  .studio-principles{max-width:860px}
+}
+
+@media(max-width:760px){
+  .main-nav{top:68px;left:18px;right:18px}
+  .process-strip{grid-template-columns:1fr 1fr;margin-top:25px}
+  .process-strip>div{min-height:78px;padding:15px}
+  .studio-intro{padding:76px 0}
+  .studio-intro-copy h2{font-size:clamp(43px,12vw,57px)}
+  .studio-intro-copy>p{font-size:14px;line-height:1.75}
+  .studio-principles article{grid-template-columns:40px minmax(0,1fr);gap:14px;padding:20px 0}
+  .studio-principles b{font-size:15px}
+  .studio-principles p{font-size:12px}
+  body[data-lang=ar] .studio-principles article{grid-template-columns:minmax(0,1fr) 40px}
+}
+
+@media(max-width:420px){
+  .process-strip{grid-template-columns:1fr}
+  .header-actions{gap:6px}
+  #lang-toggle{padding:0 10px}
+}
