@@ -6,28 +6,51 @@
   const defaults={work:{columns:4,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['type','goal','team','scope','contact'],hidden:[]}};
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
   const briefNames={type:'PROJECT TYPE',goal:'GOAL',team:'DISCIPLINES',scope:'SCOPE & TIMING',contact:'CONTACT'};
-  const state={device:null,sb:null,projects:[],layout:structuredClone(defaults),dirty:false};
+  const state={device:null,sb:null,projects:[],layout:structuredClone(defaults),dirty:false,poll:null};
   const clone=o=>JSON.parse(JSON.stringify(o));
   function notify(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
   function markDirty(){state.dirty=true;$('#save-state').textContent='Unsaved changes'}
   function makeClient(d){return window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{global:{headers:{'x-portfolio-device-id':d.id,'x-portfolio-device-secret':d.secret}},auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}})}
   function merge(raw={}){state.layout={work:{...clone(defaults.work),...(raw.work||{}),sizes:{...(raw.work?.sizes||{})}},team:{...clone(defaults.team),...(raw.team||{})},brief:{...clone(defaults.brief),...(raw.brief||{})}}}
+  function randomSecret(){const a=new Uint8Array(32);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+  function randomCode(){const a=new Uint32Array(1);crypto.getRandomValues(a);return String(a[0]%1000000).padStart(6,'0')}
+  async function sha256hex(value){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+  function showTrust(message='This V9 browser needs one-time approval before it can edit Studio settings.'){$('#gate-message').textContent=message;$('#trust-start').classList.remove('hidden');$('#pairing-box').classList.add('hidden')}
+  function showPending(code){$('#trust-start').classList.add('hidden');$('#pairing-box').classList.remove('hidden');$('#pairing-code').textContent=code||'------';$('#gate-message').textContent='This V9 browser is waiting for Trusted Device approval.';startPolling()}
+  function clearPoll(){if(state.poll){clearInterval(state.poll);state.poll=null}}
+  function startPolling(){if(state.poll)return;state.poll=setInterval(checkDevice,3000)}
+  async function checkDevice(){
+    if(!state.device?.id||!state.device?.secret||!state.sb)return false;
+    const {data,error}=await state.sb.from('portfolio_trusted_devices').select('status,claim_code,label').eq('device_id',state.device.id).maybeSingle();
+    if(error||!data)return false;
+    if(data.status==='approved'){clearPoll();await enterApp();return true}
+    if(data.status==='pending'){showPending(data.claim_code);return false}
+    localStorage.removeItem(DEVICE_KEY);state.device=null;state.sb=null;clearPoll();showTrust('This device is no longer approved. Create a new V9 browser approval request.');return false;
+  }
   async function init(){
     try{state.device=JSON.parse(localStorage.getItem(DEVICE_KEY)||'null')}catch(_e){state.device=null}
-    if(!state.device?.id||!state.device?.secret){$('#gate-message').textContent='This browser is not trusted yet. Open the main Control Center first and approve this device once.';return}
+    if(!state.device?.id||!state.device?.secret){showTrust();return}
     state.sb=makeClient(state.device);
-    const {data,error}=await state.sb.from('portfolio_trusted_devices').select('status,label').eq('device_id',state.device.id).maybeSingle();
-    if(error||!data||data.status!=='approved'){$('#gate-message').textContent='This browser is not approved for portfolio administration. Use the main Control Center to complete device approval.';return}
-    await load();$('#gate').classList.add('hidden');$('#app').classList.remove('hidden');
+    const ok=await checkDevice();if(!ok&&!state.poll)showTrust();
   }
+  $('#trust-preview').addEventListener('click',async()=>{
+    const btn=$('#trust-preview');btn.disabled=true;btn.textContent='CREATING APPROVAL…';
+    try{
+      state.device={id:crypto.randomUUID(),secret:randomSecret(),code:randomCode()};state.sb=makeClient(state.device);
+      const secret_hash=await sha256hex(state.device.secret);
+      const {error}=await state.sb.from('portfolio_trusted_devices').insert({device_id:state.device.id,secret_hash,claim_code:state.device.code,label:`V9 Preview · ${location.hostname}`,status:'pending'});
+      if(error){state.device=null;state.sb=null;return notify(error.message)}
+      localStorage.setItem(DEVICE_KEY,JSON.stringify(state.device));showPending(state.device.code);
+    }finally{btn.disabled=false;btn.textContent='TRUST THIS V9 BROWSER'}
+  });
+  async function enterApp(){await load();$('#gate').classList.add('hidden');$('#app').classList.remove('hidden')}
   async function load(){
     const [{data:projects,error:pErr},{data:setting,error:sErr}]=await Promise.all([
       state.sb.from('portfolio_projects').select('id,title,title_ar,slug,status,featured,sort_order,portfolio_categories(name)').eq('status','published').order('sort_order',{ascending:true}),
       state.sb.from('portfolio_site_settings').select('value').eq('key','v9_layout').maybeSingle()
     ]);
     if(pErr)notify(pErr.message);if(sErr)console.warn(sErr);
-    state.projects=projects||[];merge(setting?.value||{});
-    normalize();renderAll();state.dirty=false;$('#save-state').textContent='Loaded';
+    state.projects=projects||[];merge(setting?.value||{});normalize();renderAll();state.dirty=false;$('#save-state').textContent='Loaded';
   }
   function normalize(){
     const slugs=state.projects.map(p=>p.slug);state.layout.work.order=[...(state.layout.work.order||[]).filter(x=>slugs.includes(x)),...slugs.filter(x=>!(state.layout.work.order||[]).includes(x))];
@@ -67,7 +90,7 @@
       row.ondragstart=e=>{row.classList.add('dragging');e.dataTransfer.setData('text/plain',`${row.dataset.kind}:${row.dataset.key}`)};
       row.ondragend=()=>row.classList.remove('dragging');
       row.ondragover=e=>e.preventDefault();
-      row.ondrop=e=>{e.preventDefault();const raw=e.dataTransfer.getData('text/plain'),[kind,key]=raw.split(':');if(kind!==row.dataset.kind||key===row.dataset.key)return;const arr=arrayFor(kind),from=arr.indexOf(key),to=arr.indexOf(row.dataset.key);arr.splice(from,1);arr.splice(to,0,key);markDirty();renderAll()};
+      row.ondrop=e=>{e.preventDefault();const raw=e.dataTransfer.getData('text/plain'),[kind,key]=raw.split(':');if(kind!==row.dataset.kind||key===row.dataset.key)return;const arr=arrayFor(kind),from=arr.indexOf(key),to=arr.indexOf(row.dataset.key);arr.splice(from,1);arr.splice(from<to?to-1:to,0,key);markDirty();renderAll()};
     });
   }
   function arrayFor(kind){return kind==='work'?state.layout.work.order:kind==='team'?state.layout.team.order:state.layout.brief.order}
