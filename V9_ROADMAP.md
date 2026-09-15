@@ -148,7 +148,7 @@ Completed evidence:
 
 # Phase 4 — Team Model
 
-Status: **NEXT**
+Status: **COMPLETE**
 
 Goal:
 Explain the studio operating model without pretending to be a large fixed agency.
@@ -158,16 +158,27 @@ Scope:
 - Specialist network.
 - Role order and visibility.
 - Founder/network presentation ratio.
-- Visitor-facing team assembly interaction only if it improves understanding.
+- Visitor-facing expertise-mix interaction only where it improves understanding.
 
 Acceptance criteria:
 - “Different Expertise. One Direction.” is clear.
 - Team presentation feels credible and flexible.
 - No inflated agency language.
 
+Completed evidence:
+- The team section now explains the operating model as Studio Direction → Specialist Network → Project-Specific Mix.
+- Andrew Tharwat is presented as Founder & Creative Systems Director with focus on problem framing, systems thinking and creative direction.
+- Specialist cards are explicitly described as areas of expertise that can be brought into a project, not a fixed staff directory.
+- The previous “Assemble a Project Team” wording was replaced with an exploratory expertise-mix interaction so the visitor does not appear to be selecting employees.
+- Existing Admin order, visibility and founder/network ratio controls remain compatible with the revised public presentation.
+- Phase-specific CSS is layered on top of the locked visual system rather than redefining it.
+- Final protected-preview browser verification remains part of Phase 7.
+
 ---
 
 # Phase 5 — Start a Project
+
+Status: **COMPLETE**
 
 Goal:
 Turn Contact into a useful project conversation.
@@ -188,9 +199,23 @@ Acceptance criteria:
 - Visitor does not need to understand studio departments before contacting us.
 - Brief feels short, useful and intentional.
 
+Completed evidence:
+- Stored brief order is now Challenge/Outcome → Starting Point → Expertise → Scope → Contact.
+- The first step asks for the real challenge and desired change rather than forcing a service category first.
+- Starting Point is explicitly framed as a clue for the conversation, not a constraint on the final solution.
+- Expertise selection is positioned as provisional; the final project mix is shaped after the problem is understood.
+- Review behavior now focuses the live brief summary on the final step.
+- Send action validates name plus at least one contact method before opening the email workflow.
+- English and Arabic brief copy are handled consistently.
+- No public database insert was introduced; email remains the first workflow until spam protection and lead-management behavior are defined.
+- Supabase `v9_layout.brief.order` was verified after the change.
+- Vercel CI build passed after the problem-first brief behavior changes.
+
 ---
 
 # Phase 6 — V9 Admin Integration
+
+Status: **NEXT**
 
 Goal:
 Make V9 manageable from the existing Control Center ecosystem.
