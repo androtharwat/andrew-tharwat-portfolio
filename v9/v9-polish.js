@@ -16,8 +16,17 @@
   // Public V9 → Studio OS handoff. Loaded here so the core public renderer stays isolated.
   if(!document.querySelector('script[src*="v9-lead-submit.js"]')){
     const leadBridge=document.createElement('script');
-    leadBridge.src='/v9/v9-lead-submit.js?v=1';
+    leadBridge.src='/v9/v9-lead-submit.js?v=2';
+    leadBridge.async=false;
     document.body.appendChild(leadBridge);
+  }
+
+  // Recovery controller: if the main project-brief renderer fails, keep the full wizard usable.
+  if(!document.querySelector('script[src*="v9-brief-recovery.js"]')){
+    const briefRecovery=document.createElement('script');
+    briefRecovery.src='/v9/v9-brief-recovery.js?v=1';
+    briefRecovery.async=false;
+    document.body.appendChild(briefRecovery);
   }
 
   function applyOfficialBrandAssets(){
