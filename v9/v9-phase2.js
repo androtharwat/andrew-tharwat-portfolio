@@ -76,7 +76,8 @@
       const key=step.dataset.key;
       if(progress[i]&&t.progress[key]){
         const n=progress[i].querySelector('b')?.textContent||String(i+1).padStart(2,'0');
-        progress[i].innerHTML=`<b>${n}</b>${t.progress[key]}`;
+        const currentLabel=progress[i].textContent.replace(n,'').trim();
+        if(currentLabel!==t.progress[key])progress[i].innerHTML=`<b>${n}</b>${t.progress[key]}`;
       }
 
       const item=t[key];
@@ -105,13 +106,9 @@
   };
 
   const host=document.getElementById('brief-steps');
-  if(host){
-    new MutationObserver(scheduleApply).observe(host,{childList:true,subtree:true});
-  }
+  if(host)new MutationObserver(scheduleApply).observe(host,{childList:true,subtree:true});
   const progressHost=document.getElementById('brief-progress');
-  if(progressHost){
-    new MutationObserver(scheduleApply).observe(progressHost,{childList:true,subtree:true});
-  }
+  if(progressHost)new MutationObserver(scheduleApply).observe(progressHost,{childList:true,subtree:true});
 
   document.getElementById('lang-toggle')?.addEventListener('click',()=>setTimeout(scheduleApply,0));
 
