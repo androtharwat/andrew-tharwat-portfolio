@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#031018" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Andrew Tharwat Studio — Studio OS V9</title>
+  <link rel="icon" href="/assets/favicon-official.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/studio-v9.css?v=2" />
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="gate" class="auth-gate" aria-labelledby="gate-title">
+    <div class="auth-card">
+      <div class="auth-mark"><img src="/assets/app-icon-official.png" alt="" /></div>
+      <p class="overline">ANDREW THARWAT STUDIO · STUDIO OS V9</p>
+      <h1 id="gate-title">SECURE STUDIO ACCESS.</h1>
+      <p id="gate-message" class="auth-copy">Checking this browser against the existing Trusted Device system…</p>
+      <div id="trust-start" class="auth-actions hidden">
+        <button id="trust-device" class="button button-primary" type="button">TRUST THIS BROWSER</button>
+        <p class="microcopy">Uses the same one-time Trusted Device approval already used by the current portfolio Control Center.</p>
+      </div>
+      <div id="pairing-box" class="pairing-box hidden">
+        <span>DEVICE APPROVAL CODE</span>
+        <strong id="pairing-code">------</strong>
+        <p>Approve this browser through the existing admin workflow. Studio OS will unlock automatically after approval.</p>
+        <div class="waiting"><i></i><b>Waiting for approval</b></div>
+      </div>
+      <div class="auth-links">
+        <a href="/admin/">Current CMS</a>
+        <a href="/v9/" target="_blank" rel="noopener">Open V9 Preview ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" class="app-shell hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <a class="studio-brand" href="#dashboard" data-nav="dashboard" aria-label="Studio OS dashboard">
+          <img src="/assets/app-icon-official.png" alt="" />
+          <span><b>ANDREW THARWAT</b><small>STUDIO OS · V9</small></span>
+        </a>
+        <button class="icon-button mobile-only" id="close-nav" type="button" aria-label="Close navigation">×</button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Studio OS navigation">
+        <a class="nav-item active" href="#dashboard" data-nav="dashboard"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
+        <p class="nav-label">SALES</p>
+        <a class="nav-item" href="#leads" data-nav="leads"><span class="nav-icon">◎</span><span>Leads</span><span class="nav-count" id="nav-lead-count">1</span></a>
+        <a class="nav-item" href="#proposals" data-nav="proposals"><span class="nav-icon">▤</span><span>Proposals</span></a>
+        <p class="nav-label">CLIENTS</p>
+        <a class="nav-item" href="#clients" data-nav="clients"><span class="nav-icon">◇</span><span>All Clients</span></a>
+        <p class="nav-label">PROJECTS</p>
+        <a class="nav-item" href="#projects" data-nav="projects"><span class="nav-icon">◫</span><span>Active Projects</span><span class="nav-count">1</span></a>
+        <a class="nav-item" href="#waiting" data-nav="waiting"><span class="nav-icon">◷</span><span>Waiting for Client</span></a>
+        <a class="nav-item" href="#completed" data-nav="completed"><span class="nav-icon">✓</span><span>Completed</span></a>
+        <p class="nav-label">FINANCE</p>
+        <a class="nav-item" href="#payments" data-nav="payments"><span class="nav-icon">£</span><span>Payments</span></a>
+        <p class="nav-label">CONTENT</p>
+        <a class="nav-item" href="#portfolio" data-nav="portfolio"><span class="nav-icon">▧</span><span>Portfolio</span></a>
+        <a class="nav-item" href="#testimonials" data-nav="testimonials"><span class="nav-icon">✦</span><span>Testimonials</span></a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <a href="/admin/"><span>Current CMS</span><b>↗</b></a>
+        <a href="/v9/" target="_blank" rel="noopener"><span>Public V9 Preview</span><b>↗</b></a>
+        <span class="branch-foot">CLIENT OPS · v9-client-ops</span>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-button mobile-only" id="open-nav" type="button" aria-label="Open navigation">☰</button>
+          <div>
+            <p class="overline" id="page-kicker">STUDIO OPERATIONS · DEVELOPMENT MODE</p>
+            <h1 id="page-title">Good afternoon, Andrew.</h1>
+            <p id="page-subtitle" class="topbar-sub">Here’s what needs your attention today.</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <label class="search-box" aria-label="Search Studio OS">
+            <span>⌕</span>
+            <input id="global-search" type="search" placeholder="Search clients, projects, IDs…" autocomplete="off" />
+            <kbd>/</kbd>
+          </label>
+          <button class="icon-button notification-button" id="notifications-button" type="button" aria-label="Notifications">◌<span class="notification-dot"></span></button>
+          <button class="button button-primary" id="quick-create" type="button">+ QUICK CREATE</button>
+        </div>
+      </header>
+
+      <section class="demo-banner" aria-label="Development status">
+        <div><span class="status-dot"></span><b>SAFE CLIENT-OPS SANDBOX</b><p>Operational workflows use local demo state until the dedicated Supabase schema and RLS are approved.</p></div>
+        <span class="branch-chip">v9-client-ops</span>
+      </section>
+
+      <section class="app-view active" data-view="dashboard">
+        <section class="kpi-grid" aria-label="Studio metrics">
+          <button class="kpi-card" type="button" data-go="leads"><span class="kpi-label">NEW LEADS</span><strong id="kpi-leads">1</strong><small><i class="trend-up">+1</i> awaiting review</small></button>
+          <button class="kpi-card" type="button" data-go="projects"><span class="kpi-label">ACTIVE PROJECTS</span><strong id="kpi-projects">1</strong><small>1 currently in development</small></button>
+          <button class="kpi-card" type="button" data-go="waiting"><span class="kpi-label">WAITING FOR CLIENT</span><strong id="kpi-waiting">0</strong><small>No blocked approvals</small></button>
+          <button class="kpi-card" type="button" data-go="payments"><span class="kpi-label">PAYMENTS DUE</span><strong id="kpi-payments">1</strong><small>EGP 10,000 remaining</small></button>
+        </section>
+
+        <section class="dashboard-grid primary-grid">
+          <article class="panel attention-panel">
+            <div class="panel-head"><div><p class="overline">PRIORITY QUEUE</p><h2>Needs Attention</h2></div><button class="text-button" type="button" data-go="leads">View all</button></div>
+            <div id="attention-list" class="attention-list"></div>
+          </article>
+          <article class="panel quick-panel">
+            <div class="panel-head"><div><p class="overline">STUDIO ACTIONS</p><h2>Quick Actions</h2></div></div>
+            <div class="quick-actions">
+              <button type="button" data-action="review-lead"><span>01</span><div><b>Review New Lead</b><small>Open ATS-TEST-001</small></div><i>→</i></button>
+              <button type="button" data-action="create-proposal"><span>02</span><div><b>Create Proposal</b><small>Build structured offer</small></div><i>→</i></button>
+              <button type="button" data-action="record-payment"><span>03</span><div><b>Record Payment</b><small>Confirm a client payment</small></div><i>→</i></button>
+              <button type="button" data-action="post-update"><span>04</span><div><b>Post Project Update</b><small>Publish client-visible progress</small></div><i>→</i></button>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel projects-panel">
+          <div class="panel-head"><div><p class="overline">CURRENT DELIVERY</p><h2>Active Projects</h2></div><button class="text-button" type="button" data-go="projects">Open projects</button></div>
+          <div class="project-table-wrap"><table class="project-table"><thead><tr><th>PROJECT</th><th>STAGE</th><th>PROGRESS</th><th>DEADLINE</th><th>CLIENT ACTION</th><th></th></tr></thead><tbody id="project-table-body"></tbody></table></div>
+        </section>
+
+        <section class="dashboard-grid insights-grid">
+          <article class="panel pipeline-panel"><div class="panel-head"><div><p class="overline">SALES</p><h2>Pipeline</h2></div><button class="text-button" type="button" data-go="leads">Open pipeline</button></div><div id="pipeline-bars" class="pipeline-bars"></div></article>
+          <article class="panel revenue-panel"><div class="panel-head"><div><p class="overline">THIS MONTH</p><h2>Revenue Snapshot</h2></div><span class="status-badge neutral">EGP</span></div><div class="revenue-total"><small>CONFIRMED REVENUE</small><strong id="revenue-confirmed">20,000</strong></div><div class="revenue-split"><div><span>Collected</span><strong id="revenue-collected">10,000</strong><small>50% of confirmed</small></div><div><span>Outstanding</span><strong id="revenue-outstanding">10,000</strong><small>1 pending payment</small></div></div><div class="revenue-track"><i id="revenue-progress"></i></div></article>
+        </section>
+
+        <section class="panel activity-panel"><div class="panel-head"><div><p class="overline">SYSTEM RECORD</p><h2>Recent Activity</h2></div><button class="text-button" type="button" data-go="activity">Full activity</button></div><div id="activity-list" class="activity-list"></div></section>
+      </section>
+
+      <section class="app-view" data-view="leads">
+        <div class="view-toolbar">
+          <div class="view-tabs" role="tablist" aria-label="Lead views">
+            <button class="active" type="button" data-lead-filter="active">Active Pipeline</button>
+            <button type="button" data-lead-filter="lost">Lost</button>
+            <button type="button" data-lead-filter="all">All Leads</button>
+          </div>
+          <div class="toolbar-actions">
+            <button class="button button-secondary" id="reset-demo" type="button">RESET DEMO</button>
+            <button class="button button-primary" id="new-lead-button" type="button">+ NEW LEAD</button>
+          </div>
+        </div>
+
+        <section class="lead-summary-grid">
+          <article><span>ACTIVE LEADS</span><strong id="lead-summary-active">1</strong><small>Currently in pipeline</small></article>
+          <article><span>NEEDS REVIEW</span><strong id="lead-summary-review">1</strong><small>New enquiries not assessed</small></article>
+          <article><span>PROPOSALS OUT</span><strong id="lead-summary-proposals">0</strong><small>Awaiting client decision</small></article>
+          <article><span>WON</span><strong id="lead-summary-won">0</strong><small>Converted after deposit</small></article>
+        </section>
+
+        <section class="lead-board" id="lead-board" aria-label="Lead pipeline board"></section>
+        <section class="lead-list-view hidden" id="lost-lead-list"></section>
+      </section>
+
+      <section class="app-view" data-view="lead-detail">
+        <button class="back-button" type="button" data-go="leads">← BACK TO LEADS</button>
+        <div class="lead-detail-head">
+          <div>
+            <div class="entity-id" id="detail-id">ATS-TEST-001</div>
+            <h2 id="detail-name">Kareem Hassan</h2>
+            <p id="detail-company">BuildCore Contracting</p>
+          </div>
+          <div class="detail-actions" id="detail-actions"></div>
+        </div>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+            <section class="panel detail-card">
+              <div class="panel-head"><div><p class="overline">PROJECT REQUEST</p><h2>Overview</h2></div><span class="status-badge" id="detail-status">NEW INQUIRY</span></div>
+              <div class="detail-grid" id="detail-overview"></div>
+            </section>
+
+            <section class="panel detail-card">
+              <div class="panel-head"><div><p class="overline">DISCOVERY</p><h2>What the client needs</h2></div></div>
+              <div class="brief-block"><span>PROJECT GOAL</span><p id="detail-goal"></p></div>
+              <div class="brief-block"><span>CURRENT ASSETS</span><div class="chip-row" id="detail-assets"></div></div>
+              <div class="brief-block"><span>OPEN QUESTIONS</span><ul id="detail-questions"></ul></div>
+            </section>
+
+            <section class="panel detail-card">
+              <div class="panel-head"><div><p class="overline">PRIVATE</p><h2>Internal Notes</h2></div><span class="admin-only">ADMIN ONLY</span></div>
+              <textarea id="internal-notes" rows="5" placeholder="Add internal notes. These never appear in the client portal."></textarea>
+              <div class="inline-actions"><button class="button button-secondary" id="save-notes" type="button">SAVE NOTES</button></div>
+            </section>
+          </div>
+
+          <aside class="detail-side">
+            <section class="panel detail-card"><div class="panel-head"><div><p class="overline">NEXT STEP</p><h2>Lead Action</h2></div></div><div id="next-action-card" class="next-action-card"></div></section>
+            <section class="panel detail-card"><div class="panel-head"><div><p class="overline">ACTIVITY</p><h2>Lead Timeline</h2></div></div><div id="lead-activity" class="lead-activity"></div></section>
+          </aside>
+        </div>
+      </section>
+
+      <section class="app-view" data-view="placeholder">
+        <div class="placeholder-panel panel"><p class="overline">NEXT EXECUTABLE SLICE</p><h2 id="placeholder-title">Module</h2><p id="placeholder-copy">This module is intentionally not connected yet.</p><button class="button button-secondary" type="button" data-go="dashboard">BACK TO DASHBOARD</button></div>
+      </section>
+
+      <footer class="workspace-footer"><span>ANDREW THARWAT STUDIO · STUDIO OS V9</span><span>Client Operations · Isolated Development Branch</span></footer>
+    </main>
+  </div>
+
+  <dialog id="quick-dialog" class="command-dialog">
+    <form method="dialog">
+      <div class="dialog-head"><div><p class="overline">QUICK CREATE</p><h2>What do you want to create?</h2></div><button class="icon-button" value="cancel" aria-label="Close">×</button></div>
+      <div class="command-grid">
+        <button type="button" data-command="lead"><b>New Lead</b><small>Add an enquiry manually</small><i>→</i></button>
+        <button type="button" data-command="client"><b>New Client</b><small>Create an existing client record</small><i>→</i></button>
+        <button type="button" data-command="project"><b>New Project</b><small>Create a client project</small><i>→</i></button>
+        <button type="button" data-command="proposal"><b>New Proposal</b><small>Prepare scope and pricing</small><i>→</i></button>
+      </div>
+      <p class="dialog-note">Only the Leads workflow is executable in this slice. Other creation flows remain intentionally locked.</p>
+    </form>
+  </dialog>
+
+  <dialog id="lost-dialog" class="command-dialog compact-dialog">
+    <form method="dialog" id="lost-form">
+      <div class="dialog-head"><div><p class="overline">CLOSE LEAD</p><h2>Why was this lead lost?</h2></div><button class="icon-button" value="cancel" aria-label="Close">×</button></div>
+      <label class="form-field"><span>LOST REASON</span><select id="lost-reason" required><option value="">Select reason</option><option>Budget</option><option>No Response</option><option>Timing</option><option>Not Suitable</option><option>Competitor</option><option>Client Cancelled</option><option>Other</option></select></label>
+      <div class="dialog-footer"><button class="button button-secondary" value="cancel">CANCEL</button><button class="button button-danger" id="confirm-lost" type="button">MARK LOST</button></div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/admin/studio-v9.js?v=2"></script>
+</body>
+</html>
