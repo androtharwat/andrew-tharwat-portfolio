@@ -99,10 +99,148 @@ body[data-lang=ar] .v9-scroll-progress>i{transform-origin:right center}
   box-shadow:0 0 0 4px rgba(86,211,155,.08)
 }
 
+/* Final RTL QA */
+body[data-lang=ar] .hero-copy,
+body[data-lang=ar] .section-head,
+body[data-lang=ar] .featured-copy,
+body[data-lang=ar] .project-body,
+body[data-lang=ar] .specialist-panel,
+body[data-lang=ar] .brief-builder,
+body[data-lang=ar] .brief-summary,
+body[data-lang=ar] footer{text-align:right}
+body[data-lang=ar] .section-head aside{
+  border-left:0;
+  border-right:2px solid var(--red);
+  padding-left:0;
+  padding-right:24px
+}
+body[data-lang=ar] .eyebrow,
+body[data-lang=ar] .main-nav a,
+body[data-lang=ar] .btn,
+body[data-lang=ar] .header-actions button,
+body[data-lang=ar] .header-cta,
+body[data-lang=ar] .filters button{letter-spacing:0}
+body[data-lang=ar] .discipline-grid .number{right:auto;left:18px}
+body[data-lang=ar] .featured-media:after{transform:scaleX(-1)}
+body[data-lang=ar] .project-foot,
+body[data-lang=ar] .hero-actions,
+body[data-lang=ar] .founder-focus{direction:rtl}
+body[data-lang=ar] input,
+body[data-lang=ar] textarea,
+body[data-lang=ar] select{text-align:right}
+
+/* Tablet QA */
+@media(max-width:1180px){
+  .hero-grid{grid-template-columns:1fr;gap:40px}
+  .hero-copy{max-width:940px}
+  .hero h1{font-size:clamp(58px,8vw,88px)}
+  .hero-visual{width:min(100%,900px);height:58vh;min-height:470px}
+  .section-head.split{grid-template-columns:1fr;gap:32px}
+  .section-head aside{max-width:720px}
+  .discipline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .discipline-grid article{min-height:360px}
+  .featured-project{grid-template-columns:1fr;min-height:0}
+  .featured-media{min-height:390px}
+  .project-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .project-card.size-wide,
+  .project-card.size-large{grid-column:span 2}
+  .team-grid{grid-template-columns:1fr!important}
+  .founder-card{grid-template-columns:minmax(280px,.75fr) minmax(0,1.25fr)}
+  .brief-shell{grid-template-columns:1fr}
+  .brief-summary{position:relative;top:auto}
+}
+
+@media(max-width:900px){
+  .hero-visual{min-height:440px}
+  .founder-card{grid-template-columns:1fr}
+  .founder-card>img{min-height:420px;max-height:620px}
+  .role-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* Mobile QA */
 @media(max-width:760px){
+  :root{--gutter:18px;--section-y:78px}
+  html{scroll-padding-top:74px}
   .v9-scroll-progress{top:67px}
   .v9-reveal{transform:translateY(16px)}
   .site-header.is-scrolled{box-shadow:0 8px 28px rgba(0,0,0,.2)}
+  .site-header{padding-left:18px;padding-right:18px}
+  .brand img{width:40px;height:40px;border-radius:11px}
+  .brand small{display:none}
+  .header-cta{display:none}
+  .hero{min-height:auto}
+  .hero-grid{padding:48px 0 64px;gap:30px}
+  .hero h1{font-size:clamp(42px,12.4vw,58px);line-height:.93;margin:18px 0 22px;letter-spacing:-.05em}
+  body[data-lang=ar] .hero h1{letter-spacing:-.035em}
+  .hero-copy>p{font-size:15px;line-height:1.75}
+  .hero-actions{display:grid;grid-template-columns:1fr;gap:9px}
+  .hero-actions .btn{width:100%}
+  .process-strip{grid-template-columns:1fr 1fr}
+  .hero-visual{width:100%;height:54vh;min-height:390px;border-radius:20px}
+  .hero-stamp{left:18px;right:18px;bottom:18px}
+  .hero-stamp b{font-size:12px}
+  .hero-stamp small{font-size:8px}
+  .section-head h2{font-size:clamp(42px,12vw,58px);line-height:.94;margin:17px 0 19px}
+  body[data-lang=ar] .section-head h2{letter-spacing:-.035em}
+  .section-head>div>p{font-size:14px;line-height:1.75}
+  .section-head aside{padding-left:18px}
+  body[data-lang=ar] .section-head aside{padding-left:0;padding-right:18px}
+  .discipline-grid{grid-template-columns:1fr;gap:11px;margin-top:34px}
+  .discipline-grid article{min-height:0;padding:22px}
+  .discipline-grid h3{margin-top:48px}
+  .work-toolbar{align-items:stretch;margin-top:34px}
+  .filters{width:100%;display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;padding:0 0 8px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .filters button{flex:0 0 auto;white-space:nowrap}
+  #project-search{width:100%;min-width:0}
+  .featured-project{margin-top:22px;border-radius:20px}
+  .featured-media{min-height:285px}
+  .featured-copy{padding:24px 20px}
+  .featured-copy h3{font-size:clamp(29px,9vw,40px)}
+  .project-grid{grid-template-columns:1fr!important;gap:11px}
+  .project-card,
+  .project-card.size-compact,
+  .project-card.size-normal,
+  .project-card.size-wide,
+  .project-card.size-large{grid-column:auto!important}
+  .project-media{min-height:230px}
+  .project-body{padding:18px}
+  .team-model{margin-top:28px}
+  .founder-card>img{min-height:360px;max-height:520px}
+  .specialist-panel{padding:22px}
+  .role-grid{grid-template-columns:1fr}
+  .team-selection{padding:16px}
+  .brief-shell{margin-top:32px;gap:11px}
+  .brief-builder,.brief-summary{border-radius:18px}
+  .brief-progress{display:flex;overflow-x:auto;scrollbar-width:none;overscroll-behavior-inline:contain}
+  .brief-progress::-webkit-scrollbar{display:none}
+  .brief-progress button{flex:0 0 min(132px,38vw);min-height:68px}
+  .brief-step{padding:23px 20px}
+  .brief-step h3{font-size:clamp(25px,7vw,32px);line-height:1.15}
+  .field-grid,.option-grid,.brief-disciplines,.timeline-grid{grid-template-columns:1fr!important}
+  .brief-nav{padding:0 20px 22px;gap:9px}
+  .brief-nav .btn{flex:1}
+  .brief-summary{padding:22px 20px}
+  .footer-grid{grid-template-columns:1fr!important;gap:20px}
+  footer nav{display:flex;gap:14px;flex-wrap:wrap}
+}
+
+@media(max-width:420px){
+  .hero h1{font-size:clamp(39px,12vw,48px)}
+  .process-strip{grid-template-columns:1fr}
+  .hero-visual{min-height:360px}
+  .section-head h2{font-size:clamp(39px,11vw,49px)}
+  .featured-media{min-height:250px}
+  .project-media{min-height:210px}
+  .founder-card>img{min-height:330px}
+  .brief-progress button{flex-basis:118px}
+}
+
+@media(hover:none){
+  .discipline-grid article:hover,
+  .project-card:hover,
+  .btn:hover,
+  .header-cta:hover{transform:none}
 }
 
 @media(prefers-reduced-motion:reduce){
