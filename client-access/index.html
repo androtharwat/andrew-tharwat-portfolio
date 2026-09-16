@@ -22,7 +22,7 @@
     <section id="auth-card" class="auth-card">
       <p class="eyebrow">SECURE CLIENT ACCESS</p>
       <h1>Follow your request.<br><span>Review your proposal.</span></h1>
-      <p class="lede">Use the same email you used when you submitted your project request. We’ll send a one-time login code.</p>
+      <p class="lede">Use the same email you used when you submitted your project request. We’ll send you a one-time login code.</p>
       <label><span>EMAIL ADDRESS</span><input id="access-email" type="email" autocomplete="email" placeholder="name@company.com" /></label>
       <button id="send-code" class="primary" type="button">SEND LOGIN CODE →</button>
       <div id="otp-wrap" class="otp-wrap hidden">
@@ -78,6 +78,7 @@
   <div id="toast" class="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/config.js"></script>
+  <script src="/client-access/prefill.js?v=1"></script>
   <script src="/client-access/access.js?v=1"></script>
 </body>
 </html>
