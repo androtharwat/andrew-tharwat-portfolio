@@ -19,13 +19,3 @@
   document.addEventListener('click',e=>{const publish=e.target.closest('#publish-review');const complete=e.target.closest('[data-complete-revision]');const tab=e.target.closest('[data-project-tab="approvals"],[data-project-tab="revisions"]');if(publish){e.preventDefault();publishReview()}if(complete){e.preventDefault();completeRevision(complete.dataset.completeRevision)}if(tab)setTimeout(render,0)},true);
   window.addEventListener('hashchange',()=>setTimeout(render,50));window.addEventListener('storage',syncFromClient);const app=$('#app');if(app)new MutationObserver(()=>{if(!app.classList.contains('hidden'))setTimeout(render,80)}).observe(app,{attributes:true,attributeFilter:['class']});
 })();
-
-(() => {
-  const load = (src, attr) => {
-    if (document.querySelector(`script[${attr}]`)) return;
-    const script = document.createElement('script'); script.src = src; script.async = false; script.setAttribute(attr,'true'); document.head.appendChild(script);
-  };
-  load('/admin/studio-v9-live-db.js?v=1','data-studio-live-db');
-  load('/admin/studio-v9-files-live.js?v=1','data-studio-files-live');
-  load('/admin/studio-v9-final-payment-live.js?v=1','data-studio-final-payment-live');
-})();
