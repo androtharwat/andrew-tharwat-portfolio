@@ -36,14 +36,15 @@
     send.insertAdjacentElement('afterend',el);
   }
 
-  function showSuccess(code){
+  function showSuccess(code,email){
     document.querySelector('.brief-live-error')?.remove();
     const shell=$('.brief-shell');
     const summary=$('.brief-summary');
     if(shell)shell.classList.add('brief-submitted');
     if(summary){
       const ar=document.body.dataset.lang==='ar';
-      summary.innerHTML=`<small>${ar?'تم استلام الطلب':'PROJECT REQUEST RECEIVED'}</small><h3>${ar?'شكرًا — البريف وصل إلى Studio OS.':'Thank you — your brief is now inside Studio OS.'}</h3><div class="summary-row"><small>${ar?'رقم الطلب':'REQUEST ID'}</small><b>${code||'—'}</b></div><p class="summary-note">${ar?'سنراجع التحدي والاحتياج، والخطوة التالية ستكون التواصل معك ثم إعداد المقترح المناسب.':'We’ll review the challenge and requirements. The next step is contact and, if it is a fit, a structured proposal.'}</p><button class="btn ghost" type="button" id="new-project-request">${ar?'إرسال طلب آخر':'START ANOTHER REQUEST'}</button>`;
+      const accessHref=`/client-access/?email=${encodeURIComponent(email||'')}`;
+      summary.innerHTML=`<small>${ar?'تم استلام الطلب':'PROJECT REQUEST RECEIVED'}</small><h3>${ar?'شكرًا — البريف وصل إلى Studio OS.':'Thank you — your brief is now inside Studio OS.'}</h3><div class="summary-row"><small>${ar?'رقم الطلب':'REQUEST ID'}</small><b>${code||'—'}</b></div><p class="summary-note">${ar?'يمكنك متابعة حالة الطلب من Client Access بنفس البريد الإلكتروني. وعند تجهيز المقترح سيظهر لك هناك للمراجعة والقبول.':'Track this request from Client Access using the same email. When your proposal is ready, it will appear there for review and acceptance.'}</p><a class="btn primary" href="${accessHref}">${ar?'متابعة الطلب ←':'TRACK REQUEST / CLIENT ACCESS →'}</a><button class="btn ghost" type="button" id="new-project-request">${ar?'إرسال طلب آخر':'START ANOTHER REQUEST'}</button>`;
       $('#new-project-request')?.addEventListener('click',()=>location.reload());
     }
   }
@@ -96,7 +97,7 @@
       });
       if(error)throw error;
       const row=Array.isArray(data)?data[0]:data;
-      showSuccess(row?.lead_code||'REQUEST RECEIVED');
+      showSuccess(row?.lead_code||'REQUEST RECEIVED',email);
     }catch(error){
       console.error('V9 lead submission failed',error);
       showError(ar?'تعذر إرسال الطلب الآن. جرّب مرة أخرى، أو استخدم وسيلة التواصل المباشر.':'We could not send the request right now. Please try again or use direct contact.');
