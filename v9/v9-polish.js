@@ -13,6 +13,20 @@
     document.head.appendChild(finalCss);
   }
 
+  // Investigator's Eye fast-track entry: one clear HSE consultation first.
+  if(!document.querySelector('link[href*="hse-consultation-entry.css"]')){
+    const hseCss=document.createElement('link');
+    hseCss.rel='stylesheet';
+    hseCss.href='/v9/hse-consultation-entry.css?v=1';
+    document.head.appendChild(hseCss);
+  }
+  if(!document.querySelector('script[src*="hse-consultation-entry.js"]')){
+    const hseEntry=document.createElement('script');
+    hseEntry.src='/v9/hse-consultation-entry.js?v=1';
+    hseEntry.async=false;
+    document.body.appendChild(hseEntry);
+  }
+
   // Public V9 → Studio OS handoff. Loaded here so the core public renderer stays isolated.
   if(!document.querySelector('script[src*="v9-lead-submit.js"]')){
     const leadBridge=document.createElement('script');
