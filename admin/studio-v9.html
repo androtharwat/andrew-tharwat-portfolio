@@ -21,7 +21,7 @@
 
   <section id="gate" class="auth-gate" aria-labelledby="gate-title">
     <div class="auth-card">
-      <div class="auth-mark"><img src="/assets/app-icon-official.png" alt="" /></div>
+      <div class="auth-mark"><img src="/assets/logo-mark-official.png" alt="" /></div>
       <p class="overline">ANDREW THARWAT STUDIO · STUDIO OS V9</p>
       <h1 id="gate-title">SECURE STUDIO ACCESS.</h1>
       <p id="gate-message" class="auth-copy">Checking this browser against the existing Trusted Device system…</p>
@@ -37,7 +37,7 @@
       </div>
       <div class="auth-links">
         <a href="/admin/">Current CMS</a>
-        <a href="/v9/" target="_blank" rel="noopener">Open V9 Preview ↗</a>
+        <a href="/v9/" target="_blank" rel="noopener">Open Public V9 ↗</a>
       </div>
     </div>
   </section>
@@ -46,7 +46,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-head">
         <a class="studio-brand" href="#dashboard" data-nav="dashboard" aria-label="Studio OS dashboard">
-          <img src="/assets/app-icon-official.png" alt="" />
+          <img src="/assets/logo-mark-official.png" alt="" />
           <span><b>ANDREW THARWAT</b><small>STUDIO OS · V9</small></span>
         </a>
         <button class="icon-button mobile-only" id="close-nav" type="button" aria-label="Close navigation">×</button>
@@ -60,7 +60,7 @@
         <p class="nav-label">CLIENTS</p>
         <a class="nav-item" href="#clients" data-nav="clients"><span class="nav-icon">◇</span><span>All Clients</span></a>
         <p class="nav-label">PROJECTS</p>
-        <a class="nav-item" href="#projects" data-nav="projects"><span class="nav-icon">◫</span><span>Active Projects</span><span class="nav-count">1</span></a>
+        <a class="nav-item" href="#projects" data-nav="projects"><span class="nav-icon">◫</span><span>Active Projects</span><span class="nav-count">0</span></a>
         <a class="nav-item" href="#waiting" data-nav="waiting"><span class="nav-icon">◷</span><span>Waiting for Client</span></a>
         <a class="nav-item" href="#completed" data-nav="completed"><span class="nav-icon">✓</span><span>Completed</span></a>
         <p class="nav-label">FINANCE</p>
@@ -72,8 +72,8 @@
 
       <div class="sidebar-foot">
         <a href="/admin/"><span>Current CMS</span><b>↗</b></a>
-        <a href="/v9/" target="_blank" rel="noopener"><span>Public V9 Preview</span><b>↗</b></a>
-        <span class="branch-foot">CLIENT OPS · v9-client-ops</span>
+        <a href="/v9/" target="_blank" rel="noopener"><span>Public V9</span><b>↗</b></a>
+        <span class="branch-foot">UNIFIED · v9-unified</span>
       </div>
     </aside>
 
@@ -82,7 +82,7 @@
         <div class="topbar-left">
           <button class="icon-button mobile-only" id="open-nav" type="button" aria-label="Open navigation">☰</button>
           <div>
-            <p class="overline" id="page-kicker">STUDIO OPERATIONS · DEVELOPMENT MODE</p>
+            <p class="overline" id="page-kicker">STUDIO OPERATIONS · V9</p>
             <h1 id="page-title">Good afternoon, Andrew.</h1>
             <p id="page-subtitle" class="topbar-sub">Here’s what needs your attention today.</p>
           </div>
@@ -98,17 +98,17 @@
         </div>
       </header>
 
-      <section class="demo-banner" aria-label="Development status">
-        <div><span class="status-dot"></span><b>SAFE CLIENT-OPS SANDBOX</b><p>Operational workflows use local demo state until the dedicated Supabase schema and RLS are approved.</p></div>
-        <span class="branch-chip">v9-client-ops</span>
+      <section class="demo-banner" aria-label="Studio OS data connection">
+        <div><span class="status-dot"></span><b>STUDIO OS · UNIFIED SOURCE</b><p>Live Supabase data activates after Trusted Device verification and database sync.</p></div>
+        <span class="branch-chip">v9-unified</span>
       </section>
 
       <section class="app-view active" data-view="dashboard">
         <section class="kpi-grid" aria-label="Studio metrics">
-          <button class="kpi-card" type="button" data-go="leads"><span class="kpi-label">NEW LEADS</span><strong id="kpi-leads">1</strong><small><i class="trend-up">+1</i> awaiting review</small></button>
+          <button class="kpi-card" type="button" data-go="leads"><span class="kpi-label">NEW LEADS</span><strong id="kpi-leads">0</strong><small>Awaiting review</small></button>
           <button class="kpi-card" type="button" data-go="projects"><span class="kpi-label">ACTIVE PROJECTS</span><strong id="kpi-projects">0</strong><small>Created after deposit confirmation</small></button>
-          <button class="kpi-card" type="button" data-go="waiting"><span class="kpi-label">WAITING FOR CLIENT</span><strong id="kpi-waiting">0</strong><small>No blocked approvals</small></button>
-          <button class="kpi-card" type="button" data-go="payments"><span class="kpi-label">PAYMENTS DUE</span><strong id="kpi-payments">0</strong><small>Created after proposal acceptance</small></button>
+          <button class="kpi-card" type="button" data-go="waiting"><span class="kpi-label">WAITING FOR CLIENT</span><strong id="kpi-waiting">0</strong><small>Approvals and client actions</small></button>
+          <button class="kpi-card" type="button" data-go="payments"><span class="kpi-label">PAYMENTS DUE</span><strong id="kpi-payments">0</strong><small>Pending payment records</small></button>
         </section>
 
         <section class="dashboard-grid primary-grid">
@@ -119,7 +119,7 @@
           <article class="panel quick-panel">
             <div class="panel-head"><div><p class="overline">STUDIO ACTIONS</p><h2>Quick Actions</h2></div></div>
             <div class="quick-actions">
-              <button type="button" data-action="review-lead"><span>01</span><div><b>Review New Lead</b><small>Open ATS-TEST-001</small></div><i>→</i></button>
+              <button type="button" data-action="review-lead"><span>01</span><div><b>Review New Lead</b><small>Open newest enquiry</small></div><i>→</i></button>
               <button type="button" data-action="create-proposal"><span>02</span><div><b>Create Proposal</b><small>Build structured offer</small></div><i>→</i></button>
               <button type="button" data-action="record-payment"><span>03</span><div><b>Record Payment</b><small>Confirm a client payment</small></div><i>→</i></button>
               <button type="button" data-action="post-update"><span>04</span><div><b>Post Project Update</b><small>Publish client-visible progress</small></div><i>→</i></button>
@@ -148,14 +148,14 @@
             <button type="button" data-lead-filter="all">All Leads</button>
           </div>
           <div class="toolbar-actions">
-            <button class="button button-secondary" id="reset-demo" type="button">RESET DEMO</button>
+            <button class="button button-secondary" id="reset-demo" type="button">SYNCING DATA</button>
             <button class="button button-primary" id="new-lead-button" type="button">+ NEW LEAD</button>
           </div>
         </div>
 
         <section class="lead-summary-grid">
-          <article><span>ACTIVE LEADS</span><strong id="lead-summary-active">1</strong><small>Currently in pipeline</small></article>
-          <article><span>NEEDS REVIEW</span><strong id="lead-summary-review">1</strong><small>New enquiries not assessed</small></article>
+          <article><span>ACTIVE LEADS</span><strong id="lead-summary-active">0</strong><small>Currently in pipeline</small></article>
+          <article><span>NEEDS REVIEW</span><strong id="lead-summary-review">0</strong><small>New enquiries not assessed</small></article>
           <article><span>PROPOSALS OUT</span><strong id="lead-summary-proposals">0</strong><small>Awaiting client decision</small></article>
           <article><span>WON</span><strong id="lead-summary-won">0</strong><small>Converted after deposit</small></article>
         </section>
@@ -168,9 +168,9 @@
         <button class="back-button" type="button" data-go="leads">← BACK TO LEADS</button>
         <div class="lead-detail-head">
           <div>
-            <div class="entity-id" id="detail-id">ATS-TEST-001</div>
-            <h2 id="detail-name">Kareem Hassan</h2>
-            <p id="detail-company">BuildCore Contracting</p>
+            <div class="entity-id" id="detail-id">—</div>
+            <h2 id="detail-name">Lead</h2>
+            <p id="detail-company">—</p>
           </div>
           <div class="detail-actions" id="detail-actions"></div>
         </div>
@@ -204,10 +204,10 @@
       </section>
 
       <section class="app-view" data-view="placeholder">
-        <div class="placeholder-panel panel"><p class="overline">NEXT EXECUTABLE SLICE</p><h2 id="placeholder-title">Module</h2><p id="placeholder-copy">This module is intentionally not connected yet.</p><button class="button button-secondary" type="button" data-go="dashboard">BACK TO DASHBOARD</button></div>
+        <div class="placeholder-panel panel"><p class="overline">MODULE</p><h2 id="placeholder-title">Module</h2><p id="placeholder-copy">This module is part of the unified Studio OS workspace.</p><button class="button button-secondary" type="button" data-go="dashboard">BACK TO DASHBOARD</button></div>
       </section>
 
-      <footer class="workspace-footer"><span>ANDREW THARWAT STUDIO · STUDIO OS V9</span><span>Client Operations · Isolated Development Branch</span></footer>
+      <footer class="workspace-footer"><span>ANDREW THARWAT STUDIO · STUDIO OS V9</span><span>Unified Operations · Live Supabase</span></footer>
     </main>
   </div>
 
@@ -220,7 +220,7 @@
         <button type="button" data-command="project"><b>New Project</b><small>Create a client project</small><i>→</i></button>
         <button type="button" data-command="proposal"><b>New Proposal</b><small>Prepare scope and pricing</small><i>→</i></button>
       </div>
-      <p class="dialog-note">Leads, Proposals, Deposit Conversion, Project Workspace and Client Review are executable in this sandbox.</p>
+      <p class="dialog-note">Studio OS is connected to the unified live workflow: Leads, Proposals, Payments, Projects, Files and Client Review.</p>
     </form>
   </dialog>
 
@@ -239,5 +239,8 @@
   <script src="/admin/studio-v9-payments.js?v=1"></script>
   <script src="/admin/studio-v9-projects.js?v=1"></script>
   <script src="/admin/studio-v9-review.js?v=1"></script>
+  <script src="/admin/studio-v9-live-db.js?v=1"></script>
+  <script src="/admin/studio-v9-files-live.js?v=1"></script>
+  <script src="/admin/studio-v9-final-payment-live.js?v=1"></script>
 </body>
 </html>
