@@ -13,6 +13,16 @@
     const portfolio=document.querySelector('[data-nav="portfolio"]');
     if(portfolio){portfolio.setAttribute('href','/admin/');portfolio.setAttribute('title','Open live Portfolio CMS');}
   }
+  function failClosedIfNeeded(){
+    const app=$('#app'),gate=$('#gate'),banner=document.querySelector('.demo-banner');
+    if(!app||app.classList.contains('hidden'))return;
+    if((banner?.textContent||'').includes('LIVE SUPABASE DATA'))return;
+    app.classList.add('hidden');
+    gate?.classList.remove('hidden');
+    $('#trust-start')?.classList.add('hidden');
+    $('#pairing-box')?.classList.add('hidden');
+    const msg=$('#gate-message');if(msg)msg.textContent='Studio OS could not confirm a live Supabase connection. No operational data is shown. Refresh the page or verify the Trusted Device connection.';
+  }
   document.addEventListener('click',e=>{
     const action=e.target.closest('[data-action]');
     if(action){
@@ -28,4 +38,5 @@
   },true);
   new MutationObserver(polish).observe(document.body,{childList:true,subtree:true});
   polish();
+  setTimeout(failClosedIfNeeded,5000);
 })();
