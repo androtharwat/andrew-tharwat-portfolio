@@ -13,6 +13,7 @@
   const text = value => esc(value || '').replace(/\n/g, '<br>');
   const isAr = () => (window.PORTFOLIO_I18N?.getLang?.() || document.documentElement.lang || 'en') === 'ar';
   const local = (obj, key) => isAr() && obj?.[`${key}_ar`] ? obj[`${key}_ar`] : (obj?.[key] || '');
+  const isHse = () => slug === 'hse-awareness-series';
   let project = null;
   let caseStudy = null;
 
@@ -28,8 +29,72 @@
     return `<div class="v9-case-capabilities"><b>${isAr() ? 'القدرات المستخدمة' : 'CAPABILITIES USED'}</b>${items.map(item => `<span>${esc(item)}</span>`).join('')}</div>`;
   }
 
-  function block(index, labelEn, labelAr, body) {
-    return `<article class="v9-case-block"><span>${String(index).padStart(2,'0')}</span><small>${isAr() ? labelAr : labelEn}</small><h3>${isAr() ? 'من التحدي إلى حل عملي' : 'From challenge to practical solution'}</h3><p>${text(body)}</p></article>`;
+  function copy() {
+    const ar = isAr();
+    if (isHse()) {
+      return ar ? {
+        kicker:'V9 · دراسة حالة',
+        heroA:'كيف تحولت سلسلة التوعية',
+        heroB:'إلى نظام توعوي عملي؟',
+        intro:'نظرة على طريقة التفكير والتنفيذ وراء سلسلة التوعية بالسلامة والصحة المهنية، بداية من فهم التحدي، مرورًا ببناء الرسائل، وحتى تطوير مكتبة توعوية قابلة للتوسع.',
+        journeyKicker:'رحلة المشروع',
+        journeyTitle:'من الفكرة إلى التنفيذ',
+        journeyNote:'ثلاث مراحل مختلفة، لكل منها دور واضح في تحويل المعرفة الفنية إلى محتوى مفهوم وقابل للاستخدام.',
+        blocks:[
+          {label:'التحدي',title:'تحويل مفاهيم السلامة المعقدة إلى رسائل سريعة وواضحة'},
+          {label:'المنهج',title:'البدء من المخاطر الحقيقية وليس من الشرح النظري'},
+          {label:'الحل',title:'تطوير مكتبة توعوية قابلة لإعادة الاستخدام'}
+        ],
+        roleLabel:'الدور والمسؤولية', roleTitle:'ما الذي تم تنفيذه داخل المشروع؟',
+        outcomeLabel:'النتيجة', outcomeTitle:'ما الذي أصبح موجودًا في النهاية؟',
+        ctaLabel:'هل لديك تحدٍ مشابه؟', ctaText:'ابدأ بالمشكلة، ونبني لك المسار المناسب.', cta:'ابدأ مشروعك ←'
+      } : {
+        kicker:'V9 · CASE STUDY',
+        heroA:'HOW A SAFETY AWARENESS SERIES',
+        heroB:'BECAME A WORKING SYSTEM.',
+        intro:'A look at the thinking and execution behind the HSE Awareness Series — from understanding the challenge and shaping the message to building a reusable awareness library.',
+        journeyKicker:'PROJECT JOURNEY',
+        journeyTitle:'FROM IDEA TO EXECUTION',
+        journeyNote:'Three distinct stages, each with a clear role in turning technical safety knowledge into usable communication.',
+        blocks:[
+          {label:'THE CHALLENGE',title:'Turn complex safety concepts into fast, clear messages'},
+          {label:'THE APPROACH',title:'Start from real hazards, not abstract theory'},
+          {label:'THE SOLUTION',title:'Build a reusable awareness library'}
+        ],
+        roleLabel:'ROLE & RESPONSIBILITY', roleTitle:'What was actually led and delivered?',
+        outcomeLabel:'OUTCOME', outcomeTitle:'What exists at the end?',
+        ctaLabel:'HAVE A SIMILAR CHALLENGE?', ctaText:'Bring the problem. We’ll shape the right path.', cta:'START A PROJECT →'
+      };
+    }
+    return ar ? {
+      kicker:'V9 · دراسة حالة', heroA:'كيف تحولت الفكرة', heroB:'إلى حل قابل للتنفيذ؟',
+      intro:'نظرة مركزة على مسار التفكير والتنفيذ، من تحديد المشكلة إلى بناء النتيجة النهائية.',
+      journeyKicker:'رحلة المشروع', journeyTitle:'من التحدي إلى التنفيذ', journeyNote:'كل مرحلة لها وظيفة مختلفة داخل مسار بناء الحل.',
+      blocks:[
+        {label:'التحدي',title:'تحديد المشكلة الحقيقية'},
+        {label:'المنهج',title:'بناء طريقة العمل المناسبة'},
+        {label:'الحل',title:'تحويل الفكرة إلى تنفيذ'}
+      ],
+      roleLabel:'الدور والمسؤولية', roleTitle:'ما الذي تم قيادته وتنفيذه؟',
+      outcomeLabel:'النتيجة', outcomeTitle:'ما الذي أصبح موجودًا في النهاية؟',
+      ctaLabel:'هل لديك تحدٍ مشابه؟', ctaText:'ابدأ بالمشكلة، ونبني المسار المناسب.', cta:'ابدأ مشروعًا ←'
+    } : {
+      kicker:'V9 · CASE STUDY', heroA:'HOW THE IDEA BECAME', heroB:'A WORKING SOLUTION.',
+      intro:'A focused look at the thinking and execution path, from framing the problem to building the final outcome.',
+      journeyKicker:'PROJECT JOURNEY', journeyTitle:'FROM CHALLENGE TO EXECUTION', journeyNote:'Each stage plays a different role in shaping the solution.',
+      blocks:[
+        {label:'THE CHALLENGE',title:'Frame the real problem'},
+        {label:'THE APPROACH',title:'Shape the right working approach'},
+        {label:'THE SOLUTION',title:'Turn the idea into execution'}
+      ],
+      roleLabel:'ROLE & RESPONSIBILITY', roleTitle:'What was led and delivered?',
+      outcomeLabel:'OUTCOME', outcomeTitle:'What exists at the end?',
+      ctaLabel:'HAVE A SIMILAR CHALLENGE?', ctaText:'Bring the problem. We’ll shape the right path.', cta:'START A PROJECT →'
+    };
+  }
+
+  function block(index, meta, body) {
+    return `<article class="v9-case-block"><span>${String(index).padStart(2,'0')}</span><small>${esc(meta.label)}</small><h3>${esc(meta.title)}</h3><p>${text(body)}</p></article>`;
   }
 
   function markup() {
@@ -39,31 +104,36 @@
     const solution = local(caseStudy, 'solution');
     const role = local(caseStudy, 'role_text');
     const outcome = local(caseStudy, 'outcome');
-    const title = local(project, 'title') || project?.title || '';
+    const c = copy();
 
-    return `<section class="v9-case-study" data-v9-case-study style="--case-accent:${esc(color)}">
+    return `<section class="v9-case-study${isHse() ? ' v9-case-study-hse' : ''}" data-v9-case-study style="--case-accent:${esc(color)}">
       <div class="v9-case-study-shell">
         <header class="v9-case-study-head">
-          <div>
-            <p class="v9-case-kicker">${isAr() ? 'V9 · دراسة حالة' : 'V9 · CASE STUDY'}</p>
-            <h2>${isAr() ? 'كيف تحولت المشكلة إلى' : 'HOW THE PROBLEM BECAME'}<br><span>${isAr() ? 'حل قابل للتنفيذ.' : 'A WORKING SOLUTION.'}</span></h2>
-            <p>${isAr() ? `نظرة على طريقة التفكير والتنفيذ وراء ${esc(title)} — من فهم التحدي وحتى بناء المخرج النهائي.` : `A closer look at the thinking and execution behind ${esc(title)} — from framing the challenge to building the final outcome.`}</p>
+          <div class="v9-case-study-intro">
+            <p class="v9-case-kicker">${esc(c.kicker)}</p>
+            <h2>${esc(c.heroA)}<br><span>${esc(c.heroB)}</span></h2>
+            <p>${esc(c.intro)}</p>
           </div>
           ${metricsMarkup()}
         </header>
+        <div class="v9-case-flow-intro">
+          <small>${esc(c.journeyKicker)}</small>
+          <h3>${esc(c.journeyTitle)}</h3>
+          <p>${esc(c.journeyNote)}</p>
+        </div>
         <div class="v9-case-flow">
-          ${block(1,'THE CHALLENGE','التحدي',challenge)}
-          ${block(2,'THE APPROACH','المنهج',approach)}
-          ${block(3,'THE SOLUTION','الحل',solution)}
+          ${block(1,c.blocks[0],challenge)}
+          ${block(2,c.blocks[1],approach)}
+          ${block(3,c.blocks[2],solution)}
         </div>
         <div class="v9-case-detail-grid">
-          <article class="v9-case-panel"><small>${isAr() ? 'الدور والمسؤولية' : 'ROLE & RESPONSIBILITY'}</small><h3>${isAr() ? 'ما الذي تم قيادته وتنفيذه؟' : 'What was led and delivered?'}</h3><p>${text(role)}</p></article>
-          <article class="v9-case-panel"><small>${isAr() ? 'النتيجة' : 'OUTCOME'}</small><h3>${isAr() ? 'ما الذي أصبح موجودًا في النهاية؟' : 'What exists at the end?'}</h3><p>${text(outcome)}</p></article>
+          <article class="v9-case-panel"><small>${esc(c.roleLabel)}</small><h3>${esc(c.roleTitle)}</h3><p>${text(role)}</p></article>
+          <article class="v9-case-panel"><small>${esc(c.outcomeLabel)}</small><h3>${esc(c.outcomeTitle)}</h3><p>${text(outcome)}</p></article>
         </div>
         ${capabilityMarkup()}
         <div class="v9-case-cta">
-          <div><small>${isAr() ? 'هل لديك تحدٍ مشابه؟' : 'HAVE A SIMILAR CHALLENGE?'}</small><strong>${isAr() ? 'ابدأ بالمشكلة، ونبني المسار المناسب.' : 'Bring the problem. We’ll shape the right path.'}</strong></div>
-          <a href="/v9/#contact">${isAr() ? 'ابدأ مشروعًا ←' : 'START A PROJECT →'}</a>
+          <div><small>${esc(c.ctaLabel)}</small><strong>${esc(c.ctaText)}</strong></div>
+          <a href="/v9/#contact">${esc(c.cta)}</a>
         </div>
       </div>
     </section>`;
