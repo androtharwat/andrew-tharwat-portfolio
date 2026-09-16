@@ -88,3 +88,12 @@
   setTimeout(apply,0);
   setTimeout(apply,350);
 })();
+
+(() => {
+  if(document.querySelector('script[data-v9-work-fallback]'))return;
+  const s=document.createElement('script');
+  s.src='/v9/v9-work-fallback.js?v=1';
+  s.async=false;
+  s.dataset.v9WorkFallback='true';
+  document.body.appendChild(s);
+})();
