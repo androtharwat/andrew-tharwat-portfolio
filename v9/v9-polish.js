@@ -13,6 +13,20 @@
     document.head.appendChild(finalCss);
   }
 
+  // Human-first clarity layer: explain what the studio can do before explaining how it thinks.
+  if(!document.querySelector('link[href*="v9-human.css"]')){
+    const humanCss=document.createElement('link');
+    humanCss.rel='stylesheet';
+    humanCss.href='/v9/v9-human.css?v=1';
+    document.head.appendChild(humanCss);
+  }
+  if(!document.querySelector('script[src*="v9-human.js"]')){
+    const humanLayer=document.createElement('script');
+    humanLayer.src='/v9/v9-human.js?v=1';
+    humanLayer.async=false;
+    document.body.appendChild(humanLayer);
+  }
+
   // Investigator's Eye fast-track entry: one clear HSE consultation first.
   if(!document.querySelector('link[href*="hse-consultation-entry.css"]')){
     const hseCss=document.createElement('link');
@@ -142,7 +156,8 @@
     const targets=[
       '.studio-intro-copy','.studio-principles','.section-head',
       '.discipline-grid article','.featured-project','.project-card',
-      '.team-model article','.founder-card','.specialist-panel','.brief-shell'
+      '.team-model article','.founder-card','.specialist-panel','.brief-shell',
+      '.human-start-head','.human-need-card'
     ];
     const nodes=targets.flatMap(s=>$$(s)).filter(el=>!el.dataset.revealBound);
     nodes.forEach((el,i)=>{
