@@ -45,12 +45,6 @@
     }
   }
 
-  function restoreLanguage(){
-    let saved='en';
-    try{saved=localStorage.getItem(LANG_KEY)||localStorage.getItem(PORTFOLIO_LANG_KEY)||'en'}catch(_e){}
-    if(saved==='ar'&&document.body.dataset.lang!=='ar')document.getElementById('lang-toggle')?.click();
-  }
-
   function persistLanguage(){
     const current=document.body.dataset.lang==='ar'?'ar':'en';
     try{
@@ -59,8 +53,42 @@
     }catch(_e){}
   }
 
+  function applyStaticLanguage(lang){
+    const ar=lang==='ar';
+    document.body.dataset.lang=lang;
+    document.documentElement.lang=lang;
+    document.documentElement.dir=ar?'rtl':'ltr';
+    $$('[data-en]').forEach(el=>{el.textContent=el.dataset[lang]||el.dataset.en||el.textContent});
+    $$('[data-en-html]').forEach(el=>{el.innerHTML=el.dataset[lang+'Html']||el.dataset.enHtml||el.innerHTML});
+    const toggle=$('#lang-toggle');
+    if(toggle)toggle.textContent=ar?'English | AR':'EN | عربي';
+    const search=$('#project-search');
+    if(search)search.placeholder=ar?'ابحث في المشاريع...':'Search projects...';
+    localizeSmallA11y();
+  }
+
   const langToggle=$('#lang-toggle');
-  langToggle?.addEventListener('click',()=>setTimeout(persistLanguage,0));
+  let fallbackRedispatch=false;
+  langToggle?.addEventListener('click',()=>{
+    const before=document.body.dataset.lang==='ar'?'ar':'en';
+    setTimeout(()=>{
+      if(fallbackRedispatch){fallbackRedispatch=false;persistLanguage();return}
+      const after=document.body.dataset.lang==='ar'?'ar':'en';
+      if(after!==before){persistLanguage();return}
+      const next=before==='ar'?'en':'ar';
+      applyStaticLanguage(next);
+      persistLanguage();
+      // Re-fire once so the dynamic brief/team localization layers see the new language.
+      fallbackRedispatch=true;
+      langToggle.click();
+    },20);
+  });
+
+  function restoreLanguage(){
+    let saved='en';
+    try{saved=localStorage.getItem(LANG_KEY)||localStorage.getItem(PORTFOLIO_LANG_KEY)||'en'}catch(_e){}
+    if(saved==='ar'&&document.body.dataset.lang!=='ar')langToggle?.click();
+  }
 
   function installProgress(){
     if($('.v9-scroll-progress'))return;
