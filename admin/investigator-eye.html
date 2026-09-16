@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#031018" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Investigator's Eye — Studio OS V9</title>
+  <link rel="icon" href="/assets/favicon-official.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/studio-v9.css?v=2" />
+  <link rel="stylesheet" href="/admin/investigator-eye.css?v=1" />
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="gate" class="auth-gate" aria-labelledby="gate-title">
+    <div class="auth-card">
+      <div class="auth-mark"><img src="/assets/logo-mark-official.png" alt="" /></div>
+      <p class="overline">INVESTIGATOR'S EYE · STUDIO OS V9</p>
+      <h1 id="gate-title">VERIFYING STUDIO ACCESS.</h1>
+      <p id="gate-message" class="auth-copy">Checking this browser against your existing Trusted Device approval…</p>
+      <div id="gate-actions" class="auth-actions hidden">
+        <a class="button button-primary ie-link-button" href="/admin/studio-v9.html">OPEN STUDIO OS TO APPROVE THIS DEVICE</a>
+        <p class="microcopy">Investigator's Eye uses the same Trusted Device security already used by Studio OS.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" class="ie-shell hidden">
+    <aside class="sidebar ie-sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <a class="studio-brand" href="/admin/studio-v9.html" aria-label="Back to Studio OS">
+          <img src="/assets/logo-mark-official.png" alt="" />
+          <span><b>ANDREW THARWAT</b><small>STUDIO OS · V9</small></span>
+        </a>
+      </div>
+      <nav class="sidebar-nav" aria-label="Investigator's Eye navigation">
+        <p class="nav-label">INVESTIGATOR'S EYE</p>
+        <button class="nav-item active ie-nav" type="button" data-section="overview"><span class="nav-icon">⌁</span><span>Overview</span></button>
+        <button class="nav-item ie-nav" type="button" data-section="cases"><span class="nav-icon">◎</span><span>Consultation Cases</span><span class="nav-count" id="nav-case-count">0</span></button>
+        <button class="nav-item ie-nav" type="button" data-section="services"><span class="nav-icon">▤</span><span>Service Catalog</span></button>
+        <button class="nav-item ie-nav" type="button" data-section="pricing"><span class="nav-icon">$</span><span>Market Benchmarks</span></button>
+        <p class="nav-label">SYSTEM</p>
+        <a class="nav-item" href="/admin/studio-v9.html"><span class="nav-icon">←</span><span>Back to Studio OS</span></a>
+        <a class="nav-item" href="/v9/" target="_blank" rel="noopener"><span class="nav-icon">↗</span><span>Open Public V9</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="branch-foot">INVESTIGATOR'S EYE · v9-unified</span>
+      </div>
+    </aside>
+
+    <main class="workspace ie-workspace">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div>
+            <p class="overline" id="page-kicker">INVESTIGATOR'S EYE · CONTROL ROOM</p>
+            <h1 id="page-title">Consultation Intelligence.</h1>
+            <p id="page-subtitle" class="topbar-sub">One consultation. Separate services. One private case record.</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="button button-secondary" id="refresh-data" type="button">REFRESH DATA</button>
+          <a class="button button-primary ie-link-button" href="/admin/studio-v9.html">STUDIO OS</a>
+        </div>
+      </header>
+
+      <section class="ie-rulebar" aria-label="Commercial rule">
+        <div><span class="status-dot"></span><b>$75 = CONSULTATION ONLY</b><p>Every deliverable or follow-on service is scoped and priced separately after consultation.</p></div>
+        <span class="branch-chip">ADMIN CONTROLLED PRICING</span>
+      </section>
+
+      <section class="ie-view active" data-ie-view="overview">
+        <section class="kpi-grid ie-kpis" aria-label="Investigator's Eye metrics">
+          <button class="kpi-card" type="button" data-jump="cases"><span class="kpi-label">OPEN CASES</span><strong id="kpi-open-cases">0</strong><small>Consultation cases not closed</small></button>
+          <button class="kpi-card" type="button" data-jump="cases"><span class="kpi-label">CONSULTATIONS BOOKED</span><strong id="kpi-booked">0</strong><small>$75 consultation entry</small></button>
+          <button class="kpi-card" type="button" data-jump="services"><span class="kpi-label">ACTIVE SERVICES</span><strong id="kpi-services">0</strong><small>Available follow-on services</small></button>
+          <button class="kpi-card" type="button" data-jump="pricing"><span class="kpi-label">MARKET SOURCES</span><strong id="kpi-benchmarks">0</strong><small>Internal pricing references</small></button>
+        </section>
+
+        <section class="ie-grid two-col">
+          <article class="panel ie-hero-panel">
+            <div class="panel-head"><div><p class="overline">COMMERCIAL MODEL</p><h2>Consult first. Scope second. Price third.</h2></div><span class="status-badge ie-status-good">LIVE MODEL</span></div>
+            <div class="ie-flow">
+              <div><span>01</span><b>Consultation</b><small>Fixed $75</small></div><i>→</i>
+              <div><span>02</span><b>Needs Identified</b><small>Andrew review</small></div><i>→</i>
+              <div><span>03</span><b>Services Recommended</b><small>No forced bundle</small></div><i>→</i>
+              <div><span>04</span><b>Separate Work Orders</b><small>Fixed / From / Quote</small></div>
+            </div>
+            <div class="ie-principle"><b>SAME HAZARD ≠ SAME SOLUTION.</b><p>The consultation discovers what this client actually needs before any additional service is sold.</p></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head"><div><p class="overline">CASE PIPELINE</p><h2>Current Status</h2></div><button class="text-button" type="button" data-jump="cases">Open cases →</button></div>
+            <div id="case-pipeline" class="ie-pipeline"></div>
+          </article>
+        </section>
+
+        <section class="panel ie-recent-panel">
+          <div class="panel-head"><div><p class="overline">RECENT CONSULTATIONS</p><h2>Latest Cases</h2></div><button class="text-button" type="button" data-jump="cases">View all →</button></div>
+          <div id="recent-cases" class="ie-empty">No consultation cases yet.</div>
+        </section>
+      </section>
+
+      <section class="ie-view" data-ie-view="cases">
+        <div class="ie-section-head">
+          <div><p class="overline">PRIVATE CONSULTATION WORKSPACE</p><h2>Consultation Cases</h2><p>Each case starts with a paid consultation. Additional services stay financially separate.</p></div>
+          <div class="ie-filter-row">
+            <input id="case-search" class="ie-input" type="search" placeholder="Search case, client, hazard…" />
+            <select id="case-status-filter" class="ie-input"><option value="all">All statuses</option><option value="consultation_booked">Consultation booked</option><option value="intake_pending">Intake pending</option><option value="ready_for_consultation">Ready for consultation</option><option value="consultation_complete">Consultation complete</option><option value="services_recommended">Services recommended</option><option value="active">Active</option><option value="closed">Closed</option></select>
+          </div>
+        </div>
+        <section class="panel ie-table-panel">
+          <div class="project-table-wrap"><table class="project-table ie-table"><thead><tr><th>CASE</th><th>CLIENT</th><th>HAZARD</th><th>CONSULTATION</th><th>STATUS</th><th>FOLLOW-ON SERVICES</th><th></th></tr></thead><tbody id="case-table-body"></tbody></table></div>
+        </section>
+      </section>
+
+      <section class="ie-view" data-ie-view="services">
+        <div class="ie-section-head">
+          <div><p class="overline">SERVICE CATALOG</p><h2>Pricing & Scope Manager</h2><p>Prices are launch prices controlled from Studio OS, not hard-coded promises.</p></div>
+          <div class="ie-filter-row"><input id="service-search" class="ie-input" type="search" placeholder="Search service…" /><select id="service-category-filter" class="ie-input"><option value="all">All categories</option></select></div>
+        </div>
+        <div id="service-grid" class="ie-service-grid"></div>
+      </section>
+
+      <section class="ie-view" data-ie-view="pricing">
+        <div class="ie-section-head">
+          <div><p class="overline">INTERNAL ONLY</p><h2>Global Market Benchmarks</h2><p>Pricing references support commercial decisions. They are not automatically shown to clients.</p></div>
+          <span class="status-badge">LAST VERIFIED SOURCE DATA</span>
+        </div>
+        <section class="panel ie-table-panel">
+          <div class="project-table-wrap"><table class="project-table ie-table"><thead><tr><th>SERVICE</th><th>BENCHMARK</th><th>REGION</th><th>MARKET RANGE</th><th>UNIT</th><th>SOURCE</th><th>VERIFIED</th></tr></thead><tbody id="benchmark-table-body"></tbody></table></div>
+        </section>
+      </section>
+
+      <footer class="workspace-footer"><span>INVESTIGATOR'S EYE · ANDREW THARWAT STUDIO</span><span>Consultation → Scope → Service → Delivery</span></footer>
+    </main>
+  </div>
+
+  <dialog id="service-dialog" class="command-dialog ie-dialog">
+    <form method="dialog" id="service-form">
+      <div class="dialog-head"><div><p class="overline">SERVICE PRICING</p><h2 id="service-dialog-title">Edit Service</h2></div><button class="icon-button" value="cancel" aria-label="Close">×</button></div>
+      <input id="service-id" type="hidden" />
+      <div class="ie-form-grid">
+        <label class="form-field"><span>PRICING MODE</span><select id="service-pricing-mode"><option value="fixed">Fixed</option><option value="from">From</option><option value="quote">Custom Quote</option></select></label>
+        <label class="form-field"><span>DISPLAY PRICE (USD)</span><input id="service-display-price" type="number" min="0" step="5" placeholder="Leave empty for quote" /></label>
+        <label class="form-field"><span>CLIENT VISIBILITY</span><select id="service-client-visible"><option value="true">Visible</option><option value="false">Hidden</option></select></label>
+        <label class="form-field"><span>SERVICE STATUS</span><select id="service-active"><option value="true">Active</option><option value="false">Inactive</option></select></label>
+      </div>
+      <div class="dialog-note" id="service-scope-summary"></div>
+      <div class="dialog-footer"><button class="button button-secondary" value="cancel">CANCEL</button><button class="button button-primary" id="save-service" type="button">SAVE PRICING</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="case-dialog" class="command-dialog ie-dialog ie-case-dialog">
+    <form method="dialog">
+      <div class="dialog-head"><div><p class="overline">CONSULTATION CASE</p><h2 id="case-dialog-title">Case</h2></div><button class="icon-button" value="cancel" aria-label="Close">×</button></div>
+      <div id="case-detail-body"></div>
+      <div class="dialog-footer"><button class="button button-secondary" value="cancel">CLOSE</button></div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/admin/investigator-eye.js?v=1"></script>
+</body>
+</html>
