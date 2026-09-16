@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="/client-v9/portal.css?v=2" />
   <link rel="stylesheet" href="/client-v9/review.css?v=2" />
   <link rel="stylesheet" href="/client-v9/portal-auth.css?v=1" />
+  <link rel="stylesheet" href="/client-v9/portal-hse.css?v=1" />
 </head>
 <body>
   <section id="portal-auth" class="portal-auth">
@@ -38,6 +39,7 @@
       <nav>
         <a class="active" href="#home" data-portal-nav="home">⌂ <span>Home</span></a>
         <a href="#projects" data-portal-nav="projects">◫ <span>My Projects</span></a>
+        <a href="#hse" data-portal-nav="hse">⌁ <span>HSE Consultation</span></a>
         <a href="#files" data-portal-nav="files">▧ <span>Files</span></a>
         <a href="#payments" data-portal-nav="payments">£ <span>Payments</span></a>
         <a href="#new-project" data-portal-nav="new-project">+ <span>Start New Project</span></a>
@@ -60,6 +62,7 @@
         </section>
         <section class="portal-view" data-portal-view="projects"><div class="section-head"><p class="eyebrow">MY PROJECTS</p><h2>Projects</h2><p>Active and completed work with Andrew Tharwat Studio.</p></div><div id="portal-project-list" class="portal-project-list"></div></section>
         <section class="portal-view" data-portal-view="project-detail"><button class="back-link" data-portal-nav="projects" type="button">← MY PROJECTS</button><div id="client-project-detail"></div></section>
+        <section class="portal-view" data-portal-view="hse"><div id="hse-case-content"><div class="portal-card">Loading HSE consultation workspace…</div></div></section>
         <section class="portal-view" data-portal-view="files"><div class="section-head"><p class="eyebrow">PROJECT FILES</p><h2>Files</h2><p>Upload files to the Studio and access only files explicitly shared with your project.</p></div><div id="portal-files-live" class="portal-project-list"></div></section>
         <section class="portal-view" data-portal-view="payments"><div class="section-head"><p class="eyebrow">PROJECT FINANCIALS</p><h2>Payments</h2><p>A simple record of paid and outstanding amounts.</p></div><div id="portal-payment-summary" class="portal-grid payment-summary-grid"></div><div id="portal-payment-list" class="portal-payment-list"></div></section>
         <section class="portal-view" data-portal-view="new-project"><div class="section-head"><p class="eyebrow">RETURNING CLIENT</p><h2>Start New Project</h2><p>Your identity is already known, so the next request is shorter.</p></div><form id="new-project-form" class="portal-card new-project-form"><label><span>SERVICE</span><select id="new-service"><option>Website / Web App</option><option>Brand & Visual Design</option><option>Digital Documents</option><option>HSE Content & Awareness</option><option>Video / Motion</option><option>Custom Digital Solution</option></select></label><label><span>PROJECT GOAL</span><textarea id="new-goal" placeholder="What should this project help you achieve?"></textarea></label><div class="form-two"><label><span>TIMELINE</span><select id="new-timeline"><option>ASAP</option><option>2–4 weeks</option><option>1–2 months</option><option>Flexible</option></select></label><label><span>BUDGET</span><select id="new-budget"><option>Not sure yet</option><option>Under 10k EGP</option><option>10k–25k EGP</option><option>25k–50k EGP</option><option>50k+ EGP</option></select></label></div><button class="portal-button" type="submit">SUBMIT NEW PROJECT REQUEST →</button></form></section>
@@ -72,6 +75,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/config.js"></script>
   <script src="/client-v9/portal-live.js?v=1"></script>
+  <script src="/client-v9/portal-hse.js?v=1"></script>
+  <script src="/client-v9/portal-hse-bridge.js?v=1"></script>
   <script src="/client-v9/portal-files-live.js?v=1"></script>
 </body>
 </html>
