@@ -5,6 +5,7 @@
   let sb = null;
 
   const money = value => new Intl.NumberFormat('en-US').format(Number(value || 0));
+  const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;' }[c]));
   const toast = message => {
     const el = $('#toast');
     if (!el) return;
@@ -33,6 +34,96 @@
     await window.StudioLiveDB?.sync?.();
     toast(message);
     setTimeout(() => location.reload(), 500);
+  }
+
+  function ensureManualLeadDialog() {
+    let dialog = $('#manual-lead-dialog');
+    if (dialog) return dialog;
+    document.body.insertAdjacentHTML('beforeend', `
+      <dialog id="manual-lead-dialog" class="command-dialog compact-dialog">
+        <form method="dialog" id="manual-lead-form">
+          <div class="dialog-head">
+            <div><p class="overline">LIVE LEAD CAPTURE</p><h2>Add Lead</h2></div>
+            <button class="icon-button" value="cancel" aria-label="Close">×</button>
+          </div>
+          <div class="form-grid">
+            <label class="form-field"><span>FULL NAME *</span><input id="manual-lead-name" autocomplete="name" required /></label>
+            <label class="form-field"><span>EMAIL *</span><input id="manual-lead-email" type="email" autocomplete="email" required /></label>
+            <label class="form-field"><span>PHONE / WHATSAPP</span><input id="manual-lead-phone" autocomplete="tel" /></label>
+            <label class="form-field"><span>COMPANY</span><input id="manual-lead-company" autocomplete="organization" /></label>
+            <label class="form-field full"><span>SERVICE *</span><select id="manual-lead-service"><option>General / Multidisciplinary</option><option>Safety & HSE</option><option>Website Development</option><option>Digital Solution</option><option>Creative & Brand</option><option>AI & Storytelling</option><option>Video & Motion</option><option>Other</option></select></label>
+            <label class="form-field full"><span>PROJECT GOAL / REQUEST *</span><textarea id="manual-lead-goal" rows="5" placeholder="What does the client need?" required></textarea></label>
+            <label class="form-field"><span>TIMELINE</span><input id="manual-lead-timeline" placeholder="Within 2–4 weeks" /></label>
+            <label class="form-field"><span>BUDGET RANGE</span><input id="manual-lead-budget" placeholder="15,000–25,000 EGP" /></label>
+          </div>
+          <div class="dialog-footer">
+            <button class="button button-secondary" value="cancel">CANCEL</button>
+            <button class="button button-primary" id="manual-lead-save" type="button">CREATE LIVE LEAD</button>
+          </div>
+        </form>
+      </dialog>`);
+    return $('#manual-lead-dialog');
+  }
+
+  function showManualLead() {
+    $('#quick-dialog')?.close?.();
+    const dialog = ensureManualLeadDialog();
+    dialog.showModal();
+    setTimeout(() => $('#manual-lead-name')?.focus(), 30);
+  }
+
+  async function createManualLead(button) {
+    const client = ensureClient();
+    if (!client) return toast('Trusted Device connection is required.');
+    const fullName = $('#manual-lead-name')?.value.trim() || '';
+    const email = $('#manual-lead-email')?.value.trim().toLowerCase() || '';
+    const phone = $('#manual-lead-phone')?.value.trim() || null;
+    const company = $('#manual-lead-company')?.value.trim() || null;
+    const service = $('#manual-lead-service')?.value || 'General / Multidisciplinary';
+    const goal = $('#manual-lead-goal')?.value.trim() || '';
+    const timeline = $('#manual-lead-timeline')?.value.trim() || null;
+    const budget = $('#manual-lead-budget')?.value.trim() || null;
+    if (!fullName) return toast('Full name is required.');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return toast('A valid email is required.');
+    if (!goal) return toast('Project goal / request is required.');
+
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'CREATING…';
+    try {
+      const insert = await client.from('studio_leads').insert({
+        full_name: fullName,
+        email,
+        phone,
+        company_name: company,
+        service,
+        project_goal: goal,
+        current_assets: [],
+        timeline,
+        budget_range: budget,
+        source: 'studio_os_manual',
+        source_path: location.pathname,
+        status: 'new',
+        fit: null,
+        lost_reason: null
+      }).select('id,lead_code').single();
+      if (insert.error) throw insert.error;
+
+      const activity = await client.from('studio_activity').insert({
+        actor_type: 'admin', entity_type: 'lead', entity_id: insert.data.id, action: 'lead_created_manually',
+        metadata: { source: 'studio_os_manual', lead_code: insert.data.lead_code }
+      });
+      if (activity.error) throw activity.error;
+      $('#manual-lead-dialog')?.close();
+      await window.StudioLiveDB?.sync?.();
+      toast(`${insert.data.lead_code} created`);
+      location.hash = '#leads';
+      setTimeout(() => location.reload(), 450);
+    } catch (error) {
+      toast(error.message || 'Could not create lead.');
+      button.disabled = false;
+      button.textContent = original;
+    }
   }
 
   async function acceptProposal(code, button) {
@@ -163,6 +254,20 @@
   }
 
   document.addEventListener('click', event => {
+    const manual = event.target.closest('#new-lead-button,[data-command="lead"]');
+    if (manual) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      showManualLead();
+      return;
+    }
+    const saveLead = event.target.closest('#manual-lead-save');
+    if (saveLead) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void createManualLead(saveLead);
+      return;
+    }
     const accept = event.target.closest('[data-accept-proposal]');
     if (accept) {
       event.preventDefault();
