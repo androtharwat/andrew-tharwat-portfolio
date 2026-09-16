@@ -41,7 +41,7 @@
     };
     if (payload.p_full_name.length < 2 || !payload.p_email.includes('@') || payload.p_summary.length < 10) return toast(lang === 'ar' ? 'راجع الاسم والبريد ووصف المشكلة' : 'Check your name, email and problem description');
     const button = $('#submit-consultation');
-    button.disabled = true; button.textContent = lang === 'ar' ? 'جاري إنشاء الطلب…' : 'CREATING REQUEST…';
+    button.disabled = true; button.textContent = lang === 'ar' ? 'جاري فتح الحالة…' : 'OPENING YOUR CASE…';
     const { data, error } = await sb.rpc('studio_submit_public_consultation_request', payload);
     if (error) {
       console.error(error); toast(lang === 'ar' ? 'تعذر إرسال الطلب. حاول مرة أخرى.' : 'Could not submit the request. Please try again.');
@@ -50,9 +50,30 @@
     }
     $('#consultation-form').classList.add('hidden');
     $('#success-state').classList.remove('hidden');
+    const caseCode = data?.case_code || data?.lead_code || '';
+    const fee = Number(data?.consultation_fee_usd || 75).toFixed(0);
     $('#success-copy').textContent = lang === 'ar'
-      ? `تم إنشاء طلبك ${data?.lead_code || ''}. الخطوة التالية فقط هي رابط الحجز/الدفع الآمن بقيمة $${Number(data?.consultation_fee_usd || 75).toFixed(0)}.`
-      : `Your request ${data?.lead_code || ''} is created. The only next step is the secure $${Number(data?.consultation_fee_usd || 75).toFixed(0)} booking/payment link.`;
+      ? `تم فتح حالتك ${caseCode}. بيانات المشكلة محفوظة بالفعل، ومش هتحتاج تكتبها مرة تانية.`
+      : `Your case ${caseCode} is open. Your problem details are already saved, so you will not need to enter them again.`;
+
+    const nextBox = $('#success-state .next-box');
+    if (data?.checkout_url) {
+      nextBox.innerHTML = lang === 'ar'
+        ? `<b>الخطوة الوحيدة المطلوبة الآن</b><p>إتمام حجز الاستشارة بقيمة $${fee}. لا توجد أي خدمات إضافية مضافة.</p><a class="home-link" href="${data.checkout_url}" target="_blank" rel="noopener">ادفع $${fee} واحجز الاستشارة ←</a>`
+        : `<b>YOUR ONLY NEXT STEP</b><p>Complete the $${fee} consultation booking. No additional service has been added.</p><a class="home-link" href="${data.checkout_url}" target="_blank" rel="noopener">PAY $${fee} & BOOK CONSULTATION →</a>`;
+    } else {
+      nextBox.innerHTML = lang === 'ar'
+        ? `<b>إيه الخطوة الجاية؟</b><p>هنرسل لك رابط الحجز/الدفع الآمن بقيمة $${fee} على البريد المسجل. لحد ما الرابط يوصل، مش مطلوب منك أي إجراء آخر.</p>`
+        : `<b>WHAT HAPPENS NEXT?</b><p>We’ll send the secure $${fee} booking/payment link to your email. Until that link is ready, nothing else is required from you.</p>`;
+    }
+    if (!$('#success-state [data-client-portal-link]')) {
+      const portal = document.createElement('a');
+      portal.href = '/client-v9/#hse';
+      portal.className = 'home-link';
+      portal.dataset.clientPortalLink = '1';
+      portal.textContent = lang === 'ar' ? 'متابعة الحالة من بوابة العميل' : 'TRACK CASE IN CLIENT PORTAL';
+      $('#success-state').appendChild(portal);
+    }
     $('#success-state').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
