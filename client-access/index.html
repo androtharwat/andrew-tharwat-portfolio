@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#031018" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Andrew Tharwat Studio — Client Access</title>
+  <link rel="icon" href="/assets/favicon-official.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/client-access/access.css?v=1" />
+</head>
+<body>
+  <main class="access-shell">
+    <header class="access-header">
+      <a class="brand" href="/v9/"><img src="/assets/logo-mark-official.png" alt="" /><span><b>ANDREW THARWAT</b><small>STUDIO CLIENT ACCESS</small></span></a>
+      <a class="public-link" href="/v9/">PUBLIC STUDIO ↗</a>
+    </header>
+
+    <section id="auth-card" class="auth-card">
+      <p class="eyebrow">SECURE CLIENT ACCESS</p>
+      <h1>Follow your request.<br><span>Review your proposal.</span></h1>
+      <p class="lede">Use the same email you used when you submitted your project request. We’ll send a one-time login code.</p>
+      <label><span>EMAIL ADDRESS</span><input id="access-email" type="email" autocomplete="email" placeholder="name@company.com" /></label>
+      <button id="send-code" class="primary" type="button">SEND LOGIN CODE →</button>
+      <div id="otp-wrap" class="otp-wrap hidden">
+        <label><span>6-DIGIT LOGIN CODE</span><input id="access-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" /></label>
+        <button id="verify-code" class="primary" type="button">OPEN CLIENT ACCESS →</button>
+      </div>
+      <div id="auth-state" class="state">Only verified emails linked to a Studio request can continue.</div>
+    </section>
+
+    <section id="access-app" class="access-app hidden">
+      <div class="app-top">
+        <div><p class="eyebrow">CLIENT JOURNEY</p><h1 id="welcome-title">Welcome.</h1><p id="welcome-subtitle">Your Studio request and commercial status in one place.</p></div>
+        <div class="top-actions"><button id="refresh-access" type="button">REFRESH</button><button id="sign-out" type="button">SIGN OUT</button></div>
+      </div>
+
+      <section class="status-strip"><span></span><div><b id="journey-status">REQUEST RECEIVED</b><p id="journey-copy">Your request is inside Studio OS.</p></div></section>
+
+      <div class="grid">
+        <section class="panel">
+          <p class="eyebrow">PROJECT REQUEST</p>
+          <h2 id="lead-code">—</h2>
+          <div id="lead-details" class="details"></div>
+        </section>
+        <section class="panel action-panel">
+          <p class="eyebrow">CURRENT ACTION</p>
+          <h2 id="current-action">No action required</h2>
+          <p id="current-action-copy">The Studio is reviewing your request.</p>
+        </section>
+      </div>
+
+      <section id="proposal-panel" class="panel proposal-panel hidden">
+        <div class="panel-head"><div><p class="eyebrow">COMMERCIAL PROPOSAL</p><h2 id="proposal-title">Proposal</h2></div><span id="proposal-status" class="status-badge">SENT</span></div>
+        <div id="proposal-meta" class="proposal-meta"></div>
+        <div class="proposal-section"><span>SCOPE</span><p id="proposal-scope"></p></div>
+        <div class="proposal-section"><span>DELIVERABLES</span><ul id="proposal-deliverables"></ul></div>
+        <div class="proposal-section"><span>TERMS</span><p id="proposal-terms"></p></div>
+        <div id="proposal-actions" class="proposal-actions"></div>
+      </section>
+
+      <section id="deposit-panel" class="panel deposit-panel hidden">
+        <div class="panel-head"><div><p class="eyebrow">PROJECT DEPOSIT</p><h2>Activation Payment</h2></div><span id="deposit-status" class="status-badge">PENDING</span></div>
+        <div id="deposit-meta" class="proposal-meta"></div>
+        <p id="deposit-copy" class="deposit-copy"></p>
+      </section>
+
+      <section class="journey panel">
+        <p class="eyebrow">WHAT HAPPENS NEXT</p>
+        <div class="journey-steps"><div class="done"><b>01</b><span>Project Request</span></div><div id="step-proposal"><b>02</b><span>Proposal</span></div><div id="step-deposit"><b>03</b><span>Deposit</span></div><div id="step-project"><b>04</b><span>Client Portal</span></div></div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/client-access/access.js?v=1"></script>
+</body>
+</html>
