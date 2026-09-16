@@ -17,3 +17,12 @@
   document.addEventListener('click',e=>{const tab=e.target.closest('[data-project-tab="payments"]');if(tab)setTimeout(renderControl,100);const create=e.target.closest('#create-final-payment');if(create){e.preventDefault();void createFinal();return}const paid=e.target.closest('[data-mark-paid]');if(paid){e.preventDefault();e.stopImmediatePropagation();void markPaid(paid.dataset.markPaid).catch(err=>toast(err.message))}},true);
   window.addEventListener('hashchange',()=>setTimeout(renderControl,150));boot();
 })();
+
+(() => {
+  if(document.querySelector('script[data-studio-ux-live]')) return;
+  const s=document.createElement('script');
+  s.src='/admin/studio-v9-ux-live.js?v=1';
+  s.async=false;
+  s.dataset.studioUxLive='true';
+  document.head.appendChild(s);
+})();
