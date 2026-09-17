@@ -17,7 +17,8 @@
   // Keep only the final typography pass + V10 itself to avoid duplicate observers and DOM rewrites.
   addCss('/v9/v9-final.css?v=2');
   addCss('/v9/v9-home-v10.css?v=2');
-  addScript('/v9/v9-home-v10.js?v=2');
+  addCss('/v9/v9-home-v10-interactive.css?v=1');
+  addScript('/v9/v9-home-v10.js?v=3');
 
   function applyOfficialBrandAssets(){
     const logo=$('.site-header .brand img');
