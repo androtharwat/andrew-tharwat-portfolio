@@ -27,6 +27,14 @@
     document.body.appendChild(humanLayer);
   }
 
+  // Home refinement: keep each section focused on a distinct job and remove repeated messaging.
+  if(!document.querySelector('script[src*="v9-home-refine.js"]')){
+    const homeRefine=document.createElement('script');
+    homeRefine.src='/v9/v9-home-refine.js?v=1';
+    homeRefine.async=false;
+    document.body.appendChild(homeRefine);
+  }
+
   // Investigator's Eye fast-track entry: one clear HSE consultation first.
   if(!document.querySelector('link[href*="hse-consultation-entry.css"]')){
     const hseCss=document.createElement('link');
