@@ -867,7 +867,7 @@
       return val === true || (val !== false && val !== '');
     }).map(function (k) {
       const val = v.checklist[k];
-      return '<tr><th>' + esc(labelForKey(k)) + '</th><td>' + esc(val === true ? 'Yes' : val) + '</td></tr>';
+      return '<tr><th>' + esc(labelForKey(v.track, k)) + '</th><td>' + esc(val === true ? 'Yes' : val) + '</td></tr>';
     }).join('');
     const pricingRows = Object.keys(v.pricing || {}).filter(function (k) { return v.pricing[k] !== null && v.pricing[k] !== ''; }).map(function (k) {
       const pair = TRACKS[v.track].prices.find(function (x) { return x[0] === k; });
