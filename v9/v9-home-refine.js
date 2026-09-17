@@ -96,3 +96,15 @@
   new MutationObserver(()=>requestAnimationFrame(apply)).observe(document.getElementById('main-content')||document.body,{childList:true,subtree:true});
   apply();
 })();
+
+// V10 presentation layer — loaded after the stable V9 refinements so it can safely override them.
+(() => {
+  if(!document.querySelector('link[href*="v9-home-v10.css"]')){
+    const css=document.createElement('link');
+    css.rel='stylesheet';css.href='/v9/v9-home-v10.css?v=1';document.head.appendChild(css);
+  }
+  if(!document.querySelector('script[src*="v9-home-v10.js"]')){
+    const js=document.createElement('script');
+    js.src='/v9/v9-home-v10.js?v=1';js.async=false;document.body.appendChild(js);
+  }
+})();
