@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#04121c" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Field Sourcing — Andrew Tharwat Studio</title>
+  <link rel="icon" href="/assets/favicon-official.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/field-sourcing.css?v=1" />
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="gate" class="gate">
+    <div class="gate-card">
+      <img src="/assets/logo-mark-official.png" alt="" />
+      <p class="overline">ANDREW THARWAT STUDIO · FIELD OPERATIONS</p>
+      <h1>FIELD SOURCING.</h1>
+      <p id="gate-message" class="gate-copy">جاري التحقق من صلاحية الجهاز…</p>
+
+      <div id="field-device-start" class="gate-actions hidden">
+        <button id="trust-field-device" class="button primary" type="button">تفعيل هذا الجهاز للمهمات الميدانية</button>
+        <small>سيظهر كود مكوّن من 6 أرقام. يتم اعتماده مرة واحدة من مسؤول Studio OS.</small>
+      </div>
+
+      <div id="field-pairing-box" class="pairing-box hidden">
+        <span>FIELD DEVICE APPROVAL CODE</span>
+        <strong id="field-pairing-code">------</strong>
+        <p>أرسل هذا الكود لمسؤول Studio OS لاعتماد الموبايل. بعد الاعتماد ستفتح الأداة تلقائيًا.</p>
+        <div class="waiting"><i></i><b>في انتظار الاعتماد…</b></div>
+      </div>
+
+      <div class="gate-links">
+        <a href="/admin/studio-v9.html">Studio OS</a>
+        <a href="/v9/" target="_blank" rel="noopener">Public Website ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand-row">
+        <a href="/admin/studio-v9.html" class="brand">
+          <img src="/assets/logo-mark-official.png" alt="" />
+          <span><b>ANDREW THARWAT</b><small>FIELD SOURCING · STUDIO OS</small></span>
+        </a>
+        <div class="access-badge" id="access-badge">FIELD DEVICE</div>
+      </div>
+      <div class="title-row">
+        <div>
+          <p class="overline">PRODUCTION & SOURCING</p>
+          <h1>التنفيذ الميداني والتوريد</h1>
+          <p>سجّل الزيارة كاملة أثناء وجودك عند المورد — خامة، سعر، عينة، صور، وقرار المتابعة.</p>
+        </div>
+        <button id="new-visit-hero" class="button primary" type="button">+ زيارة جديدة</button>
+      </div>
+    </header>
+
+    <nav class="app-nav" aria-label="Field Sourcing Navigation">
+      <button class="active" type="button" data-view="dashboard">الرئيسية</button>
+      <button type="button" data-view="visit">زيارة جديدة</button>
+      <button type="button" data-view="visits">الزيارات</button>
+      <button type="button" data-view="compare">مقارنة</button>
+      <button type="button" data-view="suppliers">الموردون</button>
+      <button id="devices-nav" class="hidden" type="button" data-view="devices">أجهزة الفريق</button>
+    </nav>
+
+    <main class="workspace">
+      <section class="view active" data-view-panel="dashboard">
+        <div class="kpi-grid">
+          <article><span>الزيارات</span><strong id="kpi-visits">0</strong><small>كل الزيارات المسجلة</small></article>
+          <article><span>مكتملة</span><strong id="kpi-complete">0</strong><small>بيانات جاهزة للمقارنة</small></article>
+          <article><span>Shortlist</span><strong id="kpi-shortlist">0</strong><small>موردون مرشحون</small></article>
+          <article><span>الموردون</span><strong id="kpi-suppliers">0</strong><small>قاعدة الموردين</small></article>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div><p class="overline">LATEST FIELD WORK</p><h2>آخر الزيارات</h2></div>
+            <button class="text-button" type="button" data-go="visits">عرض الكل</button>
+          </div>
+          <div id="recent-visits" class="visit-list"></div>
+        </section>
+
+        <section class="panel field-rule">
+          <div><p class="overline">FIELD RULE</p><h2>ممنوع نرجع بسعر شفهي.</h2></div>
+          <p>كل مورد لازم يبقى عندنا له اسم + رقم + خامة + سعر + MOQ + مدة تنفيذ + عينة/صور + ملاحظات واضحة. لو البيانات ناقصة، الزيارة تفضل Draft.</p>
+        </section>
+      </section>
+
+      <section class="view" data-view-panel="visit">
+        <div class="view-head">
+          <div><p class="overline">NEW / EDIT VISIT</p><h2 id="visit-heading">زيارة مورد جديدة</h2><p>امشِ من فوق لتحت. الأداة تحفظ كل التفاصيل في سجل واحد.</p></div>
+          <div class="completion-box"><span>اكتمال البيانات</span><strong id="visit-progress">0%</strong><i><b id="visit-progress-bar"></b></i></div>
+        </div>
+
+        <form id="visit-form" class="visit-form">
+          <input type="hidden" id="visit-id" />
+
+          <section class="panel">
+            <div class="section-number">01</div>
+            <div class="section-copy"><p class="overline">MISSION</p><h3>أنت نازل تسأل عن إيه؟</h3></div>
+            <div class="track-grid" id="track-grid">
+              <label class="track-card selected"><input type="radio" name="track" value="do_story" checked /><b>DO STORY</b><small>طباعة · ورق · غلاف · تجليد · Packaging</small></label>
+              <label class="track-card"><input type="radio" name="track" value="string_art" /><b>STRING ART</b><small>خشب · Router · دهان · مسامير · خيط</small></label>
+              <label class="track-card"><input type="radio" name="track" value="opportunity" /><b>OPPORTUNITY</b><small>خامة أو خدمة أو مورد جديد يستحق التسجيل</small></label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-number">02</div>
+            <div class="section-copy"><p class="overline">SUPPLIER</p><h3>بيانات المورد</h3></div>
+            <div class="form-grid">
+              <label class="wide">مورد موجود
+                <select id="supplier-select"><option value="">+ مورد جديد</option></select>
+              </label>
+              <label>اسم المورد / الورشة / المطبعة<input id="supplier-name" required /></label>
+              <label>التخصص<select id="supplier-category">
+                <option value="printing">Printing</option>
+                <option value="router_cnc">Router / CNC</option>
+                <option value="wood">Wood</option>
+                <option value="paint_finishing">Paint / Finishing</option>
+                <option value="hardware">Hardware / Nails</option>
+                <option value="thread">Thread</option>
+                <option value="packaging">Packaging</option>
+                <option value="other">Other</option>
+              </select></label>
+              <label>اسم الشخص المسؤول<input id="supplier-contact" /></label>
+              <label>الموبايل<input id="supplier-phone" inputmode="tel" /></label>
+              <label>واتساب<input id="supplier-whatsapp" inputmode="tel" /></label>
+              <label>المكان / العنوان<input id="supplier-address" /></label>
+              <label class="wide">Facebook / Instagram / Website<input id="supplier-social" type="url" placeholder="https://..." /></label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-number">03</div>
+            <div class="section-copy"><p class="overline">FIELD CHECKLIST</p><h3 id="dynamic-title">DO STORY — Checklist المطبعة</h3></div>
+            <div id="checklist-root" class="checklist-root"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-number">04</div>
+            <div class="section-copy"><p class="overline">PRICE & DELIVERY</p><h3>الأسعار وشروط التنفيذ</h3></div>
+            <div id="pricing-root" class="pricing-grid"></div>
+            <div class="form-grid meta-grid">
+              <label>تكلفة الـSample<input id="sample-cost" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+              <label class="switch-label"><span>Sample متاح؟</span><input id="sample-available" type="checkbox" /></label>
+              <label>MOQ — أقل كمية<input id="moq" type="number" min="1" inputmode="numeric" /></label>
+              <label>مدة التنفيذ<input id="lead-time" placeholder="مثال: 3 أيام" /></label>
+              <label>صلاحية عرض السعر<input id="quote-valid-until" type="date" /></label>
+              <label>إجمالي تقديري<input id="quoted-total" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-number">05</div>
+            <div class="section-copy"><p class="overline">EVIDENCE</p><h3>صور وعينات من الزيارة</h3></div>
+            <label class="upload-zone" for="visit-files">
+              <b>+ أضف صور الخامات / العينات / عرض السعر</b>
+              <small>JPG, PNG, WEBP أو PDF — بحد أقصى 10MB للملف</small>
+              <input id="visit-files" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden />
+            </label>
+            <div id="pending-files" class="pending-files"></div>
+            <div id="existing-media" class="media-grid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-number">06</div>
+            <div class="section-copy"><p class="overline">FIELD JUDGEMENT</p><h3>تقييم الزيارة</h3></div>
+            <div class="rating-grid">
+              <label>جودة التنفيذ<select id="quality-rating"><option value="">—</option></select></label>
+              <label>السعر<select id="price-rating"><option value="">—</option></select></label>
+              <label>التعامل والالتزام<select id="service-rating"><option value="">—</option></select></label>
+            </div>
+            <div class="form-grid">
+              <label class="wide">ملاحظاتك<textarea id="visit-notes" rows="4" placeholder="إيه اللي عجبك؟ إيه اللي مقلقك؟ إيه اللي لازم نراجعه؟"></textarea></label>
+              <label class="wide">توصيتك<textarea id="recommendation" rows="3" placeholder="مثال: نطلب Sample أولًا / مناسب للكميات / السعر مرتفع لكن الفنش قوي"></textarea></label>
+            </div>
+          </section>
+
+          <div class="save-dock">
+            <button id="reset-visit" class="button secondary" type="button">تفريغ النموذج</button>
+            <button id="save-draft" class="button secondary" type="button">حفظ Draft</button>
+            <button id="save-complete" class="button primary" type="submit">إنهاء الزيارة ✓</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="view" data-view-panel="visits">
+        <div class="view-head">
+          <div><p class="overline">VISIT LOG</p><h2>سجل الزيارات</h2><p>كل زيارة محفوظة بمواصفاتها وصورها وأسعارها.</p></div>
+          <div class="filter-row">
+            <select id="visit-track-filter"><option value="all">كل المسارات</option><option value="do_story">DO STORY</option><option value="string_art">STRING ART</option><option value="opportunity">Opportunity</option></select>
+            <select id="visit-status-filter"><option value="all">كل الحالات</option><option value="draft">Draft</option><option value="complete">Complete</option><option value="shortlisted">Shortlisted</option><option value="rejected">Rejected</option></select>
+          </div>
+        </div>
+        <div id="visits-list" class="visit-list"></div>
+      </section>
+
+      <section class="view" data-view-panel="compare">
+        <div class="view-head">
+          <div><p class="overline">SUPPLIER COMPARISON</p><h2>قارن العروض بنفسك</h2><p>الأداة تعرض البيانات جنب بعض، والقرار يفضل عند الفريق بعد مراجعة الجودة والسعر.</p></div>
+          <select id="compare-track"><option value="do_story">DO STORY</option><option value="string_art">STRING ART</option><option value="opportunity">Opportunity</option></select>
+        </div>
+        <div class="compare-wrap"><table class="compare-table"><thead><tr><th>المورد</th><th>الحالة</th><th>الإجمالي</th><th>MOQ</th><th>التنفيذ</th><th>Sample</th><th>جودة</th><th>سعر</th><th>تعامل</th><th>التوصية</th></tr></thead><tbody id="compare-body"></tbody></table></div>
+      </section>
+
+      <section class="view" data-view-panel="suppliers">
+        <div class="view-head"><div><p class="overline">SUPPLIER BASE</p><h2>قاعدة الموردين</h2><p>بيانات المورد تتجمع تلقائيًا من الزيارات.</p></div></div>
+        <div id="suppliers-list" class="supplier-grid"></div>
+      </section>
+
+      <section class="view" data-view-panel="devices">
+        <div class="view-head"><div><p class="overline">FIELD ACCESS</p><h2>أجهزة الفريق الميداني</h2><p>اعتمد موبايل المسؤول الميداني أو أوقفه من هنا. الصلاحية تخص Field Sourcing فقط.</p></div></div>
+        <div id="devices-list" class="device-list"></div>
+      </section>
+
+      <footer><span>ANDREW THARWAT STUDIO · FIELD SOURCING</span><span id="sync-status">LIVE SUPABASE</span></footer>
+    </main>
+  </div>
+
+  <section id="print-report" class="print-report" aria-hidden="true"></section>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/admin/field-sourcing.js?v=1"></script>
+</body>
+</html>
