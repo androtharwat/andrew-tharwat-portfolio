@@ -1,0 +1,893 @@
+(() => {
+  const cfg = window.PORTFOLIO_CONFIG;
+  if (!cfg || !window.supabase) {
+    alert('Supabase configuration is missing.');
+    return;
+  }
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const PORTFOLIO_DEVICE_KEY = 'andrew_portfolio_device_v2';
+  const FIELD_DEVICE_KEY = 'ats_field_sourcing_device_v1';
+  const BUCKET = 'studio-sourcing';
+
+  const state = {
+    sb: null,
+    access: null,
+    device: null,
+    suppliers: [],
+    visits: [],
+    media: [],
+    devices: [],
+    track: 'do_story',
+    editingVisitId: null,
+    pendingFiles: []
+  };
+
+  const TRACKS = {
+    do_story: {
+      label: 'DO STORY',
+      title: 'DO STORY — Checklist المطبعة',
+      groups: [
+        {
+          title: 'الطباعة والملف',
+          items: [
+            { k: 'a5_full_color', t: 'check', l: 'A5 — Full Color — وجه وظهر' },
+            { k: 'print_method', t: 'select', l: 'طريقة الطباعة الأنسب', o: ['Digital', 'Offset', 'Other'] },
+            { k: 'sample_possible', t: 'check', l: 'يمكن عمل نسخة Sample قبل الكمية' },
+            { k: 'color_proof', t: 'check', l: 'يوجد Color Proof / تجربة ألوان' },
+            { k: 'cmyk', t: 'check', l: 'أكد أن الملفات المطلوبة CMYK' },
+            { k: 'file_format', t: 'text', l: 'صيغة الملف المطلوبة', p: 'PDF / PDF-X...' },
+            { k: 'bleed', t: 'text', l: 'Bleed المطلوب', p: 'مثال: 3 mm' },
+            { k: 'dpi', t: 'text', l: 'الدقة المطلوبة', p: 'مثال: 300 DPI' }
+          ]
+        },
+        {
+          title: 'الورق الداخلي',
+          items: [
+            { k: 'paper_type', t: 'select', l: 'الخامة', o: ['Couché Matte', 'Couché Glossy', 'Silk / Semi-Matte', 'Other'] },
+            { k: 'paper_gsm', t: 'select', l: 'الوزن', o: ['130 gsm', '150 gsm', '170 gsm', 'Other'] },
+            { k: 'paper_sample_seen', t: 'check', l: 'شفت عينة الورق بإيدك' },
+            { k: 'paper_recommendation', t: 'text', l: 'ترشيح المطبعة للخامة الأفضل', p: 'الخامة + السبب' }
+          ]
+        },
+        {
+          title: 'الغلاف والتجليد',
+          items: [
+            { k: 'cover_gsm', t: 'select', l: 'وزن الغلاف', o: ['250 gsm', '300 gsm', '350 gsm', 'Other'] },
+            { k: 'lamination', t: 'select', l: 'السلوفان', o: ['Matte', 'Gloss', 'None'] },
+            { k: 'binding', t: 'select', l: 'التجليد', o: ['Saddle Stitch', 'Perfect Binding', 'Thread Stitching', 'Hardcover', 'Other'] },
+            { k: 'premium_finish', t: 'text', l: 'تشطيب Premium متاح', p: 'Foil / Spot UV / Embossing...' },
+            { k: 'rounded_corners', t: 'check', l: 'Rounded Corners متاحة' },
+            { k: 'shrink_wrap', t: 'check', l: 'Shrink Wrap فردي متاح' }
+          ]
+        },
+        {
+          title: 'الجودة والتعامل',
+          items: [
+            { k: 'samples_photographed', t: 'check', l: 'صورت عينات الطباعة والتجليد' },
+            { k: 'written_quote', t: 'check', l: 'أخذت السعر مكتوب / رسالة واضحة' },
+            { k: 'bulk_discount', t: 'check', l: 'سألت عن خصم الكميات' },
+            { k: 'defect_policy', t: 'text', l: 'التعامل مع العيوب وإعادة الطباعة', p: 'اكتب سياسة المورد' },
+            { k: 'delivery', t: 'text', l: 'التوصيل وتكلفته', p: 'متاح؟ التكلفة؟' },
+            { k: 'payment_terms', t: 'text', l: 'شروط الدفع', p: 'مقدم / باقي / كاش...' }
+          ]
+        }
+      ],
+      prices: [
+        ['q1', 'نسخة واحدة'], ['q5', '5 نسخ'], ['q10', '10 نسخ'], ['q25', '25 نسخة'],
+        ['q50', '50 نسخة'], ['q100', '100 نسخة'], ['q250', '250 نسخة'], ['q500', '500 نسخة']
+      ]
+    },
+    string_art: {
+      label: 'STRING ART',
+      title: 'STRING ART — Checklist الورشة',
+      groups: [
+        {
+          title: 'الخشب والـCNC',
+          items: [
+            { k: 'wood_type', t: 'select', l: 'أفضل خامة', o: ['MDF', 'HDF', 'Plywood', 'Natural Wood', 'Other'] },
+            { k: 'wood_thickness', t: 'select', l: 'السمك المقترح', o: ['8 mm', '10 mm', '12 mm', '15 mm', '18 mm', 'Other'] },
+            { k: 'wood_sample_seen', t: 'check', l: 'شفت الخامة فعليًا' },
+            { k: 'router_clean_edge', t: 'check', l: 'حواف الـRouter / CNC نظيفة' },
+            { k: 'edge_finish', t: 'select', l: 'تشطيب الحواف', o: ['Straight', 'Rounded Edge', 'Chamfer', 'Other'] },
+            { k: 'pilot_holes', t: 'check', l: 'يمكن تحديد / فتح أماكن المسامير بالـCNC' },
+            { k: 'nail_count', t: 'text', l: 'عدد المسامير المقترح', p: '60 / 80 / 100...' }
+          ]
+        },
+        {
+          title: 'الدهان والفنش',
+          items: [
+            { k: 'surface_prep', t: 'text', l: 'تجهيز الخشب قبل الدهان', p: 'Sanding / Filler / Primer / Sealer' },
+            { k: 'paint_type', t: 'select', l: 'نوع الدهان', o: ['Automotive', 'PU', 'Lacquer', 'Spray', 'Oven / Premium Finish', 'Other'] },
+            { k: 'finish_level', t: 'select', l: 'الفنش', o: ['Matte', 'Satin', 'Gloss'] },
+            { k: 'paint_sample_seen', t: 'check', l: 'شفت عينة دهان حقيقية' },
+            { k: 'scratch_resistance', t: 'check', l: 'سألت عن مقاومة الخدش وثبات اللون' }
+          ]
+        },
+        {
+          title: 'المسامير والخيط والتعليق',
+          items: [
+            { k: 'nail_type', t: 'text', l: 'نوع / لون / مقاس المسمار', p: 'فضي / أسود / ذهبي + الطول' },
+            { k: 'rust_resistant', t: 'check', l: 'المسامير مقاومة للصدأ' },
+            { k: 'nail_caps', t: 'text', l: 'Nail Caps / أغطية المسامير', p: 'متاحة؟ السعر؟' },
+            { k: 'thread_type', t: 'text', l: 'نوع الخيط الأفضل', p: 'Cotton / Polyester / Embroidery...' },
+            { k: 'thread_quality', t: 'check', l: 'الخيط قوي وثابت اللون ولا يعمل وبر' },
+            { k: 'hanger', t: 'select', l: 'طريقة التعليق', o: ['Sawtooth', 'D-Ring', 'Hidden Hanger', 'Other'] },
+            { k: 'wall_protection', t: 'check', l: 'Felt / Rubber خلف اللوحة لحماية الحائط' }
+          ]
+        },
+        {
+          title: 'Packaging والتعامل',
+          items: [
+            { k: 'packaging', t: 'text', l: 'طريقة التغليف', p: 'Bubble / Foam / Carton / Custom Box' },
+            { k: 'nail_protection', t: 'check', l: 'التغليف يحمي المسامير والخيط أثناء الشحن' },
+            { k: 'written_quote', t: 'check', l: 'أخذت السعر مكتوب / رسالة واضحة' },
+            { k: 'bulk_discount', t: 'check', l: 'سألت عن خصم الكميات' },
+            { k: 'defect_policy', t: 'text', l: 'التعامل مع القطعة المعيبة', p: 'إعادة تنفيذ / إصلاح...' },
+            { k: 'delivery', t: 'text', l: 'التوصيل وتكلفته', p: 'متاح؟ التكلفة؟' }
+          ]
+        }
+      ],
+      prices: [
+        ['piece', 'قطعة واحدة'], ['q5', '5 قطع'], ['q10', '10 قطع'],
+        ['q25', '25 قطعة'], ['q50', '50 قطعة'], ['q100', '100 قطعة'],
+        ['size30', 'دائرة 30cm'], ['size40', 'دائرة 40cm']
+      ]
+    },
+    opportunity: {
+      label: 'OPPORTUNITY',
+      title: 'Opportunity Capture — اكتشاف جديد',
+      groups: [
+        {
+          title: 'الخدمة أو المنتج',
+          items: [
+            { k: 'opportunity_name', t: 'text', l: 'اسم الخدمة / المنتج', p: 'مثال: UV Printing on Wood' },
+            { k: 'opportunity_type', t: 'select', l: 'التصنيف', o: ['Printing', 'Laser', 'CNC', 'UV', 'Packaging', 'Acrylic', 'Wood', 'Gift Product', 'Other'] },
+            { k: 'customizable', t: 'check', l: 'يمكن تنفيذ Custom Design خاص بنا' },
+            { k: 'sample_seen', t: 'check', l: 'شفت Sample حقيقية' },
+            { k: 'files_required', t: 'text', l: 'صيغة الملفات المطلوبة', p: 'PDF / AI / SVG...' }
+          ]
+        },
+        {
+          title: 'القيمة للمشروع',
+          items: [
+            { k: 'use_case', t: 'text', l: 'إزاي ممكن تخدم DO أو String Art؟', p: 'اكتب الاستخدام الحقيقي' },
+            { k: 'quality_improvement', t: 'check', l: 'تحسن جودة المنتج' },
+            { k: 'cost_reduction', t: 'check', l: 'قد تقلل تكلفة التنفيذ' },
+            { k: 'new_product', t: 'check', l: 'تفتح منتج / Bundle جديد' },
+            { k: 'supplier_advice', t: 'text', l: 'إيه اللي المورد شايف إننا نغيره؟', p: 'نصيحته في الخامة أو التنفيذ' }
+          ]
+        },
+        {
+          title: 'التعامل التجاري',
+          items: [
+            { k: 'written_quote', t: 'check', l: 'أخذت السعر مكتوب' },
+            { k: 'bulk_discount', t: 'check', l: 'سألت عن سعر التعامل المستمر' },
+            { k: 'payment_terms', t: 'text', l: 'شروط الدفع', p: 'مقدم / باقي...' },
+            { k: 'delivery', t: 'text', l: 'التوصيل', p: 'المدة والتكلفة' },
+            { k: 'defect_policy', t: 'text', l: 'سياسة العيوب والاستبدال', p: 'اكتب التفاصيل' }
+          ]
+        }
+      ],
+      prices: [
+        ['sample', 'Sample'], ['piece', 'سعر القطعة'], ['q10', '10 قطع'],
+        ['q50', '50 قطعة'], ['q100', '100 قطعة'], ['other', 'عرض آخر']
+      ]
+    }
+  };
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function notify(message, type) {
+    const el = $('#toast');
+    el.textContent = message;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+    window.setTimeout(function () { el.className = 'toast'; }, 2800);
+  }
+
+  function money(v) {
+    if (v === null || v === undefined || v === '') return '—';
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toLocaleString('en-US') + ' EGP' : '—';
+  }
+
+  function localDate() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  function randomSecret() {
+    const a = new Uint8Array(32);
+    crypto.getRandomValues(a);
+    return btoa(String.fromCharCode.apply(null, a)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  function randomCode() {
+    const a = new Uint32Array(1);
+    crypto.getRandomValues(a);
+    return String(a[0] % 1000000).padStart(6, '0');
+  }
+
+  async function sha256hex(value) {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+    return Array.from(new Uint8Array(b)).map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  function makeAdminClient(device) {
+    return window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
+      global: { headers: { 'x-portfolio-device-id': device.id, 'x-portfolio-device-secret': device.secret } },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+  }
+
+  function makeFieldClient(device) {
+    return window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
+      global: { headers: { 'x-studio-sourcing-device-id': device.id, 'x-studio-sourcing-device-secret': device.secret } },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+  }
+
+  function readLocal(key) {
+    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_e) { return null; }
+  }
+
+  async function initAccess() {
+    const adminDevice = readLocal(PORTFOLIO_DEVICE_KEY);
+    if (adminDevice && adminDevice.id && adminDevice.secret) {
+      const client = makeAdminClient(adminDevice);
+      const check = await client.from('portfolio_trusted_devices').select('status').eq('device_id', adminDevice.id).maybeSingle();
+      if (!check.error && check.data && check.data.status === 'approved') {
+        state.access = 'admin';
+        state.device = adminDevice;
+        state.sb = client;
+        return enterApp();
+      }
+    }
+
+    const fieldDevice = readLocal(FIELD_DEVICE_KEY);
+    if (fieldDevice && fieldDevice.id && fieldDevice.secret) {
+      const client = makeFieldClient(fieldDevice);
+      const check = await client.from('studio_sourcing_devices').select('status,claim_code,label').eq('device_id', fieldDevice.id).maybeSingle();
+      if (!check.error && check.data) {
+        if (check.data.status === 'approved') {
+          state.access = 'field';
+          state.device = fieldDevice;
+          state.sb = client;
+          return enterApp();
+        }
+        if (check.data.status === 'pending') {
+          state.sb = client;
+          return showPending(check.data.claim_code || fieldDevice.code);
+        }
+      }
+      localStorage.removeItem(FIELD_DEVICE_KEY);
+    }
+
+    showFieldStart();
+  }
+
+  function showFieldStart() {
+    $('#gate-message').textContent = 'هذا الجهاز غير مفعّل بعد. أنشئ كود اعتماد للمهمات الميدانية فقط.';
+    $('#field-device-start').classList.remove('hidden');
+    $('#field-pairing-box').classList.add('hidden');
+  }
+
+  let pollTimer = null;
+  function showPending(code) {
+    $('#gate-message').textContent = 'تم إنشاء الجهاز. في انتظار اعتماد مسؤول Studio OS.';
+    $('#field-device-start').classList.add('hidden');
+    $('#field-pairing-box').classList.remove('hidden');
+    $('#field-pairing-code').textContent = code || '------';
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(async function () {
+      const device = readLocal(FIELD_DEVICE_KEY);
+      if (!device || !state.sb) return;
+      const r = await state.sb.from('studio_sourcing_devices').select('status').eq('device_id', device.id).maybeSingle();
+      if (!r.error && r.data && r.data.status === 'approved') {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        state.access = 'field';
+        state.device = device;
+        enterApp();
+      }
+    }, 3000);
+  }
+
+  $('#trust-field-device').addEventListener('click', async function () {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'جاري إنشاء الجهاز…';
+    try {
+      const device = { id: crypto.randomUUID(), secret: randomSecret(), code: randomCode() };
+      const client = makeFieldClient(device);
+      const secretHash = await sha256hex(device.secret);
+      const label = /Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Field mobile' : 'Field browser';
+      const r = await client.from('studio_sourcing_devices').insert({
+        device_id: device.id,
+        secret_hash: secretHash,
+        claim_code: device.code,
+        label: label,
+        status: 'pending'
+      });
+      if (r.error) throw r.error;
+      localStorage.setItem(FIELD_DEVICE_KEY, JSON.stringify(device));
+      state.sb = client;
+      showPending(device.code);
+    } catch (e) {
+      notify(e.message || 'تعذر إنشاء جهاز الميدان.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'تفعيل هذا الجهاز للمهمات الميدانية';
+    }
+  });
+
+  async function enterApp() {
+    $('#gate').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    $('#access-badge').textContent = state.access === 'admin' ? 'STUDIO ADMIN' : 'FIELD DEVICE';
+    $('#devices-nav').classList.toggle('hidden', state.access !== 'admin');
+    renderTrack();
+    buildRatingOptions();
+    await loadAll();
+  }
+
+  async function loadAll() {
+    $('#sync-status').textContent = 'SYNCING…';
+    const supplierReq = state.sb.from('studio_suppliers').select('*').order('name');
+    const visitReq = state.sb.from('studio_sourcing_visits').select('*').order('visit_date', { ascending: false }).order('created_at', { ascending: false });
+    const mediaReq = state.sb.from('studio_sourcing_media').select('*').order('created_at', { ascending: false });
+    const results = await Promise.all([supplierReq, visitReq, mediaReq]);
+    if (results[0].error || results[1].error || results[2].error) {
+      notify((results[0].error || results[1].error || results[2].error).message, 'error');
+      $('#sync-status').textContent = 'SYNC ERROR';
+      return;
+    }
+    state.suppliers = results[0].data || [];
+    state.visits = results[1].data || [];
+    state.media = results[2].data || [];
+    if (state.access === 'admin') await loadDevices();
+    renderEverything();
+    $('#sync-status').textContent = 'LIVE SUPABASE';
+  }
+
+  async function loadDevices() {
+    const r = await state.sb.from('studio_sourcing_devices').select('*').order('created_at', { ascending: false });
+    state.devices = r.error ? [] : (r.data || []);
+  }
+
+  function renderEverything() {
+    renderSupplierOptions();
+    renderDashboard();
+    renderVisits();
+    renderSuppliers();
+    renderCompare();
+    renderDevices();
+    updateProgress();
+  }
+
+  function go(view) {
+    $$('.app-nav button').forEach(function (b) { b.classList.toggle('active', b.dataset.view === view); });
+    $$('.view').forEach(function (p) { p.classList.toggle('active', p.dataset.viewPanel === view); });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  $$('.app-nav button').forEach(function (b) {
+    b.addEventListener('click', function () { go(b.dataset.view); });
+  });
+  document.addEventListener('click', function (e) {
+    const g = e.target.closest('[data-go]');
+    if (g) go(g.dataset.go);
+  });
+  $('#new-visit-hero').addEventListener('click', function () { resetVisit(); go('visit'); });
+
+  function renderTrack() {
+    const def = TRACKS[state.track];
+    $('#dynamic-title').textContent = def.title;
+    $$('.track-card').forEach(function (card) {
+      const input = $('input', card);
+      card.classList.toggle('selected', input && input.value === state.track);
+    });
+
+    $('#checklist-root').innerHTML = def.groups.map(function (group, gi) {
+      const items = group.items.map(function (item) {
+        if (item.t === 'check') {
+          return '<label class="check-field"><input type="checkbox" data-check="' + esc(item.k) + '" /><span>' + esc(item.l) + '</span></label>';
+        }
+        if (item.t === 'select') {
+          return '<label class="select-field"><span>' + esc(item.l) + '</span><select data-check="' + esc(item.k) + '"><option value="">— اختر —</option>' +
+            item.o.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') + '</select></label>';
+        }
+        return '<label class="text-field"><span>' + esc(item.l) + '</span><input data-check="' + esc(item.k) + '" placeholder="' + esc(item.p || '') + '" /></label>';
+      }).join('');
+      return '<section class="check-group"><div class="check-group-head"><b>' + esc(group.title) + '</b><span>' + String(gi + 1).padStart(2, '0') + '</span></div><div class="check-items">' + items + '</div></section>';
+    }).join('');
+
+    $('#pricing-root').innerHTML = def.prices.map(function (p) {
+      return '<label class="price-box"><span>' + esc(p[1]) + '</span><input type="number" min="0" step="0.01" inputmode="decimal" data-price="' + esc(p[0]) + '" placeholder="EGP" /></label>';
+    }).join('');
+
+    $('#checklist-root').addEventListener('input', updateProgress);
+    $('#checklist-root').addEventListener('change', updateProgress);
+    $('#pricing-root').addEventListener('input', updateProgress);
+  }
+
+  $$('input[name="track"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      state.track = r.value;
+      renderTrack();
+      updateProgress();
+    });
+  });
+
+  function collectChecklist() {
+    const out = {};
+    $$('[data-check]', $('#checklist-root')).forEach(function (el) {
+      out[el.dataset.check] = el.type === 'checkbox' ? el.checked : el.value.trim();
+    });
+    return out;
+  }
+
+  function fillChecklist(data) {
+    const obj = data || {};
+    $$('[data-check]', $('#checklist-root')).forEach(function (el) {
+      if (el.type === 'checkbox') el.checked = !!obj[el.dataset.check];
+      else el.value = obj[el.dataset.check] == null ? '' : obj[el.dataset.check];
+    });
+  }
+
+  function collectPricing() {
+    const out = {};
+    $$('[data-price]', $('#pricing-root')).forEach(function (el) {
+      out[el.dataset.price] = el.value === '' ? null : Number(el.value);
+    });
+    return out;
+  }
+
+  function fillPricing(data) {
+    const obj = data || {};
+    $$('[data-price]', $('#pricing-root')).forEach(function (el) {
+      const v = obj[el.dataset.price];
+      el.value = v === null || v === undefined ? '' : v;
+    });
+  }
+
+  function progressValue() {
+    const fixed = [
+      $('#supplier-name'), $('#supplier-phone'), $('#supplier-address'),
+      $('#lead-time'), $('#moq'), $('#quoted-total'), $('#visit-notes'), $('#recommendation')
+    ];
+    const dynamic = $$('[data-check], [data-price]', $('#visit-form'));
+    const fields = fixed.concat(dynamic);
+    if (!fields.length) return 0;
+    let done = 0;
+    fields.forEach(function (el) {
+      if (!el) return;
+      if (el.type === 'checkbox') { if (el.checked) done++; }
+      else if (String(el.value || '').trim() !== '') done++;
+    });
+    return Math.round((done / fields.length) * 100);
+  }
+
+  function updateProgress() {
+    const p = progressValue();
+    $('#visit-progress').textContent = p + '%';
+    $('#visit-progress-bar').style.width = p + '%';
+  }
+  $('#visit-form').addEventListener('input', updateProgress);
+  $('#visit-form').addEventListener('change', updateProgress);
+
+  function renderSupplierOptions() {
+    const sel = $('#supplier-select');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">+ مورد جديد</option>' + state.suppliers.map(function (s) {
+      return '<option value="' + esc(s.id) + '">' + esc(s.name) + '</option>';
+    }).join('');
+    if (state.suppliers.some(function (s) { return s.id === current; })) sel.value = current;
+  }
+
+  $('#supplier-select').addEventListener('change', function () {
+    const s = state.suppliers.find(function (x) { return x.id === $('#supplier-select').value; });
+    if (!s) {
+      clearSupplierFields();
+      return;
+    }
+    $('#supplier-name').value = s.name || '';
+    $('#supplier-category').value = s.primary_category || 'other';
+    $('#supplier-contact').value = s.contact_name || '';
+    $('#supplier-phone').value = s.phone || '';
+    $('#supplier-whatsapp').value = s.whatsapp || '';
+    $('#supplier-address').value = s.address || '';
+    $('#supplier-social').value = s.social_url || '';
+    updateProgress();
+  });
+
+  function clearSupplierFields() {
+    ['supplier-name','supplier-contact','supplier-phone','supplier-whatsapp','supplier-address','supplier-social'].forEach(function (id) { $('#' + id).value = ''; });
+    $('#supplier-category').value = state.track === 'do_story' ? 'printing' : (state.track === 'string_art' ? 'router_cnc' : 'other');
+  }
+
+  async function saveSupplier() {
+    const payload = {
+      name: $('#supplier-name').value.trim(),
+      primary_category: $('#supplier-category').value,
+      contact_name: $('#supplier-contact').value.trim(),
+      phone: $('#supplier-phone').value.trim(),
+      whatsapp: $('#supplier-whatsapp').value.trim(),
+      address: $('#supplier-address').value.trim(),
+      social_url: $('#supplier-social').value.trim(),
+      updated_at: new Date().toISOString()
+    };
+    if (!payload.name) throw new Error('اكتب اسم المورد أولًا.');
+    const existingId = $('#supplier-select').value;
+    if (existingId) {
+      const r = await state.sb.from('studio_suppliers').update(payload).eq('id', existingId).select().single();
+      if (r.error) throw r.error;
+      return r.data.id;
+    }
+    const r = await state.sb.from('studio_suppliers').insert(payload).select().single();
+    if (r.error) throw r.error;
+    return r.data.id;
+  }
+
+  function newVisitCode() {
+    const d = localDate().replace(/-/g, '').slice(2);
+    const a = new Uint32Array(1);
+    crypto.getRandomValues(a);
+    return 'SRC-' + d + '-' + String(a[0] % 10000).padStart(4, '0');
+  }
+
+  function numericOrNull(el) {
+    return el.value === '' ? null : Number(el.value);
+  }
+
+  async function saveVisit(status) {
+    const btns = $$('#save-draft,#save-complete');
+    btns.forEach(function (b) { b.disabled = true; });
+    try {
+      if (status === 'complete' && progressValue() < 55) {
+        throw new Error('البيانات لسه ناقصة. كمّل تفاصيل الزيارة أو احفظها Draft.');
+      }
+      const supplierId = await saveSupplier();
+      const payload = {
+        supplier_id: supplierId,
+        track: state.track,
+        status: status,
+        visit_date: localDate(),
+        checklist: collectChecklist(),
+        pricing: collectPricing(),
+        materials: {},
+        extra_data: {},
+        sample_available: $('#sample-available').checked,
+        sample_cost: numericOrNull($('#sample-cost')),
+        moq: numericOrNull($('#moq')),
+        lead_time: $('#lead-time').value.trim(),
+        quote_valid_until: $('#quote-valid-until').value || null,
+        quoted_total: numericOrNull($('#quoted-total')),
+        quality_rating: numericOrNull($('#quality-rating')),
+        price_rating: numericOrNull($('#price-rating')),
+        service_rating: numericOrNull($('#service-rating')),
+        recommendation: $('#recommendation').value.trim(),
+        notes: $('#visit-notes').value.trim(),
+        completed_at: status === 'complete' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      };
+
+      let visit;
+      if (state.editingVisitId) {
+        const r = await state.sb.from('studio_sourcing_visits').update(payload).eq('id', state.editingVisitId).select().single();
+        if (r.error) throw r.error;
+        visit = r.data;
+      } else {
+        payload.visit_code = newVisitCode();
+        const r = await state.sb.from('studio_sourcing_visits').insert(payload).select().single();
+        if (r.error) throw r.error;
+        visit = r.data;
+        state.editingVisitId = visit.id;
+      }
+
+      if (state.pendingFiles.length) await uploadFiles(visit.id);
+      notify(status === 'complete' ? 'تم تسجيل الزيارة كاملة ✓' : 'تم حفظ الزيارة كـ Draft.');
+      await loadAll();
+      resetVisit();
+      go('visits');
+    } catch (e) {
+      notify(e.message || 'تعذر حفظ الزيارة.', 'error');
+    } finally {
+      btns.forEach(function (b) { b.disabled = false; });
+    }
+  }
+
+  $('#visit-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    saveVisit('complete');
+  });
+  $('#save-draft').addEventListener('click', function () { saveVisit('draft'); });
+  $('#reset-visit').addEventListener('click', resetVisit);
+
+  $('#visit-files').addEventListener('change', function (e) {
+    state.pendingFiles = Array.from(e.target.files || []);
+    renderPendingFiles();
+  });
+
+  function renderPendingFiles() {
+    $('#pending-files').innerHTML = state.pendingFiles.map(function (f) {
+      return '<span class="pending-file">' + esc(f.name) + ' · ' + Math.round(f.size / 1024) + ' KB</span>';
+    }).join('');
+  }
+
+  function safeFileName(name) {
+    return String(name || 'file').toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-');
+  }
+
+  async function uploadFiles(visitId) {
+    let order = state.media.filter(function (m) { return m.visit_id === visitId; }).length * 10;
+    for (let i = 0; i < state.pendingFiles.length; i++) {
+      const file = state.pendingFiles[i];
+      const path = visitId + '/' + Date.now() + '-' + i + '-' + safeFileName(file.name);
+      const up = await state.sb.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type });
+      if (up.error) throw up.error;
+      const ins = await state.sb.from('studio_sourcing_media').insert({
+        visit_id: visitId,
+        storage_path: path,
+        file_name: file.name,
+        mime_type: file.type || '',
+        label: '',
+        sort_order: order
+      });
+      if (ins.error) throw ins.error;
+      order += 10;
+    }
+    state.pendingFiles = [];
+    $('#visit-files').value = '';
+    renderPendingFiles();
+  }
+
+  async function renderExistingMedia(visitId) {
+    const root = $('#existing-media');
+    const rows = state.media.filter(function (m) { return m.visit_id === visitId; });
+    if (!rows.length) {
+      root.innerHTML = '';
+      return;
+    }
+    root.innerHTML = rows.map(function (m) {
+      return '<article class="media-card" data-media="' + esc(m.id) + '"><div class="pdf-card">LOADING…</div><button type="button" data-delete-media="' + esc(m.id) + '">×</button></article>';
+    }).join('');
+    for (const m of rows) {
+      const signed = await state.sb.storage.from(BUCKET).createSignedUrl(m.storage_path, 3600);
+      const card = root.querySelector('[data-media="' + CSS.escape(m.id) + '"]');
+      if (!card) continue;
+      const url = signed.error ? '' : signed.data.signedUrl;
+      const body = m.mime_type && m.mime_type.indexOf('image/') === 0
+        ? '<a href="' + esc(url) + '" target="_blank" rel="noopener"><img src="' + esc(url) + '" alt="' + esc(m.file_name) + '" /></a>'
+        : '<a class="pdf-card" href="' + esc(url) + '" target="_blank" rel="noopener">PDF / FILE</a>';
+      card.innerHTML = body + '<button type="button" data-delete-media="' + esc(m.id) + '">×</button>';
+    }
+  }
+
+  $('#existing-media').addEventListener('click', async function (e) {
+    const btn = e.target.closest('[data-delete-media]');
+    if (!btn) return;
+    const m = state.media.find(function (x) { return x.id === btn.dataset.deleteMedia; });
+    if (!m) return;
+    if (!confirm('حذف الملف من الزيارة؟')) return;
+    const sr = await state.sb.storage.from(BUCKET).remove([m.storage_path]);
+    if (sr.error) return notify(sr.error.message, 'error');
+    const dr = await state.sb.from('studio_sourcing_media').delete().eq('id', m.id);
+    if (dr.error) return notify(dr.error.message, 'error');
+    await loadAll();
+    renderExistingMedia(state.editingVisitId);
+  });
+
+  function buildRatingOptions() {
+    ['quality-rating','price-rating','service-rating'].forEach(function (id) {
+      const el = $('#' + id);
+      el.innerHTML = '<option value="">—</option>';
+      for (let i = 1; i <= 10; i++) el.insertAdjacentHTML('beforeend', '<option value="' + i + '">' + i + ' / 10</option>');
+    });
+  }
+
+  function resetVisit() {
+    state.editingVisitId = null;
+    state.track = 'do_story';
+    $('#visit-id').value = '';
+    $('#visit-heading').textContent = 'زيارة مورد جديدة';
+    $('#visit-form').reset();
+    $('input[name="track"][value="do_story"]').checked = true;
+    $('#supplier-select').value = '';
+    clearSupplierFields();
+    state.pendingFiles = [];
+    renderPendingFiles();
+    $('#existing-media').innerHTML = '';
+    renderTrack();
+    updateProgress();
+  }
+
+  function editVisit(id) {
+    const v = state.visits.find(function (x) { return x.id === id; });
+    if (!v) return;
+    state.editingVisitId = v.id;
+    state.track = v.track;
+    $('#visit-id').value = v.id;
+    $('#visit-heading').textContent = 'تعديل ' + v.visit_code;
+    $('input[name="track"][value="' + v.track + '"]').checked = true;
+    renderTrack();
+    $('#supplier-select').value = v.supplier_id || '';
+    $('#supplier-select').dispatchEvent(new Event('change'));
+    fillChecklist(v.checklist || {});
+    fillPricing(v.pricing || {});
+    $('#sample-available').checked = !!v.sample_available;
+    $('#sample-cost').value = v.sample_cost == null ? '' : v.sample_cost;
+    $('#moq').value = v.moq == null ? '' : v.moq;
+    $('#lead-time').value = v.lead_time || '';
+    $('#quote-valid-until').value = v.quote_valid_until || '';
+    $('#quoted-total').value = v.quoted_total == null ? '' : v.quoted_total;
+    $('#quality-rating').value = v.quality_rating == null ? '' : v.quality_rating;
+    $('#price-rating').value = v.price_rating == null ? '' : v.price_rating;
+    $('#service-rating').value = v.service_rating == null ? '' : v.service_rating;
+    $('#visit-notes').value = v.notes || '';
+    $('#recommendation').value = v.recommendation || '';
+    renderExistingMedia(v.id);
+    updateProgress();
+    go('visit');
+  }
+
+  function supplierFor(id) {
+    return state.suppliers.find(function (s) { return s.id === id; }) || null;
+  }
+
+  function trackLabel(track) {
+    return TRACKS[track] ? TRACKS[track].label : track;
+  }
+
+  function statusLabel(status) {
+    return { draft: 'DRAFT', complete: 'COMPLETE', shortlisted: 'SHORTLIST', rejected: 'REJECTED' }[status] || status;
+  }
+
+  function visitCard(v) {
+    const s = supplierFor(v.supplier_id);
+    return '<article class="visit-card">' +
+      '<div class="visit-main"><b>' + esc(s ? s.name : 'مورد غير محدد') + '</b><small>' + esc(v.visit_code) + ' · ' + esc(trackLabel(v.track)) + ' · ' + esc(v.visit_date) + '</small></div>' +
+      '<div class="visit-meta"><span>الإجمالي</span><strong>' + esc(money(v.quoted_total)) + '</strong></div>' +
+      '<div class="visit-meta"><span>الحالة</span><strong><span class="status-pill status-' + esc(v.status) + '">' + esc(statusLabel(v.status)) + '</span></strong></div>' +
+      '<div class="visit-actions">' +
+        '<button class="mini-btn" type="button" data-edit-visit="' + esc(v.id) + '">تعديل</button>' +
+        '<button class="mini-btn" type="button" data-print-visit="' + esc(v.id) + '">تقرير</button>' +
+        (v.status !== 'shortlisted' ? '<button class="mini-btn" type="button" data-visit-status="shortlisted" data-visit-id="' + esc(v.id) + '">Shortlist</button>' : '') +
+        (v.status !== 'rejected' ? '<button class="mini-btn" type="button" data-visit-status="rejected" data-visit-id="' + esc(v.id) + '">Reject</button>' : '') +
+      '</div></article>';
+  }
+
+  function renderDashboard() {
+    $('#kpi-visits').textContent = state.visits.length;
+    $('#kpi-complete').textContent = state.visits.filter(function (v) { return v.status === 'complete' || v.status === 'shortlisted'; }).length;
+    $('#kpi-shortlist').textContent = state.visits.filter(function (v) { return v.status === 'shortlisted'; }).length;
+    $('#kpi-suppliers').textContent = state.suppliers.length;
+    $('#recent-visits').innerHTML = state.visits.length ? state.visits.slice(0, 5).map(visitCard).join('') : '<div class="empty">لسه مفيش زيارات. ابدأ بأول مورد.</div>';
+  }
+
+  function renderVisits() {
+    const track = $('#visit-track-filter').value;
+    const status = $('#visit-status-filter').value;
+    const rows = state.visits.filter(function (v) {
+      return (track === 'all' || v.track === track) && (status === 'all' || v.status === status);
+    });
+    $('#visits-list').innerHTML = rows.length ? rows.map(visitCard).join('') : '<div class="empty">لا توجد زيارات مطابقة للفلاتر.</div>';
+  }
+  $('#visit-track-filter').addEventListener('change', renderVisits);
+  $('#visit-status-filter').addEventListener('change', renderVisits);
+
+  document.addEventListener('click', async function (e) {
+    const edit = e.target.closest('[data-edit-visit]');
+    if (edit) return editVisit(edit.dataset.editVisit);
+
+    const print = e.target.closest('[data-print-visit]');
+    if (print) return printVisit(print.dataset.printVisit);
+
+    const statusBtn = e.target.closest('[data-visit-status]');
+    if (statusBtn) {
+      const next = statusBtn.dataset.visitStatus;
+      const id = statusBtn.dataset.visitId;
+      const r = await state.sb.from('studio_sourcing_visits').update({ status: next, updated_at: new Date().toISOString() }).eq('id', id);
+      if (r.error) return notify(r.error.message, 'error');
+      notify(next === 'shortlisted' ? 'تمت إضافة المورد للـShortlist.' : 'تم استبعاد الزيارة.');
+      await loadAll();
+    }
+  });
+
+  function renderSuppliers() {
+    const counts = {};
+    state.visits.forEach(function (v) { counts[v.supplier_id] = (counts[v.supplier_id] || 0) + 1; });
+    $('#suppliers-list').innerHTML = state.suppliers.length ? state.suppliers.map(function (s) {
+      return '<article class="supplier-card"><span class="supplier-type">' + esc(s.primary_category) + '</span><h3>' + esc(s.name) + '</h3>' +
+        '<p>' + esc(s.contact_name || '—') + '</p><p>' + esc(s.phone || s.whatsapp || '—') + '</p><p>' + esc(s.address || '—') + '</p>' +
+        '<div class="supplier-stats"><span>VISITS<b>' + (counts[s.id] || 0) + '</b></span><span>STATUS<b>' + (s.is_active ? 'ACTIVE' : 'OFF') + '</b></span></div></article>';
+    }).join('') : '<div class="empty">قاعدة الموردين فارغة.</div>';
+  }
+
+  function renderCompare() {
+    const track = $('#compare-track').value;
+    const rows = state.visits.filter(function (v) { return v.track === track; });
+    $('#compare-body').innerHTML = rows.length ? rows.map(function (v) {
+      const s = supplierFor(v.supplier_id);
+      return '<tr><td>' + esc(s ? s.name : '—') + '</td><td>' + esc(statusLabel(v.status)) + '</td><td>' + esc(money(v.quoted_total)) + '</td><td>' +
+        esc(v.moq == null ? '—' : v.moq) + '</td><td>' + esc(v.lead_time || '—') + '</td><td>' + (v.sample_available ? 'Yes' : 'No') + '</td><td>' +
+        esc(v.quality_rating == null ? '—' : v.quality_rating + '/10') + '</td><td>' + esc(v.price_rating == null ? '—' : v.price_rating + '/10') + '</td><td>' +
+        esc(v.service_rating == null ? '—' : v.service_rating + '/10') + '</td><td>' + esc(v.recommendation || '—') + '</td></tr>';
+    }).join('') : '<tr><td colspan="10">لا توجد زيارات في هذا المسار بعد.</td></tr>';
+  }
+  $('#compare-track').addEventListener('change', renderCompare);
+
+  function renderDevices() {
+    if (state.access !== 'admin') return;
+    $('#devices-list').innerHTML = state.devices.length ? state.devices.map(function (d) {
+      return '<article class="device-card"><div><b>' + esc(d.label || 'Field device') + ' · <span class="' + esc(d.status) + '">' + esc(d.status.toUpperCase()) +
+        '</span></b><small>Code ' + esc(d.claim_code) + ' · Created ' + esc(String(d.created_at || '').slice(0, 16).replace('T', ' ')) + '</small></div>' +
+        '<div class="device-card-actions">' +
+        (d.status !== 'approved' ? '<button class="mini-btn" type="button" data-device-action="approved" data-device-id="' + esc(d.device_id) + '">Approve</button>' : '') +
+        (d.status !== 'revoked' ? '<button class="mini-btn" type="button" data-device-action="revoked" data-device-id="' + esc(d.device_id) + '">Revoke</button>' : '') +
+        '</div></article>';
+    }).join('') : '<div class="empty">لا توجد أجهزة ميدانية.</div>';
+  }
+
+  $('#devices-list').addEventListener('click', async function (e) {
+    const btn = e.target.closest('[data-device-action]');
+    if (!btn || state.access !== 'admin') return;
+    const status = btn.dataset.deviceAction;
+    const patch = { status: status, approved_at: status === 'approved' ? new Date().toISOString() : null };
+    const r = await state.sb.from('studio_sourcing_devices').update(patch).eq('device_id', btn.dataset.deviceId);
+    if (r.error) return notify(r.error.message, 'error');
+    notify(status === 'approved' ? 'تم اعتماد جهاز الفريق.' : 'تم إيقاف الجهاز.');
+    await loadDevices();
+    renderDevices();
+  });
+
+  function labelForKey(key) {
+    const groups = TRACKS[state.track] ? TRACKS[state.track].groups : [];
+    for (const g of groups) {
+      for (const item of g.items) if (item.k === key) return item.l;
+    }
+    return key;
+  }
+
+  function printVisit(id) {
+    const v = state.visits.find(function (x) { return x.id === id; });
+    if (!v) return;
+    const s = supplierFor(v.supplier_id);
+    state.track = v.track;
+    const checklistRows = Object.keys(v.checklist || {}).filter(function (k) {
+      const val = v.checklist[k];
+      return val === true || (val !== false && val !== '');
+    }).map(function (k) {
+      const val = v.checklist[k];
+      return '<tr><th>' + esc(labelForKey(k)) + '</th><td>' + esc(val === true ? 'Yes' : val) + '</td></tr>';
+    }).join('');
+    const pricingRows = Object.keys(v.pricing || {}).filter(function (k) { return v.pricing[k] !== null && v.pricing[k] !== ''; }).map(function (k) {
+      const pair = TRACKS[v.track].prices.find(function (x) { return x[0] === k; });
+      return '<tr><th>' + esc(pair ? pair[1] : k) + '</th><td>' + esc(money(v.pricing[k])) + '</td></tr>';
+    }).join('');
+    $('#print-report').innerHTML =
+      '<h1>Field Sourcing Visit — ' + esc(v.visit_code) + '</h1>' +
+      '<div class="print-meta"><div><b>Supplier:</b> ' + esc(s ? s.name : '—') + '</div><div><b>Track:</b> ' + esc(trackLabel(v.track)) + '</div>' +
+      '<div><b>Date:</b> ' + esc(v.visit_date) + '</div><div><b>Status:</b> ' + esc(statusLabel(v.status)) + '</div>' +
+      '<div><b>Phone:</b> ' + esc(s ? s.phone : '—') + '</div><div><b>Address:</b> ' + esc(s ? s.address : '—') + '</div></div>' +
+      '<h2>Checklist</h2><table>' + (checklistRows || '<tr><td>No checklist data</td></tr>') + '</table>' +
+      '<h2>Pricing</h2><table>' + (pricingRows || '<tr><td>No pricing data</td></tr>') + '</table>' +
+      '<h2>Commercial</h2><table><tr><th>Sample</th><td>' + (v.sample_available ? 'Available' : 'No') + '</td></tr><tr><th>Sample cost</th><td>' +
+      esc(money(v.sample_cost)) + '</td></tr><tr><th>MOQ</th><td>' + esc(v.moq == null ? '—' : v.moq) + '</td></tr><tr><th>Lead time</th><td>' +
+      esc(v.lead_time || '—') + '</td></tr><tr><th>Quoted total</th><td>' + esc(money(v.quoted_total)) + '</td></tr></table>' +
+      '<h2>Field Evaluation</h2><p><b>Quality:</b> ' + esc(v.quality_rating == null ? '—' : v.quality_rating + '/10') + ' · <b>Price:</b> ' +
+      esc(v.price_rating == null ? '—' : v.price_rating + '/10') + ' · <b>Service:</b> ' + esc(v.service_rating == null ? '—' : v.service_rating + '/10') +
+      '</p><p><b>Recommendation:</b> ' + esc(v.recommendation || '—') + '</p><p><b>Notes:</b> ' + esc(v.notes || '—') + '</p>';
+    window.print();
+  }
+
+  initAccess();
+})();
