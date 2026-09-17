@@ -6,6 +6,7 @@
 .v10-service:hover::after,.v10-service:focus-visible::after,.v10-service.is-open::after{color:#ff5a6d;transform:translate(1px,-1px)}
 body[data-lang=ar] .v10-service::after{right:auto;left:11px;transform:scaleX(-1)}
 body[data-lang=ar] .v10-service:hover::after,body[data-lang=ar] .v10-service:focus-visible::after,body[data-lang=ar] .v10-service.is-open::after{transform:scaleX(-1) translate(1px,-1px)}
+.v10-swipe-hint{display:none}
 
 /* Cleaner tablet rhythm */
 @media (min-width:761px) and (max-width:1180px){
@@ -28,6 +29,9 @@ body[data-lang=ar] .v10-service:hover::after,body[data-lang=ar] .v10-service:foc
   body.v10-home .hero-visual{bottom:158px;height:286px}
   body.v10-home .hero-visual>img,body.v10-home .hero-visual:after{height:286px;width:80%;right:-15%;border-radius:18px 0 0 18px}
   body[data-lang=ar].v10-home .hero-visual>img,body[data-lang=ar].v10-home .hero-visual:after{right:auto;left:-15%;border-radius:0 18px 18px 0}
+
+  .v10-swipe-hint{display:block;position:absolute;z-index:9;left:18px;right:18px;bottom:171px;color:#6f8794;font-size:7px;letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
+  body[data-lang=ar] .v10-swipe-hint{text-align:right;letter-spacing:0;text-transform:none;font-size:9px}
 
   .v10-service-rail{
     left:0;right:0;bottom:58px;
