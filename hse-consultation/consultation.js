@@ -2,8 +2,27 @@
   const cfg = window.PORTFOLIO_CONFIG;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const LANG_KEY='andrew_v9_public_lang';
+  const PORTFOLIO_LANG_KEY='andrew_portfolio_lang';
   let lang = 'en';
+  let lastResult = null;
   const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+
+  const hazardLabels={
+    '':{en:'Choose the closest match',ar:'اختار أقرب نوع للمشكلة'},
+    'NOI|Noise Exposure':{en:'Noise Exposure',ar:'التعرض للضوضاء'},
+    'HEAT|Heat Stress':{en:'Heat Stress',ar:'الإجهاد الحراري'},
+    'LIGHT|Lighting':{en:'Lighting',ar:'الإضاءة'},
+    'VIB|Vibration':{en:'Vibration',ar:'الاهتزازات'},
+    'RAD|Radiation':{en:'Radiation',ar:'الإشعاع'},
+    'PRESS|Pressure Systems':{en:'Pressure Systems',ar:'أنظمة الضغط'},
+    'CHEM|Chemical Exposure':{en:'Chemical Exposure',ar:'التعرض للمواد الكيميائية'},
+    'ELEC|Electrical Safety':{en:'Electrical Safety',ar:'السلامة الكهربائية'},
+    'MACH|Machinery Safety':{en:'Machinery Safety',ar:'سلامة الآلات'},
+    'WAH|Work at Height':{en:'Work at Height',ar:'العمل على ارتفاع'},
+    'FIRE|Fire Safety':{en:'Fire Safety',ar:'السلامة من الحريق'},
+    'GEN|General HSE / Not Sure':{en:'General HSE / Not Sure',ar:'HSE عام / غير متأكد'}
+  };
 
   function toast(message) {
     const el = $('#toast'); if (!el) return;
@@ -11,7 +30,70 @@
     clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove('show'), 2400);
   }
 
-  function applyLang(next) {
+  function persistLanguage(){
+    try{localStorage.setItem(LANG_KEY,lang);localStorage.setItem(PORTFOLIO_LANG_KEY,lang)}catch(_e){}
+  }
+
+  function localizeProcess(){
+    const cards=$$('.process article');
+    const copy=lang==='ar'?[ 
+      ['01','احكِ لنا الحالة','وصف بسيط للمشكلة كفاية. مش محتاج تختار تقرير أو خدمة من الأول.'],
+      ['02','احجز الاستشارة بـ 75 دولار','بعد فتح الحالة، تكمل خطوة دفع واحدة فقط لما رابط الحجز يكون جاهز.'],
+      ['03','استلم التوصية المهنية','بعد الاستشارة نوضح الفجوات والخطوة المناسبة، وأي خدمة إضافية تتسعر منفصلة فقط لو احتجتها.']
+    ]:[
+      ['01','DESCRIBE THE CASE','A simple description is enough. You do not need to choose a report or service first.'],
+      ['02','BOOK THE $75 CONSULTATION','After the case is opened, complete one payment step when the booking link is ready.'],
+      ['03','GET THE PROFESSIONAL RECOMMENDATION','After the consultation, you get the recommended next step. Any extra service is quoted separately only if needed.']
+    ];
+    cards.forEach((card,i)=>{
+      if(i>=3){card.hidden=true;return}
+      card.hidden=false;
+      const c=copy[i];
+      card.querySelector('span').textContent=c[0];
+      card.querySelector('b').textContent=c[1];
+      card.querySelector('p').textContent=c[2];
+    });
+  }
+
+  function localizeHazards(){
+    const select=$('#hazard');if(!select)return;
+    [...select.options].forEach(option=>{
+      const item=hazardLabels[option.value];
+      if(item)option.textContent=item[lang];
+    });
+  }
+
+  function renderSuccess(){
+    if(!lastResult)return;
+    const data=lastResult;
+    const caseCode = data?.case_code || data?.lead_code || '';
+    const fee = Number(data?.consultation_fee_usd || 75).toFixed(0);
+    $('#success-copy').textContent = lang === 'ar'
+      ? `تم فتح حالتك ${caseCode}. بيانات المشكلة محفوظة بالفعل، ومش هتحتاج تكتبها مرة تانية.`
+      : `Your case ${caseCode} is open. Your problem details are already saved, so you will not need to enter them again.`;
+
+    const nextBox = $('#success-state .next-box');
+    if (data?.checkout_url) {
+      nextBox.innerHTML = lang === 'ar'
+        ? `<b>الخطوة المطلوبة الآن</b><p>إتمام حجز الاستشارة بقيمة $${fee}. لا توجد أي خدمات إضافية مضافة.</p><a class="home-link" href="${data.checkout_url}" target="_blank" rel="noopener">ادفع $${fee} واحجز الاستشارة ←</a>`
+        : `<b>YOUR NEXT STEP</b><p>Complete the $${fee} consultation booking. No additional service has been added.</p><a class="home-link" href="${data.checkout_url}" target="_blank" rel="noopener">PAY $${fee} & BOOK CONSULTATION →</a>`;
+    } else {
+      nextBox.innerHTML = lang === 'ar'
+        ? `<b>الحالة اتفتحت بنجاح</b><p>رابط دفع الاستشارة بقيمة $${fee} لسه قيد التجهيز. مش مطلوب منك أي إجراء إضافي حاليًا؛ الاستوديو هيشارك معاك خطوة الدفع على وسيلة التواصل المسجلة.</p>`
+        : `<b>YOUR CASE IS OPEN</b><p>The $${fee} consultation payment link is still being prepared. Nothing else is required from you right now; the studio will share the payment step using the contact details you submitted.</p>`;
+    }
+    let portal=$('#success-state [data-client-portal-link]');
+    if (!portal) {
+      portal = document.createElement('a');
+      portal.href = '/client-v9/#hse';
+      portal.className = 'home-link';
+      portal.dataset.clientPortalLink = '1';
+      $('#success-state').appendChild(portal);
+    }
+    portal.textContent = lang === 'ar' ? 'متابعة الحالة من بوابة العميل' : 'TRACK CASE IN CLIENT PORTAL';
+  }
+
+  function applyLang(next,save=true) {
     lang = next;
     document.documentElement.lang = next;
     document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
@@ -19,7 +101,13 @@
     $$('[data-en]').forEach(el => { const value = el.dataset[next]; if (value !== undefined) el.textContent = value; });
     $$('[data-en-html]').forEach(el => { const value = el.dataset[`${next}Html`]; if (value !== undefined) el.innerHTML = value; });
     $$('[data-en-placeholder]').forEach(el => { const value = el.dataset[`${next}Placeholder`]; if (value !== undefined) el.placeholder = value; });
-    $('#lang-toggle').textContent = next === 'en' ? 'EN | عربي' : 'العربية | EN';
+    $('#lang-toggle').textContent = next === 'en' ? 'EN | عربي' : 'English | AR';
+    $('.client-link').textContent=next==='ar'?'عميل حالي ←':'EXISTING CLIENT →';
+    $('.brand small').textContent=next==='ar'?'استشارة HSE احترافية':'PROFESSIONAL HSE CONSULTATION';
+    localizeHazards();
+    localizeProcess();
+    renderSuccess();
+    if(save)persistLanguage();
   }
 
   $('#lang-toggle')?.addEventListener('click', () => applyLang(lang === 'en' ? 'ar' : 'en'));
@@ -27,7 +115,7 @@
   $('#consultation-form')?.addEventListener('submit', async event => {
     event.preventDefault();
     const selected = $('#hazard').value;
-    if (!selected) return toast(lang === 'ar' ? 'اختر نوع المشكلة أولًا' : 'Choose the issue first');
+    if (!selected) return toast(lang === 'ar' ? 'اختار نوع المشكلة أولًا' : 'Choose the issue first');
     const [hazardCode, hazardName] = selected.split('|');
     const payload = {
       p_full_name: $('#full-name').value.trim(),
@@ -48,34 +136,14 @@
       button.disabled = false; button.textContent = lang === 'ar' ? 'ابدأ طلب الاستشارة ←' : 'START MY CONSULTATION →';
       return;
     }
+    lastResult=data||{};
     $('#consultation-form').classList.add('hidden');
     $('#success-state').classList.remove('hidden');
-    const caseCode = data?.case_code || data?.lead_code || '';
-    const fee = Number(data?.consultation_fee_usd || 75).toFixed(0);
-    $('#success-copy').textContent = lang === 'ar'
-      ? `تم فتح حالتك ${caseCode}. بيانات المشكلة محفوظة بالفعل، ومش هتحتاج تكتبها مرة تانية.`
-      : `Your case ${caseCode} is open. Your problem details are already saved, so you will not need to enter them again.`;
-
-    const nextBox = $('#success-state .next-box');
-    if (data?.checkout_url) {
-      nextBox.innerHTML = lang === 'ar'
-        ? `<b>الخطوة الوحيدة المطلوبة الآن</b><p>إتمام حجز الاستشارة بقيمة $${fee}. لا توجد أي خدمات إضافية مضافة.</p><a class="home-link" href="${data.checkout_url}" target="_blank" rel="noopener">ادفع $${fee} واحجز الاستشارة ←</a>`
-        : `<b>YOUR ONLY NEXT STEP</b><p>Complete the $${fee} consultation booking. No additional service has been added.</p><a class="home-link" href="${data.checkout_url}" target="_blank" rel="noopener">PAY $${fee} & BOOK CONSULTATION →</a>`;
-    } else {
-      nextBox.innerHTML = lang === 'ar'
-        ? `<b>إيه الخطوة الجاية؟</b><p>هنرسل لك رابط الحجز/الدفع الآمن بقيمة $${fee} على البريد المسجل. لحد ما الرابط يوصل، مش مطلوب منك أي إجراء آخر.</p>`
-        : `<b>WHAT HAPPENS NEXT?</b><p>We’ll send the secure $${fee} booking/payment link to your email. Until that link is ready, nothing else is required from you.</p>`;
-    }
-    if (!$('#success-state [data-client-portal-link]')) {
-      const portal = document.createElement('a');
-      portal.href = '/client-v9/#hse';
-      portal.className = 'home-link';
-      portal.dataset.clientPortalLink = '1';
-      portal.textContent = lang === 'ar' ? 'متابعة الحالة من بوابة العميل' : 'TRACK CASE IN CLIENT PORTAL';
-      $('#success-state').appendChild(portal);
-    }
+    renderSuccess();
     $('#success-state').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
-  applyLang('en');
+  let saved='en';
+  try{saved=localStorage.getItem(LANG_KEY)||localStorage.getItem(PORTFOLIO_LANG_KEY)||'en'}catch(_e){}
+  applyLang(saved==='ar'?'ar':'en',false);
 })();
