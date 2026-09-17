@@ -1,4 +1,18 @@
 (() => {
+  // Work-section refinement lives in separate files so the core public renderer stays stable.
+  if(!document.querySelector('link[href*="v9-work-refine.css"]')){
+    const workCss=document.createElement('link');
+    workCss.rel='stylesheet';
+    workCss.href='/v9/v9-work-refine.css?v=1';
+    document.head.appendChild(workCss);
+  }
+  if(!document.querySelector('script[src*="v9-work-refine.js"]')){
+    const workJs=document.createElement('script');
+    workJs.src='/v9/v9-work-refine.js?v=1';
+    workJs.async=false;
+    document.body.appendChild(workJs);
+  }
+
   const findHseCard=()=>[...document.querySelectorAll('.discipline-grid article')].find(card=>(card.querySelector('h3')?.textContent||'').toUpperCase().includes('SAFETY'));
 
   function install(){
