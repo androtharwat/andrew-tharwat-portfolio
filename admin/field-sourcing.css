@@ -400,3 +400,16 @@ body.mission-focus-mode .guided-nav .button{font-size:16px}
   .mission-help-alert small,.mission-help-alert span{font-size:10px}
   .mission-help-alert .help-resolve{width:100%;min-height:42px}
 }
+
+.mission-help-response{display:grid;gap:5px;margin-top:9px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.025)}
+.mission-help-response b{font-size:12px}
+.mission-help-response span{font-size:13px;line-height:1.6;color:#c2d0d6}
+.mission-help-response small{font-size:10px;color:#728994}
+.mission-help-response.waiting{border-color:rgba(244,189,98,.24);background:rgba(244,189,98,.06)}
+.mission-help-response.waiting b{color:#f0c674}
+.mission-help-response.answered{border-color:rgba(86,211,155,.25);background:rgba(86,211,155,.06)}
+.mission-help-response.answered b{color:#8ee0b8}
+.help-response-context{margin-bottom:14px;padding:12px;border:1px solid rgba(239,35,60,.2);border-radius:11px;background:rgba(239,35,60,.05)}
+.help-response-context b{display:block;color:#ff8b94;font-size:12px}
+.help-response-context p{margin:7px 0;color:#fff;font-size:14px;line-height:1.65}
+.help-response-context small{color:#8298a2;font-size:11px}
