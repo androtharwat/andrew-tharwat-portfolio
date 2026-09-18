@@ -383,3 +383,20 @@ body.mission-focus-mode .guided-nav .button{font-size:16px}
   .mission-live-status small{font-size:9px!important}
   .mission-live-status b{font-size:12px!important}
 }
+
+.mission-help-button{margin-top:14px;width:100%;min-height:44px;border-color:rgba(244,189,98,.28);background:rgba(244,189,98,.07);color:#f1c978}
+.mission-help-button.requested{border-color:rgba(86,211,155,.25);background:rgba(86,211,155,.06);color:#91dfb7}
+.mission-help-alert{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin-top:10px;padding:11px;border:1px solid rgba(239,35,60,.3);border-radius:11px;background:rgba(239,35,60,.07)}
+.mission-help-alert div{min-width:0}
+.mission-help-alert span{display:block;color:#ff8b94;font-size:8px;font-family:Montserrat;font-weight:900;letter-spacing:.06em}
+.mission-help-alert b{display:block;margin:5px 0;color:#fff;font-size:10px;line-height:1.55}
+.mission-help-alert small{display:block;color:#8fa3ad;font-size:8px;line-height:1.5}
+.mission-card.needs-help{border-color:rgba(239,35,60,.32)}
+.help-resolve{border-color:rgba(86,211,155,.25)!important;color:#8ee0b8!important}
+.help-dialog textarea{font-size:15px;line-height:1.65}
+@media(max-width:700px){
+  .mission-help-alert{grid-template-columns:1fr}
+  .mission-help-alert b{font-size:13px}
+  .mission-help-alert small,.mission-help-alert span{font-size:10px}
+  .mission-help-alert .help-resolve{width:100%;min-height:42px}
+}
