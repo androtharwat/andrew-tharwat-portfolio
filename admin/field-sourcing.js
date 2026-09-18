@@ -18,6 +18,7 @@
     suppliers: [],
     visits: [],
     media: [],
+    missions: [],
     devices: [],
     track: 'do_story',
     editingVisitId: null,
@@ -375,6 +376,7 @@
     $('#app').classList.remove('hidden');
     $('#access-badge').textContent = state.access === 'admin' ? 'STUDIO ADMIN' : 'FIELD DEVICE';
     $('#devices-nav').classList.toggle('hidden', state.access !== 'admin');
+    $('#new-mission-button').classList.toggle('hidden', state.access !== 'admin');
     renderTrack();
     buildRatingOptions();
     await loadAll();
@@ -385,15 +387,17 @@
     const supplierReq = state.sb.from('studio_suppliers').select('*').order('name');
     const visitReq = state.sb.from('studio_sourcing_visits').select('*').order('visit_date', { ascending: false }).order('created_at', { ascending: false });
     const mediaReq = state.sb.from('studio_sourcing_media').select('*').order('created_at', { ascending: false });
-    const results = await Promise.all([supplierReq, visitReq, mediaReq]);
-    if (results[0].error || results[1].error || results[2].error) {
-      notify((results[0].error || results[1].error || results[2].error).message, 'error');
+    const missionReq = state.sb.from('studio_sourcing_missions').select('*').order('created_at', { ascending: false });
+    const results = await Promise.all([supplierReq, visitReq, mediaReq, missionReq]);
+    if (results[0].error || results[1].error || results[2].error || results[3].error) {
+      notify((results[0].error || results[1].error || results[2].error || results[3].error).message, 'error');
       $('#sync-status').textContent = 'SYNC ERROR';
       return;
     }
     state.suppliers = results[0].data || [];
     state.visits = results[1].data || [];
     state.media = results[2].data || [];
+    state.missions = results[3].data || [];
     if (state.access === 'admin') await loadDevices();
     renderEverything();
     $('#sync-status').textContent = 'LIVE SUPABASE';
@@ -406,7 +410,9 @@
 
   function renderEverything() {
     renderSupplierOptions();
+    renderMissionOptions();
     renderDashboard();
+    renderMissions();
     renderVisits();
     renderSuppliers();
     renderCompare();
@@ -502,10 +508,10 @@
 
   function progressValue() {
     const fixed = [
-      $('#supplier-name'), $('#supplier-phone'), $('#supplier-address'),
+      $('#field-owner'), $('#supplier-name'), $('#supplier-phone'), $('#supplier-address'),
       $('#lead-time'), $('#moq'), $('#quoted-total'), $('#visit-notes'), $('#recommendation')
     ];
-    const dynamic = $$('[data-check], [data-price]', $('#visit-form'));
+    const dynamic = $('[data-check], [data-price]', $('#visit-form'));
     const fields = fixed.concat(dynamic);
     if (!fields.length) return 0;
     let done = 0;
@@ -517,10 +523,39 @@
     return Math.round((done / fields.length) * 100);
   }
 
+  function missingRequired() {
+    const req = REQUIRED[state.track] || { checks: [], fields: [], labels: {} };
+    const checklist = collectChecklist();
+    const missing = [];
+    req.checks.forEach(function (key) {
+      const val = checklist[key];
+      if (val !== true && String(val || '').trim() === '') missing.push(req.labels[key] || key);
+    });
+    req.fields.forEach(function (id) {
+      const el = $('#' + id);
+      if (!el || String(el.value || '').trim() === '') missing.push(req.labels[id] || id);
+    });
+    const hasPrice = $('[data-price]', $('#pricing-root')).some(function (el) {
+      return String(el.value || '').trim() !== '';
+    });
+    if (!hasPrice) missing.push('سعر واحد على الأقل');
+    return missing;
+  }
+
   function updateProgress() {
     const p = progressValue();
     $('#visit-progress').textContent = p + '%';
     $('#visit-progress-bar').style.width = p + '%';
+    const box = $('#visit-missing-box');
+    if (!box) return;
+    const missing = missingRequired();
+    if (!missing.length) {
+      box.className = 'missing-box ready';
+      box.innerHTML = '<b>جاهز للإغلاق ✓</b><span>الحد الأدنى من بيانات الزيارة مكتمل. راجع التفاصيل ثم اضغط إنهاء الزيارة.</span>';
+    } else {
+      box.className = 'missing-box';
+      box.innerHTML = '<b>قبل ما تمشي من المورد</b><span>ناقص: ' + esc(missing.join(' · ')) + '</span>';
+    }
   }
   $('#visit-form').addEventListener('input', updateProgress);
   $('#visit-form').addEventListener('change', updateProgress);
@@ -604,15 +639,20 @@
     const btns = $$('#save-draft,#save-complete');
     btns.forEach(function (b) { b.disabled = true; });
     try {
-      if (status === 'complete' && progressValue() < 55) {
-        throw new Error('البيانات لسه ناقصة. كمّل تفاصيل الزيارة أو احفظها Draft.');
+      if (status === 'complete') {
+        const missing = missingRequired();
+        if (missing.length) throw new Error('الزيارة لا يمكن إغلاقها بعد. ناقص: ' + missing.join('، '));
       }
       const supplierId = await saveSupplier();
       const payload = {
         supplier_id: supplierId,
+        mission_id: $('#mission-select').value || null,
         track: state.track,
         status: status,
-        visit_date: localDate(),
+        visit_date: state.editingVisitId
+          ? ((state.visits.find(function (v) { return v.id === state.editingVisitId; }) || {}).visit_date || localDate())
+          : localDate(),
+        field_owner: $('#field-owner').value.trim(),
         checklist: collectChecklist(),
         pricing: collectPricing(),
         materials: {},
@@ -627,6 +667,8 @@
         price_rating: numericOrNull($('#price-rating')),
         service_rating: numericOrNull($('#service-rating')),
         recommendation: $('#recommendation').value.trim(),
+        next_action: $('#next-action').value.trim(),
+        follow_up_date: $('#follow-up-date').value || null,
         notes: $('#visit-notes').value.trim(),
         completed_at: status === 'complete' ? new Date().toISOString() : null,
         updated_at: new Date().toISOString()
@@ -664,9 +706,22 @@
   $('#save-draft').addEventListener('click', function () { saveVisit('draft'); });
   $('#reset-visit').addEventListener('click', resetVisit);
 
-  $('#visit-files').addEventListener('change', function (e) {
-    state.pendingFiles = Array.from(e.target.files || []);
+  function addPendingFiles(list) {
+    const incoming = Array.from(list || []);
+    const seen = new Set(state.pendingFiles.map(function (f) { return f.name + ':' + f.size + ':' + f.lastModified; }));
+    incoming.forEach(function (f) {
+      const key = f.name + ':' + f.size + ':' + f.lastModified;
+      if (!seen.has(key)) {
+        state.pendingFiles.push(f);
+        seen.add(key);
+      }
+    });
     renderPendingFiles();
+  }
+  $('#visit-files').addEventListener('change', function (e) { addPendingFiles(e.target.files); });
+  $('#visit-camera').addEventListener('change', function (e) {
+    addPendingFiles(e.target.files);
+    e.target.value = '';
   });
 
   function renderPendingFiles() {
@@ -753,6 +808,7 @@
     $('#visit-heading').textContent = 'زيارة مورد جديدة';
     $('#visit-form').reset();
     $('input[name="track"][value="do_story"]').checked = true;
+    $('#mission-select').value = '';
     $('#supplier-select').value = '';
     clearSupplierFields();
     state.pendingFiles = [];
@@ -769,8 +825,10 @@
     state.track = v.track;
     $('#visit-id').value = v.id;
     $('#visit-heading').textContent = 'تعديل ' + v.visit_code;
+    $('#field-owner').value = v.field_owner || '';
     $('input[name="track"][value="' + v.track + '"]').checked = true;
     renderTrack();
+    $('#mission-select').value = v.mission_id || '';
     $('#supplier-select').value = v.supplier_id || '';
     $('#supplier-select').dispatchEvent(new Event('change'));
     fillChecklist(v.checklist || {});
@@ -786,6 +844,8 @@
     $('#service-rating').value = v.service_rating == null ? '' : v.service_rating;
     $('#visit-notes').value = v.notes || '';
     $('#recommendation').value = v.recommendation || '';
+    $('#next-action').value = v.next_action || '';
+    $('#follow-up-date').value = v.follow_up_date || '';
     renderExistingMedia(v.id);
     updateProgress();
     go('visit');
@@ -821,8 +881,11 @@
     $('#kpi-visits').textContent = state.visits.length;
     $('#kpi-complete').textContent = state.visits.filter(function (v) { return v.status === 'complete' || v.status === 'shortlisted'; }).length;
     $('#kpi-shortlist').textContent = state.visits.filter(function (v) { return v.status === 'shortlisted'; }).length;
-    $('#kpi-suppliers').textContent = state.suppliers.length;\n    $('#kpi-missions').textContent = state.missions.filter(function (m) { return m.status === 'active'; }).length;
-    $('#recent-visits').innerHTML = state.visits.length ? state.visits.slice(0, 5).map(visitCard).join('') : '<div class="empty">لسه مفيش زيارات. ابدأ بأول مورد.</div>';\n    const activeMissions = state.missions.filter(function (m) { return m.status === 'active'; }).slice(0, 4);\n    $('#dashboard-missions').innerHTML = activeMissions.length ? activeMissions.map(missionCard).join('') : '<div class="empty">لا توجد مهمات ميدانية نشطة.</div>';
+    $('#kpi-suppliers').textContent = state.suppliers.length;
+    $('#kpi-missions').textContent = state.missions.filter(function (m) { return m.status === 'active'; }).length;
+    $('#recent-visits').innerHTML = state.visits.length ? state.visits.slice(0, 5).map(visitCard).join('') : '<div class="empty">لسه مفيش زيارات. ابدأ بأول مورد.</div>';
+    const activeMissions = state.missions.filter(function (m) { return m.status === 'active'; }).slice(0, 4);
+    $('#dashboard-missions').innerHTML = activeMissions.length ? activeMissions.map(missionCard).join('') : '<div class="empty">لا توجد مهمات ميدانية نشطة.</div>';
   }
 
   function renderVisits() {
@@ -991,8 +1054,8 @@
     renderDevices();
   });
 
-  function labelForKey(key) {
-    const groups = TRACKS[state.track] ? TRACKS[state.track].groups : [];
+  function labelForKey(track, key) {
+    const groups = TRACKS[track] ? TRACKS[track].groups : [];
     for (const g of groups) {
       for (const item of g.items) if (item.k === key) return item.l;
     }
@@ -1003,7 +1066,6 @@
     const v = state.visits.find(function (x) { return x.id === id; });
     if (!v) return;
     const s = supplierFor(v.supplier_id);
-    state.track = v.track;
     const checklistRows = Object.keys(v.checklist || {}).filter(function (k) {
       const val = v.checklist[k];
       return val === true || (val !== false && val !== '');
