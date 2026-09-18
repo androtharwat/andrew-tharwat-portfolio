@@ -19,7 +19,8 @@
   addCss('/v9/v9-home-v10.css?v=2');
   addCss('/v9/v9-home-v10-interactive.css?v=1');
   addCss('/v9/v9-home-v10-responsive.css?v=1');
-  addScript('/v9/v9-home-v10.js?v=4');
+  addCss('/v9/v9-home-first-impression.css?v=1');
+  addScript('/v9/v9-home-v10.js?v=5');
   addScript('/v9/v9-home-v10-responsive.js?v=2');
 
   function applyOfficialBrandAssets(){
