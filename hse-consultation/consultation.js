@@ -143,7 +143,27 @@
     $('#success-state').scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
+  function prefillFromGuidedReview(){
+    const params=new URLSearchParams(location.search);
+    if(params.get('source')!=='guided-review')return;
+    const hazard=params.get('hazard')||'';
+    const summary=params.get('summary')||'';
+    const jurisdiction=params.get('jurisdiction')||'';
+    if(hazard&&$('#hazard'))$('#hazard').value=hazard;
+    if(summary&&$('#summary'))$('#summary').value=summary;
+    if(jurisdiction&&$('#jurisdiction'))$('#jurisdiction').value=jurisdiction;
+    const head=$('.booking-head');
+    if(head&&!document.querySelector('.guided-review-prefill')){
+      const note=document.createElement('div');
+      note.className='guided-review-prefill';
+      note.innerHTML='<b data-guided-title>GUIDED REVIEW ATTACHED</b><p data-guided-copy>Your issue, jurisdiction and Gap Map snapshot were carried forward. Add your contact details and review the information before sending.</p>';
+      note.style.cssText='grid-column:1/-1;margin-top:14px;padding:14px 16px;border:1px solid rgba(85,214,255,.3);background:rgba(85,214,255,.06);border-radius:14px;color:#dceaf0;font-size:12px;line-height:1.6';
+      head.appendChild(note);
+    }
+  }
+
   let saved='en';
   try{saved=localStorage.getItem(LANG_KEY)||localStorage.getItem(PORTFOLIO_LANG_KEY)||'en'}catch(_e){}
+  prefillFromGuidedReview();
   applyLang(saved==='ar'?'ar':'en',false);
 })();
