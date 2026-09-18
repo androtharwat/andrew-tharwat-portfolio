@@ -24,6 +24,47 @@
     pendingFiles: []
   };
 
+  const REQUIRED = {
+    do_story: {
+      checks: ['a5_full_color','paper_sample_seen','written_quote'],
+      fields: ['supplier-name','supplier-phone','lead-time','moq'],
+      labels: {
+        a5_full_color:'تأكيد A5 Full Color',
+        paper_sample_seen:'رؤية عينة الورق',
+        written_quote:'سعر مكتوب',
+        'supplier-name':'اسم المورد',
+        'supplier-phone':'رقم الهاتف',
+        'lead-time':'مدة التنفيذ',
+        moq:'أقل كمية MOQ'
+      }
+    },
+    string_art: {
+      checks: ['wood_sample_seen','router_clean_edge','paint_sample_seen','written_quote'],
+      fields: ['supplier-name','supplier-phone','lead-time','moq'],
+      labels: {
+        wood_sample_seen:'رؤية خامة الخشب',
+        router_clean_edge:'فحص جودة حواف الـCNC',
+        paint_sample_seen:'رؤية عينة الدهان',
+        written_quote:'سعر مكتوب',
+        'supplier-name':'اسم المورد',
+        'supplier-phone':'رقم الهاتف',
+        'lead-time':'مدة التنفيذ',
+        moq:'أقل كمية MOQ'
+      }
+    },
+    opportunity: {
+      checks: ['opportunity_name','use_case','written_quote'],
+      fields: ['supplier-name','supplier-phone'],
+      labels: {
+        opportunity_name:'اسم الفرصة / الخدمة',
+        use_case:'استخدامها الحقيقي للمشروع',
+        written_quote:'سعر مكتوب',
+        'supplier-name':'اسم المورد',
+        'supplier-phone':'رقم الهاتف'
+      }
+    }
+  };
+
   const TRACKS = {
     do_story: {
       label: 'DO STORY',
@@ -484,6 +525,17 @@
   $('#visit-form').addEventListener('input', updateProgress);
   $('#visit-form').addEventListener('change', updateProgress);
 
+  function renderMissionOptions() {
+    const sel = $('#mission-select');
+    if (!sel) return;
+    const current = sel.value;
+    const active = state.missions.filter(function (m) { return m.status === 'active'; });
+    sel.innerHTML = '<option value="">زيارة بدون مهمة محددة</option>' + active.map(function (m) {
+      return '<option value="' + esc(m.id) + '">' + esc(m.title) + ' · ' + esc(trackLabel(m.track)) + '</option>';
+    }).join('');
+    if (active.some(function (m) { return m.id === current; })) sel.value = current;
+  }
+
   function renderSupplierOptions() {
     const sel = $('#supplier-select');
     const current = sel.value;
@@ -769,8 +821,8 @@
     $('#kpi-visits').textContent = state.visits.length;
     $('#kpi-complete').textContent = state.visits.filter(function (v) { return v.status === 'complete' || v.status === 'shortlisted'; }).length;
     $('#kpi-shortlist').textContent = state.visits.filter(function (v) { return v.status === 'shortlisted'; }).length;
-    $('#kpi-suppliers').textContent = state.suppliers.length;
-    $('#recent-visits').innerHTML = state.visits.length ? state.visits.slice(0, 5).map(visitCard).join('') : '<div class="empty">لسه مفيش زيارات. ابدأ بأول مورد.</div>';
+    $('#kpi-suppliers').textContent = state.suppliers.length;\n    $('#kpi-missions').textContent = state.missions.filter(function (m) { return m.status === 'active'; }).length;
+    $('#recent-visits').innerHTML = state.visits.length ? state.visits.slice(0, 5).map(visitCard).join('') : '<div class="empty">لسه مفيش زيارات. ابدأ بأول مورد.</div>';\n    const activeMissions = state.missions.filter(function (m) { return m.status === 'active'; }).slice(0, 4);\n    $('#dashboard-missions').innerHTML = activeMissions.length ? activeMissions.map(missionCard).join('') : '<div class="empty">لا توجد مهمات ميدانية نشطة.</div>';
   }
 
   function renderVisits() {
@@ -824,6 +876,96 @@
     }).join('') : '<tr><td colspan="10">لا توجد زيارات في هذا المسار بعد.</td></tr>';
   }
   $('#compare-track').addEventListener('change', renderCompare);
+
+  function missionProgress(m) {
+    const visits = state.visits.filter(function (v) { return v.mission_id === m.id && v.status !== 'rejected'; });
+    const unique = new Set(visits.map(function (v) { return v.supplier_id; }).filter(Boolean)).size;
+    const target = Number(m.target_supplier_count || 1);
+    return { visits: visits.length, suppliers: unique, target: target, percent: Math.min(100, Math.round((unique / target) * 100)) };
+  }
+
+  function missionCard(m) {
+    const p = missionProgress(m);
+    return '<article class="mission-card"><div class="mission-main"><span class="mission-code">' + esc(m.mission_code) + '</span><b>' + esc(m.title) + '</b><small>' +
+      esc(trackLabel(m.track)) + ' · ' + esc(m.assigned_to || 'غير محدد') + (m.due_date ? ' · حتى ' + esc(m.due_date) : '') + '</small></div>' +
+      '<div class="mission-progress"><div><span>SUPPLIERS</span><strong>' + p.suppliers + ' / ' + p.target + '</strong></div><i><b style="width:' + p.percent + '%"></b></i></div>' +
+      '<div class="mission-actions"><span class="status-pill status-' + (m.status === 'active' ? 'complete' : 'draft') + '">' + esc(m.status.toUpperCase()) + '</span>' +
+      (state.access === 'admin' && m.status === 'active' ? '<button class="mini-btn" type="button" data-mission-complete="' + esc(m.id) + '">Complete</button>' : '') +
+      '<button class="mini-btn" type="button" data-start-mission="' + esc(m.id) + '">زيارة</button></div></article>';
+  }
+
+  function renderMissions() {
+    const rows = state.missions;
+    $('#missions-list').innerHTML = rows.length ? rows.map(missionCard).join('') : '<div class="empty">لا توجد مهمات ميدانية حتى الآن.</div>';
+  }
+
+  function newMissionCode() {
+    const d = localDate().replace(/-/g, '').slice(2);
+    const a = new Uint32Array(1);
+    crypto.getRandomValues(a);
+    return 'MIS-' + d + '-' + String(a[0] % 10000).padStart(4, '0');
+  }
+
+  $('#new-mission-button').addEventListener('click', function () {
+    if (state.access !== 'admin') return;
+    $('#mission-form').reset();
+    $('#mission-target').value = '3';
+    $('#mission-dialog').showModal();
+  });
+
+  $('#mission-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (state.access !== 'admin') return;
+    const payload = {
+      mission_code: newMissionCode(),
+      title: $('#mission-title').value.trim(),
+      track: $('#mission-track').value,
+      objective: $('#mission-objective').value.trim(),
+      assigned_to: $('#mission-owner').value.trim(),
+      target_supplier_count: Number($('#mission-target').value || 3),
+      due_date: $('#mission-due').value || null,
+      notes: $('#mission-notes').value.trim(),
+      status: 'active'
+    };
+    if (!payload.title) return notify('اكتب عنوان المهمة.', 'error');
+    const r = await state.sb.from('studio_sourcing_missions').insert(payload);
+    if (r.error) return notify(r.error.message, 'error');
+    $('#mission-dialog').close();
+    notify('تم إنشاء المهمة الميدانية.');
+    await loadAll();
+    go('missions');
+  });
+
+  document.addEventListener('click', async function (e) {
+    const start = e.target.closest('[data-start-mission]');
+    if (start) {
+      const m = state.missions.find(function (x) { return x.id === start.dataset.startMission; });
+      if (!m) return;
+      resetVisit();
+      state.track = m.track;
+      $('input[name="track"][value="' + m.track + '"]').checked = true;
+      renderTrack();
+      $('#mission-select').value = m.id;
+      $('#field-owner').value = m.assigned_to || '';
+      updateProgress();
+      return go('visit');
+    }
+    const complete = e.target.closest('[data-mission-complete]');
+    if (complete && state.access === 'admin') {
+      const m = state.missions.find(function (x) { return x.id === complete.dataset.missionComplete; });
+      if (!m) return;
+      const p = missionProgress(m);
+      if (p.suppliers < p.target && !confirm('لسه لم يتم جمع العدد المستهدف من الموردين. إغلاق المهمة رغم ذلك؟')) return;
+      const r = await state.sb.from('studio_sourcing_missions').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq('id', m.id);
+      if (r.error) return notify(r.error.message, 'error');
+      notify('تم إغلاق المهمة.');
+      await loadAll();
+    }
+  });
 
   function renderDevices() {
     if (state.access !== 'admin') return;
