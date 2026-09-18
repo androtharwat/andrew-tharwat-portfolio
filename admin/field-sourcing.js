@@ -1395,10 +1395,36 @@
     return { visits: visits.length, suppliers: unique, target: target, percent: Math.min(100, Math.round((unique / target) * 100)) };
   }
 
+  function missionActivityText(a) {
+    if (!a) return 'لم تُفتح بعد';
+    if (a.event_type === 'opened') return 'فتح المهمة';
+    if (a.event_type === 'stage') return a.stage_title || 'بدأ التنفيذ';
+    if (a.event_type === 'draft_saved') return 'حفظ Draft';
+    if (a.event_type === 'supplier_completed') return 'أنهى مورد';
+    if (a.event_type === 'mission_ready') return 'جاهزة للمراجعة';
+    return a.event_type;
+  }
+
   function missionCard(m) {
     const p = missionProgress(m);
-    return '<article class="mission-card"><div class="mission-main"><span class="mission-code">' + esc(m.mission_code) + '</span><b>' + esc(m.title) + '</b><small>' +
-      esc(trackLabel(m.track)) + ' · ' + esc(m.assigned_to || 'غير محدد') + (m.due_date ? ' · حتى ' + esc(m.due_date) : '') + '</small></div>' +
+    const latest = latestMissionActivity(m.id);
+    const opened = firstMissionActivity(m.id, 'opened');
+    const started = firstMissionActivity(m.id, 'stage');
+    const supplierNow = latest && latest.supplier_no ? latest.supplier_no : Math.min(p.target, p.suppliers + 1);
+    const currentTask = latest ? missionActivityText(latest) : 'لم تُفتح بعد';
+    const liveClass = latest && ['stage','opened'].includes(latest.event_type) ? ' live' : '';
+
+    return '<article class="mission-card' + liveClass + '">' +
+      '<div class="mission-main"><span class="mission-code">' + esc(m.mission_code) + '</span><b>' + esc(m.title) + '</b><small>' +
+      esc(trackLabel(m.track)) + ' · ' + esc(m.assigned_to || 'غير محدد') + (m.due_date ? ' · حتى ' + esc(m.due_date) : '') + '</small>' +
+      (state.access === 'admin' ? '<div class="mission-live-status">' +
+        '<span><small>فتح المهمة</small><b>' + esc(opened ? relativeActivityTime(opened.created_at) : 'لم يفتح') + '</b></span>' +
+        '<span><small>بدأ التنفيذ</small><b>' + esc(started ? relativeActivityTime(started.created_at) : 'لم يبدأ') + '</b></span>' +
+        '<span><small>المورد الحالي</small><b>' + esc(String(supplierNow)) + ' / ' + esc(String(p.target)) + '</b></span>' +
+        '<span class="wide"><small>آخر Task</small><b>' + esc(currentTask) + '</b></span>' +
+        '<span><small>آخر نشاط</small><b>' + esc(latest ? relativeActivityTime(latest.created_at) : '—') + '</b></span>' +
+      '</div>' : '') +
+      '</div>' +
       '<div class="mission-progress"><div><span>SUPPLIERS</span><strong>' + p.suppliers + ' / ' + p.target + '</strong></div><i><b style="width:' + p.percent + '%"></b></i></div>' +
       '<div class="mission-actions"><span class="status-pill status-' + (m.status === 'active' ? 'complete' : 'draft') + '">' + esc(m.status.toUpperCase()) + '</span>' +
       (state.access === 'admin' && m.status === 'active' ? '<button class="mini-btn" type="button" data-mission-complete="' + esc(m.id) + '">Complete</button>' : '') +
