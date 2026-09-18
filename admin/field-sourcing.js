@@ -956,7 +956,7 @@
     window.open(base + '?text=' + encodeURIComponent(parts.join('\n')), '_blank', 'noopener');
   }
 
-  function openMission(m) {
+  function openMission(m, focusMode) {
     if (!m) return;
     resetVisit();
     state.track = m.track;
@@ -968,14 +968,257 @@
     $('#field-owner').value = m.assigned_to || '';
     updateProgress();
     go('visit');
+
+    if (focusMode) {
+      state.focusMissionId = m.id;
+      state.guidedIndex = 0;
+      document.body.classList.add('mission-focus-mode');
+      setupGuidedMission(m);
+    } else {
+      state.focusMissionId = null;
+      document.body.classList.remove('mission-focus-mode');
+    }
   }
 
   function openMissionFromUrl() {
     const id = new URLSearchParams(window.location.search).get('mission');
-    if (!id) return;
+    if (!id || state.focusMissionId === id) return;
     const m = state.missions.find(function (x) { return x.id === id; });
-    if (m) openMission(m);
+    if (m) openMission(m, true);
   }
+
+  function completedMissionProgress(m) {
+    const rows = state.visits.filter(function (v) {
+      return v.mission_id === m.id && (v.status === 'complete' || v.status === 'shortlisted');
+    });
+    const suppliers = new Set(rows.map(function (v) { return v.supplier_id; }).filter(Boolean)).size;
+    const target = Number(m.target_supplier_count || 1);
+    return { suppliers: suppliers, target: target, percent: Math.min(100, Math.round((suppliers / target) * 100)) };
+  }
+
+  function checklistLabel(key) {
+    const groups = TRACKS[state.track] ? TRACKS[state.track].groups : [];
+    for (const group of groups) {
+      for (const item of group.items) {
+        if (item.k === key) return item.l;
+      }
+    }
+    return key;
+  }
+
+  function guidedValueMissing(key) {
+    const el = $('[data-check="' + key + '"]', $('#checklist-root'));
+    if (!el) return true;
+    if (el.type === 'checkbox') return !el.checked;
+    return String(el.value || '').trim() === '';
+  }
+
+  function setupGuidedMission(m) {
+    const p = completedMissionProgress(m);
+    const supplierNo = Math.min(p.target, p.suppliers + 1);
+
+    $('#mission-focus-title').textContent = m.title || 'مهمة ميدانية';
+    $('#mission-focus-objective').textContent = m.objective || 'نفّذ الزيارة خطوة بخطوة وسجّل البيانات المطلوبة.';
+    $('#mission-focus-owner').textContent = 'المسؤول: ' + (m.assigned_to || '—');
+    $('#mission-focus-progress').textContent = 'المورد: ' + supplierNo + ' من ' + p.target;
+    $('#mission-focus-due').textContent = m.due_date ? 'الموعد: ' + m.due_date : 'بدون موعد محدد';
+
+    const panels = $('#visit-form > section.panel').filter(function (el) { return el.id !== 'guided-review-panel'; });
+    const missionPanel = panels[0];
+    const supplierPanel = panels[1];
+    const checklistPanel = panels[2];
+    const pricePanel = panels[3];
+    const evidencePanel = panels[4];
+    const judgementPanel = panels[5];
+    const reviewPanel = $('#guided-review-panel');
+
+    if (missionPanel) missionPanel.classList.remove('guided-active');
+    if (checklistPanel) checklistPanel.classList.add('guided-checklist-panel');
+
+    const groups = $('#checklist-root > .check-group');
+    const stages = [
+      { title: 'بيانات المورد', type: 'supplier', el: supplierPanel }
+    ];
+
+    groups.forEach(function (group, index) {
+      const titleEl = $('.check-group-head b', group);
+      stages.push({
+        title: titleEl ? titleEl.textContent.trim() : 'Checklist ' + (index + 1),
+        type: 'check',
+        groupIndex: index,
+        el: group,
+        parent: checklistPanel
+      });
+    });
+
+    stages.push(
+      { title: 'السعر والتنفيذ', type: 'price', el: pricePanel },
+      { title: 'الإثبات والصور', type: 'evidence', el: evidencePanel },
+      { title: 'التقييم والمتابعة', type: 'judgement', el: judgementPanel },
+      { title: 'المراجعة النهائية', type: 'review', el: reviewPanel }
+    );
+
+    state.guidedStages = stages;
+    state.guidedIndex = Math.min(state.guidedIndex, Math.max(0, stages.length - 1));
+
+    const missionLabel = $('#mission-select') && $('#mission-select').closest('label');
+    const ownerLabel = $('#field-owner') && $('#field-owner').closest('label');
+    if (missionLabel) missionLabel.classList.add('hidden');
+    if (ownerLabel) ownerLabel.classList.add('hidden');
+
+    renderGuidedStage();
+  }
+
+  function validateGuidedStage(showMessage) {
+    const stage = state.guidedStages[state.guidedIndex];
+    if (!stage) return true;
+    const missing = [];
+
+    if (stage.type === 'supplier') {
+      if (!$('#supplier-name').value.trim()) missing.push('اسم المورد');
+      if (!$('#supplier-phone').value.trim()) missing.push('رقم الهاتف');
+    }
+
+    if (stage.type === 'check') {
+      const req = (GUIDED_REQUIRED[state.track] || [])[stage.groupIndex] || [];
+      req.forEach(function (key) {
+        if (guidedValueMissing(key)) missing.push(checklistLabel(key));
+      });
+    }
+
+    if (stage.type === 'price') {
+      const hasPrice = $('[data-price]', $('#pricing-root')).some(function (el) {
+        return String(el.value || '').trim() !== '';
+      });
+      if (!hasPrice) missing.push('سعر واحد على الأقل');
+      if (!$('#moq').value.trim()) missing.push('MOQ');
+      if (!$('#lead-time').value.trim()) missing.push('مدة التنفيذ');
+    }
+
+    if (stage.type === 'evidence') {
+      const existing = state.editingVisitId
+        ? state.media.some(function (m) { return m.visit_id === state.editingVisitId; })
+        : false;
+      if (!state.pendingFiles.length && !existing) missing.push('صورة أو عرض سعر أو عينة');
+    }
+
+    if (stage.type === 'judgement') {
+      if (!$('#next-action').value.trim()) missing.push('الخطوة التالية');
+    }
+
+    if (missing.length && showMessage) {
+      notify('كمّل المرحلة أولًا: ' + missing.join('، '), 'error');
+    }
+    return missing.length === 0;
+  }
+
+  function renderGuidedReview() {
+    const supplier = [
+      $('#supplier-name').value.trim(),
+      $('#supplier-contact').value.trim(),
+      $('#supplier-phone').value.trim()
+    ].filter(Boolean).join(' · ');
+
+    const checklist = collectChecklist();
+    const checklistRows = Object.keys(checklist).filter(function (key) {
+      const v = checklist[key];
+      return v === true || (v !== false && String(v || '').trim() !== '');
+    }).map(function (key) {
+      const v = checklist[key];
+      return '<div class="guided-review-row"><span>' + esc(checklistLabel(key)) + '</span><b>' + esc(v === true ? 'نعم' : v) + '</b></div>';
+    }).join('');
+
+    const pricing = collectPricing();
+    const pricingRows = Object.keys(pricing).filter(function (key) {
+      return pricing[key] !== null && pricing[key] !== '';
+    }).map(function (key) {
+      const pair = TRACKS[state.track].prices.find(function (x) { return x[0] === key; });
+      return '<div class="guided-review-row"><span>' + esc(pair ? pair[1] : key) + '</span><b>' + esc(money(pricing[key])) + '</b></div>';
+    }).join('');
+
+    $('#guided-review-content').innerHTML =
+      '<div class="guided-review-grid">' +
+        '<div class="guided-review-block"><h4>المورد</h4><p>' + esc(supplier || '—') + '</p></div>' +
+        '<div class="guided-review-block"><h4>التنفيذ التجاري</h4><p>MOQ: ' + esc($('#moq').value || '—') + '<br>مدة التنفيذ: ' + esc($('#lead-time').value || '—') + '<br>Sample: ' + ($('#sample-available').checked ? 'متاح' : 'غير مسجل') + '</p></div>' +
+      '</div>' +
+      '<div class="guided-review-block"><h4>إجابات الـChecklist</h4>' + (checklistRows || '<p>—</p>') + '</div>' +
+      '<div class="guided-review-block"><h4>الأسعار</h4>' + (pricingRows || '<p>—</p>') + '</div>' +
+      '<div class="guided-review-grid">' +
+        '<div class="guided-review-block"><h4>الخطوة التالية</h4><p>' + esc($('#next-action').value.trim() || '—') + '</p></div>' +
+        '<div class="guided-review-block"><h4>ملاحظات المسؤول</h4><p>' + esc($('#visit-notes').value.trim() || $('#recommendation').value.trim() || '—') + '</p></div>' +
+      '</div>';
+  }
+
+  function renderGuidedStage() {
+    const stages = state.guidedStages;
+    if (!stages.length) return;
+    const stage = stages[state.guidedIndex];
+
+    $('#visit-form > section.panel').forEach(function (panel) {
+      panel.classList.remove('guided-active', 'guided-active-parent');
+    });
+    $('#checklist-root > .check-group').forEach(function (group) {
+      group.classList.remove('guided-active');
+    });
+
+    if (stage.type === 'check') {
+      if (stage.parent) stage.parent.classList.add('guided-active-parent');
+      stage.el.classList.add('guided-active');
+    } else if (stage.el) {
+      stage.el.classList.add('guided-active');
+    }
+
+    if (stage.type === 'review') renderGuidedReview();
+
+    const pct = Math.round(((state.guidedIndex + 1) / stages.length) * 100);
+    $('#guided-step-label').textContent = 'الخطوة ' + (state.guidedIndex + 1) + ' من ' + stages.length;
+    $('#guided-step-percent').textContent = pct + '%';
+    $('#guided-step-bar').style.width = pct + '%';
+
+    $('#guided-task-strip').innerHTML = stages.map(function (item, index) {
+      const cls = index === state.guidedIndex ? ' active' : (index < state.guidedIndex ? ' done' : '');
+      return '<button class="guided-task' + cls + '" type="button" data-guided-jump="' + index + '">' +
+        (index < state.guidedIndex ? '✓ ' : '') + esc(item.title) + '</button>';
+    }).join('');
+
+    $('#mission-focus-current-task').textContent = stage.title;
+    $('#mission-focus-next-task').textContent = state.guidedIndex < stages.length - 1
+      ? 'التالي: ' + stages[state.guidedIndex + 1].title
+      : 'التالي: إنهاء المورد وحفظ المرجع';
+
+    $('#guided-back').disabled = state.guidedIndex === 0;
+    $('#guided-next').textContent = state.guidedIndex === stages.length - 1 ? 'إنهاء المورد ✓' : 'التالي';
+
+    const active = stage.type === 'check' ? stage.parent : stage.el;
+    if (active && typeof active.scrollIntoView === 'function') {
+      active.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  $('#guided-back').addEventListener('click', function () {
+    if (state.guidedIndex <= 0) return;
+    state.guidedIndex--;
+    renderGuidedStage();
+  });
+
+  $('#guided-next').addEventListener('click', function () {
+    if (!validateGuidedStage(true)) return;
+    if (state.guidedIndex >= state.guidedStages.length - 1) {
+      saveVisit('complete');
+      return;
+    }
+    state.guidedIndex++;
+    renderGuidedStage();
+  });
+
+  $('#guided-task-strip').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-guided-jump]');
+    if (!btn) return;
+    const index = Number(btn.dataset.guidedJump);
+    if (!Number.isInteger(index) || index < 0 || index > state.guidedIndex) return;
+    state.guidedIndex = index;
+    renderGuidedStage();
+  });
 
   document.addEventListener('click', async function (e) {
     const edit = e.target.closest('[data-edit-visit]');
