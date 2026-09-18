@@ -75,7 +75,7 @@
           <article><span>الزيارات</span><strong id="kpi-visits">0</strong><small>كل الزيارات المسجلة</small></article>
           <article><span>مكتملة</span><strong id="kpi-complete">0</strong><small>بيانات جاهزة للمقارنة</small></article>
           <article><span>Shortlist</span><strong id="kpi-shortlist">0</strong><small>موردون مرشحون</small></article>
-          <article><span>الموردون</span><strong id="kpi-suppliers">0</strong><small>قاعدة الموردين</small></article>
+          <article><span>الموردون</span><strong id="kpi-suppliers">0</strong><small>قاعدة الموردين</small></article>\n          <article><span>مهمات نشطة</span><strong id="kpi-missions">0</strong><small>أهداف ميدانية مفتوحة</small></article>
         </div>
 
         <section class="panel">
@@ -86,10 +86,18 @@
           <div id="recent-visits" class="visit-list"></div>
         </section>
 
-        <section class="panel field-rule">
+        <section class="panel">\n          <div class="panel-head"><div><p class="overline">ACTIVE MISSIONS</p><h2>المهمات الحالية</h2></div><button class="text-button" type="button" data-go="missions">فتح المهمات</button></div>\n          <div id="dashboard-missions" class="mission-list"></div>\n        </section>\n\n        <section class="panel field-rule">
           <div><p class="overline">FIELD RULE</p><h2>ممنوع نرجع بسعر شفهي.</h2></div>
           <p>كل مورد لازم يبقى عندنا له اسم + رقم + خامة + سعر + MOQ + مدة تنفيذ + عينة/صور + ملاحظات واضحة. لو البيانات ناقصة، الزيارة تفضل Draft.</p>
         </section>
+      </section>
+
+      <section class="view" data-view-panel="missions">
+        <div class="view-head">
+          <div><p class="overline">FIELD MISSIONS</p><h2>المهمات الميدانية</h2><p>كل مهمة لها هدف واضح، مسؤول، موعد مستهدف، وعدد موردين مطلوب جمع عروض منهم.</p></div>
+          <button id="new-mission-button" class="button primary hidden" type="button">+ مهمة جديدة</button>
+        </div>
+        <div id="missions-list" class="mission-list"></div>
       </section>
 
       <section class="view" data-view-panel="visit">
@@ -160,7 +168,7 @@
           <section class="panel">
             <div class="section-number">05</div>
             <div class="section-copy"><p class="overline">EVIDENCE</p><h3>صور وعينات من الزيارة</h3></div>
-            <label class="upload-zone" for="visit-files">
+            <div class="capture-actions"><label class="camera-button" for="visit-camera">📷 تصوير الآن<input id="visit-camera" type="file" accept="image/*" capture="environment" hidden /></label><span>أو</span></div>\n            <label class="upload-zone" for="visit-files">
               <b>+ أضف صور الخامات / العينات / عرض السعر</b>
               <small>JPG, PNG, WEBP أو PDF — بحد أقصى 10MB للملف</small>
               <input id="visit-files" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple hidden />
@@ -223,6 +231,22 @@
       <footer><span>ANDREW THARWAT STUDIO · FIELD SOURCING</span><span id="sync-status">LIVE SUPABASE</span></footer>
     </main>
   </div>
+
+  <dialog id="mission-dialog" class="mission-dialog">
+    <form id="mission-form" method="dialog">
+      <div class="dialog-head"><div><p class="overline">NEW FIELD MISSION</p><h2>إنشاء مهمة ميدانية</h2></div><button class="dialog-close" value="cancel" aria-label="Close">×</button></div>
+      <div class="form-grid">
+        <label class="wide">عنوان المهمة<input id="mission-title" required placeholder="مثال: مقارنة 3 مطابع لقصة DO STORY A5" /></label>
+        <label>المسار<select id="mission-track"><option value="do_story">DO STORY</option><option value="string_art">STRING ART</option><option value="opportunity">Opportunity</option></select></label>
+        <label>اسم المسؤول<input id="mission-owner" placeholder="اسم عضو الفريق" /></label>
+        <label>عدد الموردين المطلوب<input id="mission-target" type="number" min="1" max="50" value="3" /></label>
+        <label>الموعد المستهدف<input id="mission-due" type="date" /></label>
+        <label class="wide">الهدف المطلوب<textarea id="mission-objective" rows="4" placeholder="اكتب النتيجة التي يجب أن يرجع بها المسؤول، وليس مجرد النشاط."></textarea></label>
+        <label class="wide">ملاحظات داخلية<textarea id="mission-notes" rows="3"></textarea></label>
+      </div>
+      <div class="dialog-footer"><button class="button secondary" value="cancel">إلغاء</button><button id="save-mission" class="button primary" type="submit">إنشاء المهمة</button></div>
+    </form>
+  </dialog>
 
   <section id="print-report" class="print-report" aria-hidden="true"></section>
 
