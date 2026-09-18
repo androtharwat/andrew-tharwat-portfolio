@@ -122,6 +122,7 @@
             <span>المهمة الحالية</span>
             <strong id="mission-focus-current-task">بيانات المورد</strong>
             <small id="mission-focus-next-task">التالي: —</small>
+            <button id="mission-help-button" class="button mission-help-button" type="button">محتاج مساعدة</button>
           </div>
         </section>
 
@@ -283,6 +284,31 @@
       <footer><span>ANDREW THARWAT STUDIO · FIELD SOURCING</span><span id="sync-status">LIVE SUPABASE</span></footer>
     </main>
   </div>
+
+  <dialog id="mission-help-dialog" class="mission-dialog help-dialog">
+    <form id="mission-help-form">
+      <div class="dialog-head">
+        <div><p class="overline">FIELD SUPPORT</p><h2>محتاج مساعدة في إيه؟</h2></div>
+        <button class="dialog-close" type="button" data-close-help aria-label="Close">×</button>
+      </div>
+      <div class="form-grid">
+        <label>نوع الطلب
+          <select id="mission-help-type">
+            <option value="question">سؤال</option>
+            <option value="problem">مشكلة</option>
+            <option value="blocked">التنفيذ متوقف</option>
+          </select>
+        </label>
+        <label class="wide">اكتب المطلوب باختصار
+          <textarea id="mission-help-message" rows="4" required placeholder="مثال: المورد بيقترح خامة مختلفة عن المواصفة، أوافق ولا أكمل على نفس الخامة؟"></textarea>
+        </label>
+      </div>
+      <div class="dialog-footer">
+        <button class="button secondary" type="button" data-close-help>إلغاء</button>
+        <button class="button primary" type="submit">إرسال للمسؤول</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="mission-dialog" class="mission-dialog">
     <form id="mission-form" method="dialog">
