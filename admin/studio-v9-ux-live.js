@@ -11,7 +11,18 @@
     if(proposal){proposal.querySelector('small').textContent='Prepare an offer for a qualified lead';}
     const note=$('#quick-dialog .dialog-note');if(note)note.textContent='Clients and Projects are created only through the controlled Proposal → Deposit → Conversion workflow.';
     const portfolio=document.querySelector('[data-nav="portfolio"]');
-    if(portfolio){portfolio.setAttribute('href','/admin/');portfolio.setAttribute('title','Open live Portfolio CMS');}
+    if(portfolio){
+      portfolio.setAttribute('href','/admin/');portfolio.setAttribute('title','Open live Portfolio CMS');
+      let hse=document.querySelector('[data-hse-world-admin]');
+      if(!hse){
+        hse=document.createElement('a');
+        hse.className='nav-item';
+        hse.href='/admin/investigator-eye.html';
+        hse.dataset.hseWorldAdmin='1';
+        hse.innerHTML='<span class="nav-icon">⌁</span><span>HSE Cases & Content</span><b style="margin-left:auto;font-size:10px">→</b>';
+        portfolio.insertAdjacentElement('beforebegin',hse);
+      }
+    }
   }
   function failClosedIfNeeded(){
     const app=$('#app'),gate=$('#gate'),banner=document.querySelector('.demo-banner');
