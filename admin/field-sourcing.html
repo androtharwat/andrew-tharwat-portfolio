@@ -123,6 +123,7 @@
             <strong id="mission-focus-current-task">بيانات المورد</strong>
             <small id="mission-focus-next-task">التالي: —</small>
             <button id="mission-help-button" class="button mission-help-button" type="button">محتاج مساعدة</button>
+            <div id="mission-help-response" class="mission-help-response hidden"></div>
           </div>
         </section>
 
@@ -284,6 +285,26 @@
       <footer><span>ANDREW THARWAT STUDIO · FIELD SOURCING</span><span id="sync-status">LIVE SUPABASE</span></footer>
     </main>
   </div>
+
+  <dialog id="mission-help-response-dialog" class="mission-dialog help-dialog">
+    <form id="mission-help-response-form">
+      <input id="mission-help-response-id" type="hidden" />
+      <div class="dialog-head">
+        <div><p class="overline">FIELD SUPPORT RESPONSE</p><h2>رد على المسؤول الميداني</h2></div>
+        <button class="dialog-close" type="button" data-close-help-response aria-label="Close">×</button>
+      </div>
+      <div id="mission-help-response-context" class="help-response-context"></div>
+      <div class="form-grid">
+        <label class="wide">القرار / التعليمات
+          <textarea id="mission-help-admin-note" rows="4" required placeholder="مثال: استمر على المواصفة الأصلية، وسجل اقتراح المورد كملاحظة فقط."></textarea>
+        </label>
+      </div>
+      <div class="dialog-footer">
+        <button class="button secondary" type="button" data-close-help-response>إلغاء</button>
+        <button class="button primary" type="submit">إرسال الرد وإغلاق الطلب ✓</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="mission-help-dialog" class="mission-dialog help-dialog">
     <form id="mission-help-form">
