@@ -262,12 +262,14 @@
   });
   $('#continue-consultation').addEventListener('click',()=>{
     const d=collect();
-    const q=new URLSearchParams();
-    q.set('hazard',d.hazardCode+'|'+d.hazardName);
-    q.set('summary',lastSnapshot||buildSnapshot(d));
-    if(d.jurisdiction)q.set('jurisdiction',d.jurisdiction);
-    q.set('source','guided-review');
-    location.href='/hse-consultation/?'+q.toString();
+    const handoff={
+      hazard:d.hazardCode+'|'+d.hazardName,
+      summary:lastSnapshot||buildSnapshot(d),
+      jurisdiction:d.jurisdiction||'',
+      createdAt:new Date().toISOString()
+    };
+    try{sessionStorage.setItem('ats_hse_guided_review_handoff_v1',JSON.stringify(handoff))}catch(_e){}
+    location.href='/hse-consultation/?source=guided-review';
   });
   $('#lang-toggle').addEventListener('click',()=>applyLang(lang==='ar'?'en':'ar'));
   document.addEventListener('change',e=>{if(e.target.matches('input,select,textarea'))saveDraft()});
