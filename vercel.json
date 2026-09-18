@@ -41,6 +41,14 @@
     {
       "source": "/hse/case-studies/:slug",
       "destination": "/hse/topic.html?type=case&slug=:slug"
+    },
+    {
+      "source": "/hse-guided-review",
+      "destination": "/hse-guided-review/index.html"
+    },
+    {
+      "source": "/hse-consultation",
+      "destination": "/hse-consultation/index.html"
     }
   ],
   "redirects": [
