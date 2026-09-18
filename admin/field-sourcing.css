@@ -366,3 +366,20 @@ body.mission-focus-mode .guided-nav .button{font-size:16px}
   body.mission-focus-mode .panel,
   body.mission-focus-mode .visit-form .panel{padding:18px;padding-top:46px}
 }
+
+.mission-card.live{border-color:rgba(86,211,155,.22);background:linear-gradient(135deg,rgba(86,211,155,.035),rgba(255,255,255,.02))}
+.mission-live-status{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:11px}
+.mission-live-status span{display:grid;gap:3px;padding:8px 9px;border:1px solid rgba(255,255,255,.07);border-radius:9px;background:rgba(0,0,0,.12);min-width:0}
+.mission-live-status span.wide{grid-column:span 2}
+.mission-live-status small{color:#66808c!important;font-size:7px!important;margin:0!important;font-family:Montserrat;font-weight:900;letter-spacing:.04em}
+.mission-live-status b{font-size:9px!important;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+.mission-card.live .mission-code::before{content:'●';margin-left:5px;color:#56d39b;font-size:7px}
+@media(max-width:900px){
+  .mission-live-status{grid-template-columns:1fr 1fr}
+  .mission-live-status span.wide{grid-column:span 2}
+}
+@media(max-width:520px){
+  .mission-live-status{grid-template-columns:1fr 1fr}
+  .mission-live-status small{font-size:9px!important}
+  .mission-live-status b{font-size:12px!important}
+}
