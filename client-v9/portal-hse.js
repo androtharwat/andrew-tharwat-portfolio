@@ -35,6 +35,7 @@
   function toast(message){const el=$('#portal-toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),2200)}
 
   function paymentFor(id){return payments.find(p=>p.id===id)||null}
+  function consultationFee(c){const p=paymentFor(c?.consultation_payment_id);const amount=p?.amount??c?.consultation_fee_usd;const currency=p?.currency||'USD';return amount===null||amount===undefined?'':money(amount,currency)}
   function servicePaymentIds(c){return [...new Set((c.studio_case_services||[]).map(x=>x.payment_id).filter(Boolean))]}
   function serviceName(s){return ar()?(s.studio_service_catalog?.name_ar||s.studio_service_catalog?.name_en||'خدمة'):(s.studio_service_catalog?.name_en||'Service')}
   function hazardName(c){return ar()?(hazardAr[c.hazard_code]||c.hazard_name||c.title):(c.hazard_name||c.title)}
@@ -100,7 +101,7 @@
     const services=c.studio_case_services||[];
     const selectable=services.filter(s=>['recommended','quoted'].includes(s.status));
     if(consultationPay&&consultationPay.status!=='paid'){
-      if(consultationPay.checkout_url)return `<div class="hse-next is-action"><span>01</span><div><b>${t('Complete the $75 consultation booking','أكمل حجز الاستشارة بقيمة 75 دولار')}</b><p>${t('Your case details are saved. This is the only action needed now.','بيانات حالتك محفوظة. ده الإجراء الوحيد المطلوب منك دلوقتي.')}</p></div><a href="${esc(consultationPay.checkout_url)}" target="_blank" rel="noopener">${t('PAY','ادفع')} ${money(consultationPay.amount,consultationPay.currency)} →</a></div>`;
+      if(consultationPay.checkout_url)return `<div class="hse-next is-action"><span>01</span><div><b>${t('Complete the consultation booking','أكمل حجز الاستشارة')} · ${consultationFee(c)}</b><p>${t('Your case details are saved. This is the only action needed now.','بيانات حالتك محفوظة. ده الإجراء الوحيد المطلوب منك دلوقتي.')}</p></div><a href="${esc(consultationPay.checkout_url)}" target="_blank" rel="noopener">${t('PAY','ادفع')} ${money(consultationPay.amount,consultationPay.currency)} →</a></div>`;
       return `<div class="hse-next"><span>01</span><div><b>${t('Your secure payment link is being prepared','رابط الدفع الآمن يتم تجهيزه')}</b><p>${t('You do not need to do anything else or send your details again. The payment step will appear here when ready.','مش مطلوب منك أي إجراء أو إعادة إرسال البيانات. خطوة الدفع هتظهر هنا بمجرد تجهيزها.')}</p></div><button class="quiet-action" type="button" data-hse-refresh>${t('REFRESH','تحديث')}</button></div>`;
     }
     if(['consultation_booked','ready_for_consultation'].includes(c.status))return `<div class="hse-next"><span>02</span><div><b>${t('Your consultation is booked','تم حجز الاستشارة')}</b><p>${t('No action is required right now. Andrew will confirm the consultation timing and use the information already attached to this case.','لا يوجد إجراء مطلوب منك حاليًا. سيتم تأكيد موعد الاستشارة باستخدام بيانات الحالة المحفوظة بالفعل.')}</p></div><button class="quiet-action" type="button" disabled>${t('NO ACTION NEEDED','لا يوجد إجراء')}</button></div>`;
@@ -131,7 +132,7 @@
     const historyHtml=others.length?`<details class="hse-history"><summary>${t('OTHER HSE CASES','حالات HSE أخرى')} <span>${others.length}</span></summary><div>${others.map(historyRow).join('')}</div></details>`:'';
     const startHtml=(!cases.length||!hasOpenCase)?`<div class="hse-start-wrap">${startForm()}</div>`:'';
     const ruleHtml=primary
-      ? `<div class="hse-rule"><b>${t('$75 = consultation only.','75 دولار = الاستشارة فقط.')}</b><br>${t('Reports, assessments, surveys, site visits and technical deliverables are separate and optional.','التقارير والتقييمات والقياسات وزيارات الموقع والمخرجات الفنية خدمات منفصلة واختيارية.')}</div>`
+      ? `<div class="hse-rule"><b>${esc(consultationFee(primary)||t('Consultation fee','سعر الاستشارة'))} = ${t('consultation only.','الاستشارة فقط.')}</b><br>${t('Reports, assessments, surveys, site visits and technical deliverables are separate and optional.','التقارير والتقييمات والقياسات وزيارات الموقع والمخرجات الفنية خدمات منفصلة واختيارية.')}</div>`
       : `<div class="hse-rule"><b>${t('GUIDED REVIEW FIRST','المراجعة الموجهة أولًا')}</b><br>${t('Consultation details appear only after the Professional Review Gate.','تفاصيل الاستشارة تظهر فقط بعد بوابة المراجعة المهنية.')}</div>`;
     root.innerHTML=`<div class="hse-workspace" dir="${ar()?'rtl':'ltr'}"><div class="hse-view-head"><div><p class="eyebrow">INVESTIGATOR'S EYE</p><h2>${cases.length?t('Your HSE Workspace','مساحة HSE الخاصة بك'):t('HSE Review','مراجعة HSE')}</h2><p>${t('One clear next action at a time. Everything else stays in the case record.','إجراء واحد واضح في كل مرحلة، وباقي التفاصيل تفضل محفوظة في سجل الحالة.')}</p></div>${ruleHtml}</div>${currentHtml}${historyHtml}${startHtml}</div>`;
   }
