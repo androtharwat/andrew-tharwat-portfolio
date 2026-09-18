@@ -900,6 +900,59 @@
   $('#visit-track-filter').addEventListener('change', renderVisits);
   $('#visit-status-filter').addEventListener('change', renderVisits);
 
+  function missionLink(m) {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('mission', m.id);
+    return url.toString();
+  }
+
+  function normalizeWhatsAppPhone(raw) {
+    let p = String(raw || '').replace(/\D/g, '');
+    if (p.startsWith('01') && p.length === 11) p = '2' + p;
+    return p;
+  }
+
+  function shareMissionWhatsApp(m) {
+    const link = missionLink(m);
+    const parts = [
+      'مهمة ميدانية جديدة — Andrew Tharwat Studio',
+      '',
+      m.title,
+      m.objective ? 'المطلوب: ' + m.objective : '',
+      'عدد الموردين المطلوب: ' + (m.target_supplier_count || 1),
+      m.due_date ? 'الموعد المستهدف: ' + m.due_date : '',
+      '',
+      'ابدأ المهمة من هنا:',
+      link
+    ].filter(Boolean);
+    const phone = normalizeWhatsAppPhone(m.assigned_phone);
+    const base = phone ? 'https://wa.me/' + phone : 'https://wa.me/';
+    window.open(base + '?text=' + encodeURIComponent(parts.join('\n')), '_blank', 'noopener');
+  }
+
+  function openMission(m) {
+    if (!m) return;
+    resetVisit();
+    state.track = m.track;
+    const radio = $('input[name="track"][value="' + m.track + '"]');
+    if (radio) radio.checked = true;
+    renderTrack();
+    renderMissionOptions();
+    $('#mission-select').value = m.id;
+    $('#field-owner').value = m.assigned_to || '';
+    updateProgress();
+    go('visit');
+  }
+
+  function openMissionFromUrl() {
+    const id = new URLSearchParams(window.location.search).get('mission');
+    if (!id) return;
+    const m = state.missions.find(function (x) { return x.id === id; });
+    if (m) openMission(m);
+  }
+
   document.addEventListener('click', async function (e) {
     const edit = e.target.closest('[data-edit-visit]');
     if (edit) return editVisit(edit.dataset.editVisit);
@@ -955,7 +1008,7 @@
       '<div class="mission-progress"><div><span>SUPPLIERS</span><strong>' + p.suppliers + ' / ' + p.target + '</strong></div><i><b style="width:' + p.percent + '%"></b></i></div>' +
       '<div class="mission-actions"><span class="status-pill status-' + (m.status === 'active' ? 'complete' : 'draft') + '">' + esc(m.status.toUpperCase()) + '</span>' +
       (state.access === 'admin' && m.status === 'active' ? '<button class="mini-btn" type="button" data-mission-complete="' + esc(m.id) + '">Complete</button>' : '') +
-      '<button class="mini-btn" type="button" data-start-mission="' + esc(m.id) + '">زيارة</button></div></article>';
+      (state.access === 'admin' ? '<button class="mini-btn" type="button" data-share-mission="' + esc(m.id) + '">إرسال المهمة</button>' : '') +\n      '<button class="mini-btn" type="button" data-start-mission="' + esc(m.id) + '">زيارة</button></div></article>';
   }
 
   function renderMissions() {
@@ -985,7 +1038,7 @@
       title: $('#mission-title').value.trim(),
       track: $('#mission-track').value,
       objective: $('#mission-objective').value.trim(),
-      assigned_to: $('#mission-owner').value.trim(),
+      assigned_to: $('#mission-owner').value.trim(),\n      assigned_phone: $('#mission-phone').value.trim(),
       target_supplier_count: Number($('#mission-target').value || 3),
       due_date: $('#mission-due').value || null,
       notes: $('#mission-notes').value.trim(),
@@ -1001,18 +1054,19 @@
   });
 
   document.addEventListener('click', async function (e) {
+    const share = e.target.closest('[data-share-mission]');
+    if (share && state.access === 'admin') {
+      const m = state.missions.find(function (x) { return x.id === share.dataset.shareMission; });
+      if (!m) return;
+      shareMissionWhatsApp(m);
+      return;
+    }
+
     const start = e.target.closest('[data-start-mission]');
     if (start) {
       const m = state.missions.find(function (x) { return x.id === start.dataset.startMission; });
       if (!m) return;
-      resetVisit();
-      state.track = m.track;
-      $('input[name="track"][value="' + m.track + '"]').checked = true;
-      renderTrack();
-      $('#mission-select').value = m.id;
-      $('#field-owner').value = m.assigned_to || '';
-      updateProgress();
-      return go('visit');
+      return openMission(m);
     }
     const complete = e.target.closest('[data-mission-complete]');
     if (complete && state.access === 'admin') {
