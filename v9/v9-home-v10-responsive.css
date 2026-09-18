@@ -1,0 +1,89 @@
+/* Andrew Tharwat Studio V10 — responsive and interaction polish */
+
+/* Stronger interactive affordance without adding heavy animation */
+.v10-service{outline:none}
+.v10-service::after{content:'↗';position:absolute;top:10px;right:11px;font-size:10px;color:rgba(255,255,255,.34);z-index:4;transition:color .15s ease,transform .15s ease}
+.v10-service:hover::after,.v10-service:focus-visible::after,.v10-service.is-open::after{color:#ff5a6d;transform:translate(1px,-1px)}
+body[data-lang=ar] .v10-service::after{right:auto;left:11px;transform:scaleX(-1)}
+body[data-lang=ar] .v10-service:hover::after,body[data-lang=ar] .v10-service:focus-visible::after,body[data-lang=ar] .v10-service.is-open::after{transform:scaleX(-1) translate(1px,-1px)}
+.v10-swipe-hint{display:none}
+
+/* Cleaner tablet rhythm */
+@media (min-width:761px) and (max-width:1180px){
+  body.v10-home .hero-grid{grid-template-columns:minmax(0,1fr) minmax(320px,.72fr);gap:24px;padding-top:46px}
+  body.v10-home .hero h1{font-size:clamp(50px,6vw,72px)}
+  body.v10-home .hero-visual>img,body.v10-home .hero-visual:after{width:min(48vw,610px);height:min(67vh,610px)}
+  .v10-service-rail{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .v10-service{min-height:88px}
+  body.v10-home .section-head.split{gap:34px}
+}
+
+/* Mobile: one clean swipeable service row instead of six tiny cards */
+@media (max-width:760px){
+  body.v10-home .hero-grid{padding:34px 0 330px;min-height:800px}
+  body.v10-home .hero .eyebrow{font-size:8px;letter-spacing:.18em;margin-bottom:15px}
+  body.v10-home .hero h1{margin-bottom:18px}
+  body.v10-home .hero-actions{margin-top:20px}
+  body.v10-home .hero-actions .btn{min-height:44px;padding:0 15px;font-size:9px}
+
+  body.v10-home .hero-visual{bottom:158px;height:286px}
+  body.v10-home .hero-visual>img,body.v10-home .hero-visual:after{height:286px;width:80%;right:-15%;border-radius:18px 0 0 18px}
+  body[data-lang=ar].v10-home .hero-visual>img,body[data-lang=ar].v10-home .hero-visual:after{right:auto;left:-15%;border-radius:0 18px 18px 0}
+
+  .v10-swipe-hint{display:block;position:absolute;z-index:9;left:18px;right:18px;bottom:171px;color:#6f8794;font-size:7px;letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
+  body[data-lang=ar] .v10-swipe-hint{text-align:right;letter-spacing:0;text-transform:none;font-size:9px}
+
+  .v10-service-rail{
+    left:0;right:0;bottom:58px;
+    display:flex;grid-template-columns:none;gap:9px;
+    overflow-x:auto;overflow-y:hidden;
+    padding:0 18px 7px;
+    scroll-snap-type:x mandatory;
+    scroll-padding-inline:18px;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .v10-service-rail::-webkit-scrollbar{display:none}
+  .v10-service{
+    flex:0 0 min(74vw,270px);
+    min-height:104px;
+    padding:13px 14px;
+    scroll-snap-align:start;
+    border-radius:13px;
+  }
+  .v10-service-icon{width:31px;height:31px;font-size:8px;margin-bottom:7px}
+  .v10-service b{font-size:10px}
+  .v10-service small{display:block;font-size:7px;margin-top:4px}
+  .v10-service-detail{padding:12px 15px;gap:8px}
+  .v10-service-detail>span{font-size:9px;line-height:1.48;max-width:220px}
+  .v10-service-detail strong{min-height:25px;font-size:6.5px;padding:0 9px}
+
+  .v10-stat-rail{height:52px}
+  .v10-stat-inner{grid-template-columns:repeat(5,minmax(130px,1fr));scroll-snap-type:x proximity}
+  .v10-stat{scroll-snap-align:start;padding:0 16px}
+
+  body.v10-home #capabilities,body.v10-home #work,body.v10-home #team,body.v10-home #contact{padding-top:72px}
+  body.v10-home #studio{padding:72px 0}
+  body.v10-home .section-head.split{display:block}
+  body.v10-home .section-head aside{margin-top:22px;max-width:none}
+  body.v10-home .section-head>div>p{font-size:13px}
+
+  /* Reduce long page feeling on phones while keeping content available on tap */
+  body.v10-home .discipline-grid{grid-template-columns:1fr 1fr;gap:9px;margin-top:28px}
+  body.v10-home .discipline-grid article{min-height:148px;padding:17px}
+  body.v10-home .discipline-grid h3{font-size:16px;margin-top:22px}
+  body.v10-home .discipline-grid i{width:40px;height:40px}
+  body.v10-home .project-grid{grid-template-columns:1fr;gap:12px}
+  body.v10-home .featured-project{min-height:0}
+}
+
+@media (max-width:460px){
+  body.v10-home .hero-grid{padding-bottom:320px;min-height:780px}
+  body.v10-home .hero h1{font-size:clamp(40px,11vw,50px)}
+  body.v10-home[data-lang=ar] .hero h1{font-size:clamp(34px,9.4vw,43px)}
+  body.v10-home .discipline-grid{grid-template-columns:1fr}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .v10-service::after{transition:none!important}
+}

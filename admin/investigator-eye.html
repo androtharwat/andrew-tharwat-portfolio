@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="/admin/studio-v9.css?v=2" />
   <link rel="stylesheet" href="/admin/investigator-eye.css?v=1" />
   <link rel="stylesheet" href="/admin/investigator-eye-actions.css?v=1" />
+  <link rel="stylesheet" href="/admin/hse-content-admin.css?v=1" />
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -44,6 +45,7 @@
         <button class="nav-item ie-nav" type="button" data-section="cases"><span class="nav-icon">◎</span><span>Consultation Cases</span><span class="nav-count" id="nav-case-count">0</span></button>
         <button class="nav-item ie-nav" type="button" data-section="services"><span class="nav-icon">▤</span><span>Service Catalog</span></button>
         <button class="nav-item ie-nav" type="button" data-section="pricing"><span class="nav-icon">$</span><span>Market Benchmarks</span></button>
+        <button class="nav-item ie-nav" type="button" data-section="content"><span class="nav-icon">▧</span><span>HSE Content</span></button>
         <p class="nav-label">SYSTEM</p>
         <a class="nav-item" href="/admin/studio-v9.html"><span class="nav-icon">←</span><span>Back to Studio OS</span></a>
         <a class="nav-item" href="/v9/" target="_blank" rel="noopener"><span class="nav-icon">↗</span><span>Open Public V9</span></a>
@@ -69,14 +71,14 @@
       </header>
 
       <section class="ie-rulebar" aria-label="Commercial rule">
-        <div><span class="status-dot"></span><b>$75 = CONSULTATION ONLY</b><p>Every deliverable or follow-on service is scoped and priced separately after consultation.</p></div>
+        <div><span class="status-dot"></span><b>CONSULTATION = CONSULTATION ONLY</b><p>Every deliverable or follow-on service is scoped and priced separately after consultation.</p></div>
         <span class="branch-chip">ADMIN CONTROLLED PRICING</span>
       </section>
 
       <section class="ie-view active" data-ie-view="overview">
         <section class="kpi-grid ie-kpis" aria-label="Investigator's Eye metrics">
           <button class="kpi-card" type="button" data-jump="cases"><span class="kpi-label">OPEN CASES</span><strong id="kpi-open-cases">0</strong><small>Consultation cases not closed</small></button>
-          <button class="kpi-card" type="button" data-jump="cases"><span class="kpi-label">CONSULTATIONS BOOKED</span><strong id="kpi-booked">0</strong><small>$75 consultation entry</small></button>
+          <button class="kpi-card" type="button" data-jump="cases"><span class="kpi-label">CONSULTATIONS BOOKED</span><strong id="kpi-booked">0</strong><small>Catalog-controlled consultation entry</small></button>
           <button class="kpi-card" type="button" data-jump="services"><span class="kpi-label">ACTIVE SERVICES</span><strong id="kpi-services">0</strong><small>Available follow-on services</small></button>
           <button class="kpi-card" type="button" data-jump="pricing"><span class="kpi-label">MARKET SOURCES</span><strong id="kpi-benchmarks">0</strong><small>Internal pricing references</small></button>
         </section>
@@ -85,7 +87,7 @@
           <article class="panel ie-hero-panel">
             <div class="panel-head"><div><p class="overline">COMMERCIAL MODEL</p><h2>Consult first. Scope second. Price third.</h2></div><span class="status-badge ie-status-good">LIVE MODEL</span></div>
             <div class="ie-flow">
-              <div><span>01</span><b>Consultation</b><small>Fixed $75</small></div><i>→</i>
+              <div><span>01</span><b>Consultation</b><small>Catalog price</small></div><i>→</i>
               <div><span>02</span><b>Needs Identified</b><small>Andrew review</small></div><i>→</i>
               <div><span>03</span><b>Services Recommended</b><small>No forced bundle</small></div><i>→</i>
               <div><span>04</span><b>Separate Work Orders</b><small>Fixed / From / Quote</small></div>
@@ -136,6 +138,90 @@
         </section>
       </section>
 
+      <section class="ie-view" data-ie-view="content">
+        <div class="ie-section-head">
+          <div><p class="overline">HSE WORLD · CONTENT ENGINE</p><h2>HSE Content.</h2><p>Source-controlled bilingual publishing. AI can build a draft; only a reviewed and validated revision can become public.</p></div>
+          <div class="hsec-toolbar"><a class="button button-secondary ie-link-button" href="/hse/" target="_blank" rel="noopener">OPEN HSE WORLD ↗</a><button class="button button-primary" type="button" id="hsec-new">NEW HSE CONTENT</button></div>
+        </div>
+
+        <div id="hse-content-admin" class="hsec-shell">
+          <section class="hsec-kpis">
+            <article class="hsec-kpi"><span>PUBLISHED</span><strong id="hsec-kpi-published">—</strong></article>
+            <article class="hsec-kpi"><span>DRAFTS</span><strong id="hsec-kpi-drafts">—</strong></article>
+            <article class="hsec-kpi"><span>REVIEW REQUIRED</span><strong id="hsec-kpi-review">—</strong></article>
+            <article class="hsec-kpi"><span>FEATURED</span><strong id="hsec-kpi-featured">—</strong></article>
+          </section>
+
+          <section id="hsec-browser" class="panel">
+            <div class="panel-head"><div><p class="overline">DRAFT → VALIDATE → PUBLISH</p><h2>Content Library</h2></div><span class="status-badge ie-status-good">PUBLISHED REVISION ONLY</span></div>
+            <div class="hsec-toolbar">
+              <input id="hsec-search" type="search" placeholder="Search title, Arabic title, slug or category…" />
+              <select id="hsec-type"><option value="all">All types</option><option value="knowledge">Knowledge</option><option value="problem">Problems</option><option value="solution">Solutions</option><option value="training">Training</option><option value="digital">Digital HSE</option><option value="case">Case Studies</option></select>
+              <select id="hsec-status"><option value="all">All states</option><option value="published">Published</option><option value="draft">Has Draft</option><option value="unpublished">Unpublished</option></select>
+            </div>
+            <div id="hsec-list" class="hsec-list"><div class="hsec-empty">Open HSE Content to load the library.</div></div>
+          </section>
+
+          <section id="hsec-editor" class="panel hsec-editor hidden">
+            <div class="hsec-editor-head">
+              <div><p class="overline">HSE CONTENT EDITOR</p><h3 id="hsec-editor-title">HSE Draft</h3><p>Source Content stays authoritative. Draft changes never alter the live public revision until Publish succeeds.</p></div>
+              <div class="hsec-editor-actions"><button class="button button-secondary" type="button" id="hsec-back">← LIBRARY</button><button class="button button-secondary" type="button" id="hsec-discard">DISCARD DRAFT</button><button class="button button-secondary" type="button" id="hsec-save">SAVE DRAFT</button><button class="button button-secondary" type="button" id="hsec-validate">VALIDATE</button><button class="button button-primary" type="button" id="hsec-publish" disabled>PUBLISH</button></div>
+            </div>
+
+            <div id="hsec-live-note" class="hsec-live-note"></div>
+            <div class="hsec-readiness"><div><span class="overline">BILINGUAL READINESS</span><strong id="hsec-readiness-number">0%</strong></div><div><div class="hsec-meter"><i id="hsec-readiness-bar"></i></div><small>EN/AR pairs across core fields and visible sections. Server validation remains the publish authority.</small></div></div>
+            <div id="hsec-validation" class="hsec-validation">Save the Draft, then run Validate before Publish.</div>
+
+            <div class="hsec-grid three">
+              <label class="hsec-field"><span>CONTENT TYPE</span><select id="hsec-content-type"><option value="knowledge">Knowledge</option><option value="problem">Problem</option><option value="solution">Solution</option><option value="training">Training</option><option value="digital">Digital HSE</option><option value="case">Case Study</option></select></label>
+              <label class="hsec-field"><span>SLUG</span><input id="hsec-slug" placeholder="machine-guarding-basics" /></label>
+              <label class="hsec-field"><span>VISIBILITY</span><select id="hsec-visibility"><option value="public">Public after Publish</option><option value="hidden">Hidden</option></select></label>
+            </div>
+
+            <div class="hsec-grid three">
+              <label class="hsec-field"><span>CATEGORY SLUG</span><input id="hsec-category" placeholder="machinery-safety" /></label>
+              <label class="hsec-field"><span>CATEGORY · EN</span><input id="hsec-category-name" /></label>
+              <label class="hsec-field"><span>CATEGORY · AR</span><input id="hsec-category-name-ar" dir="rtl" /></label>
+            </div>
+
+            <div class="hsec-grid">
+              <label class="hsec-field"><span>TITLE · EN</span><input id="hsec-title-en" /></label>
+              <label class="hsec-field"><span>TITLE · AR</span><input id="hsec-title-ar" dir="rtl" /></label>
+              <label class="hsec-field"><span>SUMMARY · EN</span><textarea id="hsec-excerpt-en"></textarea></label>
+              <label class="hsec-field"><span>SUMMARY · AR</span><textarea id="hsec-excerpt-ar" dir="rtl"></textarea></label>
+            </div>
+
+            <div class="hsec-grid three">
+              <label class="hsec-field"><span>SOURCE LANGUAGE</span><select id="hsec-source-language"><option value="auto">Auto</option><option value="en">English</option><option value="ar">Arabic</option><option value="bilingual">Bilingual</option></select></label>
+              <label class="hsec-field"><span>FIELD LOCKS · comma separated</span><input id="hsec-locks" placeholder="title, title_ar, sections" /></label>
+              <div class="hsec-field"><span>DISPLAY</span><label><input id="hsec-featured" type="checkbox" /> Featured</label><label><input id="hsec-home" type="checkbox" /> HSE Home</label></div>
+            </div>
+            <div id="hsec-lock-chips" class="hsec-locks"></div>
+
+            <label class="hsec-field hsec-source"><span>SOURCE CONTENT · AUTHORITATIVE</span><textarea id="hsec-source" placeholder="Paste the reviewed source material here. AI suggestions must stay traceable to this source."></textarea></label>
+
+            <section class="hsec-ai">
+              <div class="hsec-ai-head"><div><h4>AI Builder</h4><p>Generates a bilingual Draft suggestion only. It cannot Publish. Locked fields are preserved.</p></div><div class="hsec-editor-actions"><button class="button button-secondary" type="button" id="hsec-ai-generate">GENERATE AI DRAFT</button><button class="button button-primary" type="button" id="hsec-ai-apply" disabled>APPLY AI DRAFT</button></div></div>
+              <div id="hsec-ai-result" class="hsec-ai-result">No AI draft generated in this editing session.</div>
+            </section>
+
+            <div class="hsec-grid">
+              <label class="hsec-field"><span>HERO JSON</span><textarea id="hsec-hero"></textarea></label>
+              <label class="hsec-field"><span>CARD JSON</span><textarea id="hsec-card"></textarea></label>
+              <label class="hsec-field"><span>SEO JSON</span><textarea id="hsec-seo"></textarea></label>
+              <label class="hsec-field"><span>TAGS JSON</span><textarea id="hsec-tags"></textarea></label>
+            </div>
+            <div class="hsec-json-grid">
+              <label class="hsec-field"><span>SECTIONS JSON · AI suggestion sections require manual approval</span><textarea id="hsec-sections"></textarea></label>
+              <label class="hsec-field"><span>GUIDED REVIEW JSON · review_approved must be true before publishing when enabled</span><textarea id="hsec-guided"></textarea></label>
+            </div>
+
+            <div class="hsec-tabs"><button type="button" class="active" data-hsec-preview="split">SPLIT PREVIEW</button><button type="button" data-hsec-preview="en">EN PREVIEW</button><button type="button" data-hsec-preview="ar">AR PREVIEW</button></div>
+            <div id="hsec-preview" class="hsec-preview"></div>
+          </section>
+        </div>
+      </section>
+
       <footer class="workspace-footer"><span>INVESTIGATOR'S EYE · ANDREW THARWAT STUDIO</span><span>Consultation → Scope → Service → Delivery</span></footer>
     </main>
   </div>
@@ -165,7 +251,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/config.js"></script>
-  <script src="/admin/investigator-eye.js?v=1"></script>
+  <script src="/admin/investigator-eye.js?v=3"></script>
   <script src="/admin/investigator-eye-actions.js?v=1"></script>
+  <script src="/admin/hse-content-admin.js?v=2"></script>
 </body>
 </html>

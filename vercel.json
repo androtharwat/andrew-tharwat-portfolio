@@ -2,8 +2,65 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/", "destination": "/v9/index.html" },
-    { "source": "/share/:media", "destination": "/api/share?media=:media" },
-    { "source": "/projects/:slug", "destination": "/project?slug=:slug" }
+    {
+      "source": "/",
+      "destination": "/v9/index.html"
+    },
+    {
+      "source": "/share/:media",
+      "destination": "/api/share?media=:media"
+    },
+    {
+      "source": "/projects/:slug",
+      "destination": "/project?slug=:slug"
+    },
+    {
+      "source": "/hse",
+      "destination": "/hse/index.html"
+    },
+    {
+      "source": "/hse/knowledge/:slug",
+      "destination": "/hse/topic.html?type=knowledge&slug=:slug"
+    },
+    {
+      "source": "/hse/problems/:slug",
+      "destination": "/hse/topic.html?type=problem&slug=:slug"
+    },
+    {
+      "source": "/hse/solutions/:slug",
+      "destination": "/hse/topic.html?type=solution&slug=:slug"
+    },
+    {
+      "source": "/hse/training/:slug",
+      "destination": "/hse/topic.html?type=training&slug=:slug"
+    },
+    {
+      "source": "/hse/digital/:slug",
+      "destination": "/hse/topic.html?type=digital&slug=:slug"
+    },
+    {
+      "source": "/hse/case-studies/:slug",
+      "destination": "/hse/topic.html?type=case&slug=:slug"
+    },
+    {
+      "source": "/hse-guided-review",
+      "destination": "/hse-guided-review/index.html"
+    },
+    {
+      "source": "/hse-consultation",
+      "destination": "/hse-consultation/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/hse-world",
+      "destination": "/hse",
+      "permanent": false
+    },
+    {
+      "source": "/hse-world/:path*",
+      "destination": "/hse",
+      "permanent": false
+    }
   ]
 }

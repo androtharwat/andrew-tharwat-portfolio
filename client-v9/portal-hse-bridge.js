@@ -14,7 +14,7 @@
   }
   function addEmptyCta(){
     const box=$('#portal-empty');if(!box||box.querySelector('[data-open-hse-empty]'))return;
-    const a=document.createElement('a');a.href='#hse';a.dataset.portalNav='hse';a.dataset.openHseEmpty='1';a.textContent=t('START HSE CONSULTATION →','ابدأ استشارة HSE ←');box.appendChild(a);
+    const a=document.createElement('a');a.href='#hse';a.dataset.portalNav='hse';a.dataset.openHseEmpty='1';a.textContent=t('START HSE REVIEW →','ابدأ مراجعة HSE ←');box.appendChild(a);
   }
   document.addEventListener('click',e=>{if(e.target.closest('[data-portal-nav="hse"]'))setTimeout(openHseShell,0)});
   window.addEventListener('hashchange',()=>{if(location.hash==='#hse')openHseShell()});

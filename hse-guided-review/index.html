@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#04121c" />
+  <meta name="robots" content="index,follow" />
+  <meta name="description" content="A guided HSE self-review that turns your current situation into a structured gap map before professional consultation." />
+  <title>Guided HSE Review — Andrew Tharwat Studio</title>
+  <link rel="icon" href="/assets/favicon-official.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/hse-guided-review/guided-review.css?v=3" />
+</head>
+<body data-lang="en">
+  <header class="topbar">
+    <a class="brand" href="/hse/"><img src="/assets/logo-mark-official.png" alt="" /><span><b>ANDREW THARWAT</b><small data-en="HSE WORLD · GUIDED REVIEW" data-ar="HSE WORLD · مراجعة موجهة">HSE WORLD · GUIDED REVIEW</small></span></a>
+    <div class="top-actions"><a href="/hse/" data-en="HSE World" data-ar="عالم HSE">HSE World</a><button id="lang-toggle" type="button">EN | عربي</button></div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div>
+        <span class="eyebrow" data-en="GUIDED REVIEW · SELF-CHECK · GAP MAP" data-ar="مراجعة موجهة · تقييم ذاتي · خريطة فجوات">GUIDED REVIEW · SELF-CHECK · GAP MAP</span>
+        <h1 data-en-html="CHECK THE CASE<br><span>BEFORE YOU CHOOSE A SERVICE.</span>" data-ar-html="راجع الحالة<br><span>قبل ما تختار أي خدمة.</span>">CHECK THE CASE<br><span>BEFORE YOU CHOOSE A SERVICE.</span></h1>
+        <p data-en="Six focused stages turn what you already know into a structured review you can use yourself or carry into professional consultation." data-ar="ست مراحل مركزة تحول المعلومات اللي عندك لمراجعة منظمة تقدر تستخدمها بنفسك أو تكمل بيها للاستشارة المهنية.">Six focused stages turn what you already know into a structured review you can use yourself or carry into professional consultation.</p>
+      </div>
+      <aside><b data-en="IMPORTANT" data-ar="مهم">IMPORTANT</b><p data-en="This is an educational diagnostic aid, not a legal compliance check, formal risk assessment, permit, or confirmation that work is safe to continue." data-ar="دي أداة تعليمية للمراجعة وليست فحص امتثال قانوني أو تقييم مخاطر رسمي أو تصريح عمل أو تأكيد أن العمل آمن للاستمرار.">This is an educational diagnostic aid, not a legal compliance check, formal risk assessment, permit, or confirmation that work is safe to continue.</p></aside>
+    </section>
+
+    <section class="review-shell">
+      <nav id="stepper" class="stepper" aria-label="Guided review progress"></nav>
+
+      <form id="review-form">
+        <section class="review-step active" data-step="0">
+          <div class="step-head"><span>01</span><div><h2 data-en="Understand the situation" data-ar="افهم الحالة">Understand the situation</h2><p data-en="Start with the issue and what is actually happening. Plain language is enough." data-ar="ابدأ بالمشكلة وإيه اللي بيحصل فعليًا. اكتب بطريقتك العادية.">Start with the issue and what is actually happening. Plain language is enough.</p></div></div>
+          <label><span data-en="MAIN HAZARD / ISSUE" data-ar="الخطر / المشكلة الرئيسية">MAIN HAZARD / ISSUE</span><select id="hazard" required>
+            <option value="">Choose the closest match</option>
+            <option value="NOI|Noise Exposure">Noise Exposure</option><option value="HEAT|Heat Stress">Heat Stress</option><option value="LIGHT|Lighting">Lighting</option><option value="VIB|Vibration">Vibration</option><option value="RAD|Radiation">Radiation</option><option value="PRESS|Pressure Systems">Pressure Systems</option><option value="CHEM|Chemical Exposure">Chemical Exposure</option><option value="ELEC|Electrical Safety">Electrical Safety</option><option value="MACH|Machinery Safety">Machinery Safety</option><option value="WAH|Work at Height">Work at Height</option><option value="FIRE|Fire Safety">Fire Safety</option><option value="GEN|General HSE / Not Sure">General HSE / Not Sure</option>
+          </select></label>
+          <label><span data-en="WHAT IS HAPPENING?" data-ar="إيه اللي بيحصل؟">WHAT IS HAPPENING?</span><textarea id="context" required minlength="10" rows="5" data-en-placeholder="Describe the task, condition or concern you want to review." data-ar-placeholder="اوصف المهمة أو الحالة أو المشكلة اللي عايز تراجعها." placeholder="Describe the task, condition or concern you want to review."></textarea></label>
+          <div class="review-note" data-en="This review supports understanding only. It is not a formal risk assessment, compliance decision, permit, or safe-to-work confirmation." data-ar="المراجعة دي تساعد على الفهم فقط. ليست تقييم مخاطر رسميًا أو قرار امتثال أو تصريح عمل أو تأكيدًا بأن العمل آمن.">This review supports understanding only. It is not a formal risk assessment, compliance decision, permit, or safe-to-work confirmation.</div>
+        </section>
+
+        <section class="review-step" data-step="1">
+          <div class="step-head"><span>02</span><div><h2 data-en="Diagnose the context" data-ar="شخّص السياق">Diagnose the context</h2><p data-en="Add the context that changes how the issue should be reviewed, and flag any immediate uncontrolled condition early." data-ar="أضف السياق اللي يغير طريقة مراجعة المشكلة، وحدد من البداية لو في حالة فورية غير مسيطر عليها.">Add the context that changes how the issue should be reviewed, and flag any immediate uncontrolled condition early.</p></div></div>
+          <div class="two"><label><span data-en="COUNTRY / JURISDICTION · OPTIONAL" data-ar="الدولة / جهة التطبيق · اختياري">COUNTRY / JURISDICTION · OPTIONAL</span><input id="jurisdiction" placeholder="Example: Egypt" /></label><label><span data-en="WHO IS EXPOSED? · OPTIONAL" data-ar="مين بيتعرض؟ · اختياري">WHO IS EXPOSED? · OPTIONAL</span><input id="people" data-en-placeholder="Workers, contractors, visitors…" data-ar-placeholder="عمال، مقاولين، زوار…" placeholder="Workers, contractors, visitors…" /></label></div>
+          <label><span data-en="IS THERE ANY IMMEDIATE DANGER OR UNCONTROLLED CONDITION RIGHT NOW?" data-ar="هل يوجد حاليًا خطر فوري أو حالة غير مسيطر عليها؟">IS THERE ANY IMMEDIATE DANGER OR UNCONTROLLED CONDITION RIGHT NOW?</span><select id="immediate-danger"><option value="">Choose</option><option value="no">No known immediate danger</option><option value="unsure">Unsure</option><option value="yes">Yes</option></select></label>
+          <div id="early-danger-note" class="danger-alert hidden"></div>
+        </section>
+
+        <section class="review-step" data-step="2">
+          <div class="step-head"><span>03</span><div><h2 data-en="Explore the Control Pathways" data-ar="استكشف مسارات التحكم">Explore the Control Pathways</h2><p data-en="Select only the layers you actually have. Open each pathway to understand the control concept before answering." data-ar="حدد فقط الطبقات الموجودة فعليًا عندك. افتح كل مسار لفهم فكرة التحكم قبل الإجابة.">Select only the layers you actually have. Open each pathway to understand the control concept before answering.</p></div></div>
+          <div class="control-pathways" id="control-checks">
+            <details class="control-path"><summary><input type="checkbox" value="elimination/substitution" /><span><b data-en="Elimination / substitution" data-ar="الإزالة / الاستبدال">Elimination / substitution</b><small data-en="Open explanation + general example" data-ar="افتح الشرح + مثال عام">Open explanation + general example</small></span><i>+</i></summary><div><b data-en="WHY IT MATTERS" data-ar="ليه ده مهم">WHY IT MATTERS</b><p data-en="This pathway asks whether the hazard can be removed or reduced at source before relying on downstream controls." data-ar="المسار ده بيسأل هل يمكن إزالة الخطر أو تقليله من المصدر قبل الاعتماد على وسائل تحكم لاحقة.">This pathway asks whether the hazard can be removed or reduced at source before relying on downstream controls.</p><b data-en="GENERAL EXAMPLE" data-ar="مثال عام">GENERAL EXAMPLE</b><p data-en="Remove an unnecessary hazardous step, or consider a lower-hazard method or material where suitable." data-ar="إلغاء خطوة خطرة غير ضرورية، أو النظر في طريقة أو مادة أقل خطورة عندما يكون ذلك مناسبًا.">Remove an unnecessary hazardous step, or consider a lower-hazard method or material where suitable.</p></div></details>
+            <details class="control-path"><summary><input type="checkbox" value="engineering controls" /><span><b data-en="Engineering controls" data-ar="وسائل تحكم هندسية">Engineering controls</b><small data-en="Open explanation + general example" data-ar="افتح الشرح + مثال عام">Open explanation + general example</small></span><i>+</i></summary><div><b data-en="WHY IT MATTERS" data-ar="ليه ده مهم">WHY IT MATTERS</b><p data-en="Engineering controls change equipment, process or the physical environment so protection does not depend only on individual behavior." data-ar="وسائل التحكم الهندسية تغيّر المعدة أو العملية أو البيئة المادية بحيث لا تعتمد الحماية فقط على سلوك الفرد.">Engineering controls change equipment, process or the physical environment so protection does not depend only on individual behavior.</p><b data-en="GENERAL EXAMPLE" data-ar="مثال عام">GENERAL EXAMPLE</b><p data-en="Examples can include guarding, isolation, enclosure, ventilation or physical barriers when suitable for the actual hazard." data-ar="قد تشمل الأمثلة الحواجز أو العزل أو الاحتواء أو التهوية أو الحواجز المادية عندما تكون مناسبة للخطر الفعلي.">Examples can include guarding, isolation, enclosure, ventilation or physical barriers when suitable for the actual hazard.</p></div></details>
+            <details class="control-path"><summary><input type="checkbox" value="administrative controls" /><span><b data-en="Administrative controls" data-ar="وسائل تحكم إدارية">Administrative controls</b><small data-en="Open explanation + general example" data-ar="افتح الشرح + مثال عام">Open explanation + general example</small></span><i>+</i></summary><div><b data-en="WHY IT MATTERS" data-ar="ليه ده مهم">WHY IT MATTERS</b><p data-en="Administrative controls define how work is planned, authorized, supervised and communicated." data-ar="وسائل التحكم الإدارية تحدد كيفية تخطيط العمل واعتماده والإشراف عليه والتواصل بشأنه.">Administrative controls define how work is planned, authorized, supervised and communicated.</p><b data-en="GENERAL EXAMPLE" data-ar="مثال عام">GENERAL EXAMPLE</b><p data-en="Examples can include procedures, permits, access rules, competency requirements, scheduling or supervision arrangements." data-ar="قد تشمل الأمثلة الإجراءات والتصاريح وقواعد الدخول ومتطلبات الكفاءة وتنظيم التوقيت أو ترتيبات الإشراف.">Examples can include procedures, permits, access rules, competency requirements, scheduling or supervision arrangements.</p></div></details>
+            <details class="control-path"><summary><input type="checkbox" value="PPE" /><span><b data-en="PPE" data-ar="مهمات الوقاية الشخصية">PPE</b><small data-en="Open explanation + general example" data-ar="افتح الشرح + مثال عام">Open explanation + general example</small></span><i>+</i></summary><div><b data-en="WHY IT MATTERS" data-ar="ليه ده مهم">WHY IT MATTERS</b><p data-en="PPE is a personal protection layer and needs to suit the actual exposure and task." data-ar="مهمات الوقاية الشخصية طبقة حماية فردية ويجب أن تناسب التعرض والمهمة الفعلية.">PPE is a personal protection layer and needs to suit the actual exposure and task.</p><b data-en="GENERAL EXAMPLE" data-ar="مثال عام">GENERAL EXAMPLE</b><p data-en="Check that the selected protection is suitable, available, usable and actually worn for the relevant task." data-ar="تحقق أن وسيلة الحماية المختارة مناسبة ومتاحة وصالحة ويتم استخدامها فعليًا للمهمة ذات الصلة.">Check that the selected protection is suitable, available, usable and actually worn for the relevant task.</p></div></details>
+            <details class="control-path"><summary><input type="checkbox" value="monitoring/measurement" /><span><b data-en="Monitoring / measurement" data-ar="القياس / المتابعة">Monitoring / measurement</b><small data-en="Open explanation + general example" data-ar="افتح الشرح + مثال عام">Open explanation + general example</small></span><i>+</i></summary><div><b data-en="WHY IT MATTERS" data-ar="ليه ده مهم">WHY IT MATTERS</b><p data-en="Monitoring provides evidence about exposure, condition or control performance instead of relying only on assumptions." data-ar="المتابعة توفر دليلًا عن التعرض أو الحالة أو أداء وسيلة التحكم بدل الاعتماد فقط على الافتراضات.">Monitoring provides evidence about exposure, condition or control performance instead of relying only on assumptions.</p><b data-en="GENERAL EXAMPLE" data-ar="مثال عام">GENERAL EXAMPLE</b><p data-en="Use inspections, measurements, verification checks or other evidence appropriate to the hazard being reviewed." data-ar="استخدم الفحوصات أو القياسات أو اختبارات التحقق أو أي أدلة مناسبة للخطر الذي تتم مراجعته.">Use inspections, measurements, verification checks or other evidence appropriate to the hazard being reviewed.</p></div></details>
+          </div>
+          <label><span data-en="WHICH CONTROL ARE YOU LEAST CONFIDENT ABOUT? · OPTIONAL" data-ar="إيه وسيلة التحكم اللي أقل ثقة فيها؟ · اختياري">WHICH CONTROL ARE YOU LEAST CONFIDENT ABOUT? · OPTIONAL</span><textarea id="control-note" rows="3"></textarea></label>
+        </section>
+
+        <section class="review-step" data-step="3">
+          <div class="step-head"><span>04</span><div><h2 data-en="Self-Check the evidence" data-ar="راجع الأدلة بنفسك">Self-Check the evidence</h2><p data-en="Answer from evidence you actually have. “Needs verification” is better than guessing." data-ar="جاوب بناءً على الأدلة الموجودة فعلًا. «يحتاج تحقق» أفضل من التخمين.">Answer from evidence you actually have. “Needs verification” is better than guessing.</p></div></div>
+          <h3 class="substep-title" data-en="Management-system evidence" data-ar="أدلة نظام الإدارة">Management-system evidence</h3>
+          <div id="assurance-questions" class="assurance-list"></div>
+          <h3 class="substep-title" data-en="Evidence you can point to" data-ar="الأدلة اللي تقدر ترجع لها">Evidence you can point to</h3>
+          <div class="check-grid" id="evidence-checks">
+            <label><input type="checkbox" value="current risk assessment" /><span><b data-en="Current risk assessment" data-ar="تقييم مخاطر حالي">Current risk assessment</b></span></label>
+            <label><input type="checkbox" value="procedure / permit / method" /><span><b data-en="Procedure / permit / method" data-ar="إجراء / تصريح / طريقة عمل">Procedure / permit / method</b></span></label>
+            <label><input type="checkbox" value="training / competence records" /><span><b data-en="Training / competence records" data-ar="سجلات تدريب / كفاءة">Training / competence records</b></span></label>
+            <label><input type="checkbox" value="inspection / maintenance records" /><span><b data-en="Inspection / maintenance records" data-ar="سجلات فحص / صيانة">Inspection / maintenance records</b></span></label>
+            <label><input type="checkbox" value="measurement / monitoring data" /><span><b data-en="Measurement / monitoring data" data-ar="بيانات قياس / متابعة">Measurement / monitoring data</b></span></label>
+            <label><input type="checkbox" value="incident / near-miss learning" /><span><b data-en="Incident / near-miss learning" data-ar="تعلم من الحوادث / شبه الحوادث">Incident / near-miss learning</b></span></label>
+          </div>
+          <label><span data-en="OTHER EVIDENCE OR NOTES · OPTIONAL" data-ar="أدلة أو ملاحظات إضافية · اختياري">OTHER EVIDENCE OR NOTES · OPTIONAL</span><textarea id="evidence-note" rows="4"></textarea></label>
+          <div class="final-checks">
+            <label><span data-en="Are you confident the current controls match the actual task?" data-ar="هل أنت واثق إن وسائل التحكم الحالية مطابقة لطبيعة المهمة الفعلية؟">Are you confident the current controls match the actual task?</span><select id="confidence-task"><option value="">Choose</option><option value="2">Yes, with evidence</option><option value="1">Partly / unsure</option><option value="0">No / not checked</option></select></label>
+            <label><span data-en="Would you be comfortable explaining the current control basis to a competent reviewer?" data-ar="هل تقدر تشرح أساس وسائل التحكم الحالية لمراجع مختص بثقة؟">Would you be comfortable explaining the current control basis to a competent reviewer?</span><select id="confidence-review"><option value="">Choose</option><option value="2">Yes, with evidence</option><option value="1">Partly / unsure</option><option value="0">No / not checked</option></select></label>
+          </div>
+        </section>
+
+        <section class="review-step" data-step="4">
+          <div class="step-head"><span>05</span><div><h2 data-en="Your Gap Map" data-ar="خريطة الفجوات">Your Gap Map</h2><p data-en="This is a structured signal from your answers, not a compliance score or safe-work decision." data-ar="دي إشارة منظمة مبنية على إجاباتك، وليست درجة امتثال أو قرارًا بأن العمل آمن.">This is a structured signal from your answers, not a compliance score or safe-work decision.</p></div></div>
+          <div class="result-head compact"><div><span class="eyebrow" data-en="REVIEW SIGNAL" data-ar="إشارة المراجعة">REVIEW SIGNAL</span><h2 id="result-title">Review result</h2><p id="result-copy"></p></div><div class="signal" id="signal"><small data-en="CURRENT SIGNAL" data-ar="الإشارة الحالية">CURRENT SIGNAL</small><strong id="signal-label">—</strong></div></div>
+          <div id="danger-alert" class="danger-alert hidden"></div>
+          <article class="gap-panel"><div class="panel-head"><h3 data-en="Gap Map" data-ar="خريطة الفجوات">Gap Map</h3><span id="gap-count">0</span></div><div id="gap-map" class="gap-map"></div></article>
+        </section>
+
+        <section class="review-step" data-step="5">
+          <div class="step-head"><span>06</span><div><h2 data-en="Next Actions" data-ar="الإجراءات التالية">Next Actions</h2><p data-en="Use the free actions first. Professional review remains optional." data-ar="ابدأ بالإجراءات المجانية أولًا. تظل المراجعة المهنية اختيارية.">Use the free actions first. Professional review remains optional.</p></div></div>
+          <article class="actions-panel"><div class="panel-head"><h3 data-en="Recommended next actions" data-ar="الإجراءات التالية المقترحة">Recommended next actions</h3></div><ol id="actions"></ol></article>
+          <section class="snapshot"><div class="panel-head"><h3 data-en="Review snapshot" data-ar="ملخص المراجعة">Review snapshot</h3><button id="copy-snapshot" type="button" data-en="COPY" data-ar="نسخ">COPY</button></div><pre id="snapshot"></pre></section>
+          <section class="professional-gate"><div><span class="eyebrow" data-en="PROFESSIONAL REVIEW GATE" data-ar="بوابة المراجعة المهنية">PROFESSIONAL REVIEW GATE</span><h3 data-en="Want a professional review of this exact case?" data-ar="عايز مراجعة مهنية لنفس الحالة دي؟">Want a professional review of this exact case?</h3><p data-en="Only now can you continue to the consultation flow. Scope, exclusions and price appear there before you submit." data-ar="هنا فقط تقدر تكمل لمسار الاستشارة. النطاق والاستثناءات والسعر يظهروا هناك قبل إرسال الطلب.">Only now can you continue to the consultation flow. Scope, exclusions and price appear there before you submit.</p></div><div class="gate-actions"><button id="continue-consultation" class="button primary" type="button" data-en="REVIEW MY ACTUAL CASE →" data-ar="راجع حالتي الفعلية ←">REVIEW MY ACTUAL CASE →</button><button id="restart" class="button ghost" type="button" data-en="START AGAIN" data-ar="ابدأ من جديد">START AGAIN</button></div></section>
+        </section>
+
+        <div class="review-nav"><button id="back" class="button ghost" type="button" disabled data-en="← BACK" data-ar="رجوع →">← BACK</button><div id="step-copy">Step 1 of 6</div><button id="next" class="button primary" type="button" data-en="NEXT →" data-ar="التالي ←">NEXT →</button></div>
+      </form>
+
+    </section>
+  </main>
+
+  <footer><a href="/hse/" data-en="← Back to HSE World" data-ar="العودة إلى HSE World →">← Back to HSE World</a><span>ANDREW THARWAT STUDIO · GUIDED HSE REVIEW</span></footer>
+  <div id="toast" class="toast"></div>
+  <script src="/hse-guided-review/guided-review.js?v=3"></script>
+</body>
+</html>

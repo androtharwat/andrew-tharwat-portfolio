@@ -54,7 +54,7 @@
       'Internal QA':'Run internal quality checklist',
       'Client Review':'Track client review response',
       'Revisions':'Complete consolidated revision request',
-      'Final Approval':'Request final approval',
+      'Final Approval':'Confirm approved client review before final payment',
       'Final Payment':'Confirm final payment',
       'Deployment':'Deploy and validate production',
       'Completed':'Archive and start retention follow-up'
@@ -71,7 +71,7 @@
   async function clientAction(stage, project) {
     if (stage === 'Onboarding') return 'Provide onboarding information';
     if (stage === 'Client Review') return 'Review current deliverable';
-    if (stage === 'Final Approval') return 'Approve final version';
+    if (stage === 'Final Approval') return 'No action required';
     if (stage === 'Final Payment') return `Pay outstanding EGP ${money(await outstandingFor(project))}`;
     return 'No action required';
   }
@@ -90,9 +90,24 @@
       throw new Error(`Latest review is ${String(q.data.status).replaceAll('_',' ')}. Publish the active review version before continuing.`);
     }
 
+    if (project.stage === 'Final Approval') {
+      const q = await ensureClient().from('studio_reviews').select('id,status,version,published_at').eq('project_id', project.id).order('published_at', { ascending: false }).limit(1).maybeSingle();
+      if (q.error) throw q.error;
+      if (!q.data || q.data.status !== 'approved') throw new Error('An approved client review is required before final payment.');
+    }
+
     if (project.stage === 'Final Payment') {
       const outstanding = await outstandingFor(project);
       if (outstanding > 0.001) throw new Error(`Final payment is still outstanding: EGP ${money(outstanding)}.`);
+    }
+
+    if (project.stage === 'Deployment') {
+      const files = await ensureClient().from('studio_files').select('id,file_name,category,visibility').eq('project_id', project.id).eq('category', 'final_delivery');
+      if (files.error) throw files.error;
+      const finalFiles = files.data || [];
+      if (finalFiles.length && !finalFiles.some(file => file.visibility === 'client_visible')) {
+        throw new Error('Release at least one Final Delivery file to the Client Portal before completing the project.');
+      }
     }
 
     return { next: stageOrder[idx + 1], skipped: [] };

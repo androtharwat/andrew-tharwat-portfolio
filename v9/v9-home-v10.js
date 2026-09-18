@@ -13,15 +13,15 @@
       const map=[['#home','Home','الرئيسية'],['#capabilities','Services','الخدمات'],['#work','Projects','المشاريع'],['#studio','About','عن الاستوديو'],['#contact','Contact','تواصل']];
       links.forEach((a,i)=>{if(!map[i])return;a.href=map[i][0];set(a,map[i][1],map[i][2])});
       let hse=nav.querySelector('[data-v10-hse]');
-      if(!hse){hse=document.createElement('a');hse.dataset.v10Hse='1';hse.href='/hse-consultation/';nav.querySelector('a[href="#work"]')?.insertAdjacentElement('afterend',hse)}
-      hse.textContent=ar()?'استشارة HSE':'HSE Consultation';
+      if(!hse){hse=document.createElement('a');hse.dataset.v10Hse='1';hse.href='/hse/';nav.querySelector('a[href="#work"]')?.insertAdjacentElement('afterend',hse)}
+      hse.textContent=ar()?'عالم HSE':'HSE World';
     }
     const cta=$('.header-cta');set(cta,'LET’S TALK →','ابدأ التواصل ←');if(cta)cta.href='#contact';
   }
 
   const services=[
-    {code:'HSE',en:'HSE & Safety',ar:'السلامة وHSE',subEn:'Risk · Controls',subAr:'مخاطر · تحكم',descEn:'Risk assessment, practical controls, systems and professional HSE support.',descAr:'تقييم مخاطر، وسائل تحكم عملية، أنظمة ودعم مهني في HSE.',actionEn:'OPEN CONSULTATION →',actionAr:'افتح الاستشارة ←',href:'/hse-consultation/'},
-    {code:'TRN',en:'Training & Awareness',ar:'التدريب والتوعية',subEn:'People · Culture',subAr:'أفراد · ثقافة',descEn:'Awareness content and training built around real work situations and clear behavior.',descAr:'محتوى توعوي وتدريب مبني على مواقف عمل حقيقية وسلوك واضح.',actionEn:'SEE HSE WORK →',actionAr:'شوف أعمال HSE ←',href:'#work'},
+    {code:'HSE',en:'HSE & Safety',ar:'السلامة وHSE',subEn:'Risk · Controls',subAr:'مخاطر · تحكم',descEn:'Risk assessment, practical controls, systems and professional HSE support.',descAr:'تقييم مخاطر، وسائل تحكم عملية، أنظمة ودعم مهني في HSE.',actionEn:'OPEN HSE WORLD →',actionAr:'افتح عالم HSE ←',href:'/hse/'},
+    {code:'TRN',en:'Training & Awareness',ar:'التدريب والتوعية',subEn:'People · Culture',subAr:'أفراد · ثقافة',descEn:'Awareness content and training built around real work situations and clear behavior.',descAr:'محتوى توعوي وتدريب مبني على مواقف عمل حقيقية وسلوك واضح.',actionEn:'OPEN HSE KNOWLEDGE →',actionAr:'افتح محتوى HSE ←',href:'/hse/#explore'},
     {code:'DES',en:'Graphic Design',ar:'التصميم الجرافيكي',subEn:'Brand · Visuals',subAr:'هوية · مرئيات',descEn:'Brand identity, visual communication, campaigns and presentation systems.',descAr:'هوية بصرية، تواصل مرئي، حملات وأنظمة عرض احترافية.',actionEn:'SEE CREATIVE WORK →',actionAr:'شوف الأعمال الإبداعية ←',href:'#work'},
     {code:'VID',en:'Video Production',ar:'إنتاج الفيديو',subEn:'Story · Motion',subAr:'سرد · موشن',descEn:'Video, motion and AI-assisted visual storytelling for technical and creative ideas.',descAr:'فيديو وموشن وسرد بصري مدعوم بالذكاء الاصطناعي للأفكار الفنية والإبداعية.',actionEn:'SEE VIDEO WORK →',actionAr:'شوف أعمال الفيديو ←',href:'#work'},
     {code:'DEV',en:'Websites & Apps',ar:'المواقع والتطبيقات',subEn:'Web · Systems',subAr:'ويب · أنظمة',descEn:'Websites, apps, dashboards and workflows that turn manual work into usable systems.',descAr:'مواقع وتطبيقات ولوحات تحكم ومسارات عمل تحول الشغل اليدوي إلى أنظمة عملية.',actionEn:'SEE DIGITAL WORK →',actionAr:'شوف الأعمال الرقمية ←',href:'#work'},
