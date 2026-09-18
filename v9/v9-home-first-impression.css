@@ -1920,7 +1920,7 @@ body.v10-home #team .role-card.v10-role-node:before{
   transition:opacity .2s ease;
 }
 body.v10-home #team .role-card.v10-role-node:hover,
-body.v10-home #team .role-card.v10-role-node:focus-visible,
+body.v10-home #team .role-card.v10-role-node:focus-within,
 body.v10-home #team .role-card.v10-role-node.selected{
   transform:translateY(-3px);
   border-color:rgba(239,35,60,.30);

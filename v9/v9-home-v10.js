@@ -335,12 +335,22 @@
   function enhanceRoleCards(){
     $$('#role-grid .role-card').forEach(card=>{
       card.classList.add('v10-role-node');
-      card.tabIndex=0;
-      if(card.dataset.v10KeyBound)return;
-      card.dataset.v10KeyBound='1';
-      card.addEventListener('keydown',e=>{
-        if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click()}
-      });
+      card.removeAttribute('tabindex');
+      card.setAttribute('role','group');
+      const button=$('button',card);
+      const syncA11y=()=>{
+        const name=$('h4',card)?.textContent?.trim()||card.dataset.role||'expertise';
+        const selected=card.classList.contains('selected');
+        card.setAttribute('aria-label',name);
+        if(button){
+          button.setAttribute('aria-pressed',selected?'true':'false');
+          button.setAttribute('aria-label',ar()?(selected?'إزالة خبرة '+name:'اختيار خبرة '+name):(selected?'Remove '+name:'Select '+name));
+        }
+      };
+      syncA11y();
+      if(card.dataset.v10A11yBound)return;
+      card.dataset.v10A11yBound='1';
+      card.addEventListener('click',()=>setTimeout(syncA11y,0));
     });
   }
 
