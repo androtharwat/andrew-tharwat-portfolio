@@ -37,8 +37,8 @@
       type:{eyebrow:'02 · STARTING POINT',title:'Which area feels closest to the challenge?',guide:'This does not lock the solution. It only gives the studio a useful starting point for the conversation.'},
       team:{eyebrow:'03 · POSSIBLE EXPERTISE',title:'Which expertise could help solve it?',guide:'Select what seems relevant. The final mix is shaped after the problem is understood.'},
       scope:{eyebrow:'04 · SCOPE & TIMING',title:'What constraints should shape the work?',guide:'Timing, budget and current stage help define a practical path — not a generic package.',labels:['BUDGET RANGE','CURRENT STAGE']},
-      contact:{eyebrow:'05 · CONTACT',title:'Who should we reply to?',guide:'Add your name and at least one contact method so the studio can respond to the brief.',labels:['NAME','EMAIL','PHONE / WHATSAPP','COMPANY / ORGANIZATION']},
-      back:'← BACK',copy:'COPY BRIEF',send:'SEND PROJECT BRIEF →',validation:'Add your name and at least one contact method (email or phone) before sending.',summary:['PROJECT TYPE','CHALLENGE','EXPERTISE','TIMELINE','CONTACT']
+      contact:{eyebrow:'05 · CONTACT',title:'Who should we reply to?',guide:'Add your name and a valid email so the studio can reply and give you Client Access. Phone / WhatsApp is optional.',labels:['NAME','EMAIL','PHONE / WHATSAPP','COMPANY / ORGANIZATION']},
+      back:'← BACK',copy:'COPY BRIEF',send:'SEND PROJECT BRIEF →',validation:'Add your name and a valid email address before sending. Phone / WhatsApp is optional.',summary:['PROJECT TYPE','CHALLENGE','EXPERTISE','TIMELINE','CONTACT']
     },
     ar:{
       progress:{goal:'التحدي',type:'نقطة البداية',team:'الخبرات',scope:'النطاق',contact:'التواصل'},
@@ -46,8 +46,8 @@
       type:{eyebrow:'02 · نقطة البداية',title:'أي مجال يبدو الأقرب للتحدي؟',guide:'ده لا يحدد الحل مسبقًا؛ هو فقط نقطة بداية تساعد الاستوديو على فهم الاتجاه.'},
       team:{eyebrow:'03 · الخبرات المحتملة',title:'ما الخبرات التي قد تساعد في حل المشكلة؟',guide:'اختر ما يبدو مناسبًا الآن. التشكيل النهائي يتحدد بعد فهم المشكلة بشكل كامل.'},
       scope:{eyebrow:'04 · النطاق والتوقيت',title:'ما القيود التي يجب أن نضعها في الاعتبار؟',guide:'التوقيت والميزانية ومرحلة المشروع تساعدنا على بناء مسار عملي، وليس باقة جاهزة.',labels:['نطاق الميزانية','المرحلة الحالية']},
-      contact:{eyebrow:'05 · التواصل',title:'مع من نتواصل؟',guide:'أضف اسمك وطريقة تواصل واحدة على الأقل حتى نقدر نرد على البريف.',labels:['الاسم','البريد الإلكتروني','الهاتف / واتساب','الشركة / الجهة']},
-      back:'السابق →',copy:'نسخ البريف',send:'إرسال بريف المشروع ←',validation:'أضف الاسم وطريقة تواصل واحدة على الأقل (البريد أو الهاتف) قبل الإرسال.',summary:['نقطة البداية','التحدي','الخبرات','التوقيت','التواصل']
+      contact:{eyebrow:'05 · التواصل',title:'مع من نتواصل؟',guide:'أضف اسمك وبريدًا إلكترونيًا صحيحًا علشان نقدر نرد عليك ونوفر لك Client Access. الهاتف / واتساب اختياري.',labels:['الاسم','البريد الإلكتروني','الهاتف / واتساب','الشركة / الجهة']},
+      back:'السابق →',copy:'نسخ البريف',send:'إرسال بريف المشروع ←',validation:'أضف الاسم وبريدًا إلكترونيًا صحيحًا قبل الإرسال. الهاتف / واتساب اختياري.',summary:['نقطة البداية','التحدي','الخبرات','التوقيت','التواصل']
     }
   };
 

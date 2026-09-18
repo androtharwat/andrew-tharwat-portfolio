@@ -19,6 +19,16 @@
   const selectedMany=(selector,key)=>$$(selector).map(x=>x.dataset?.[key]).filter(Boolean);
   const isEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
+  function goToStep(key){
+    const steps=$('.brief-step[data-key]');
+    const index=steps.findIndex(step=>step.dataset.key===key);
+    if(index<0)return false;
+    const buttons=$('#brief-progress button');
+    buttons[index]?.click();
+    setTimeout(()=>steps[index]?.scrollIntoView({behavior:'smooth',block:'center'}),30);
+    return true;
+  }
+
   function setBusy(busy){
     send.setAttribute('aria-busy',busy?'true':'false');
     send.style.pointerEvents=busy?'none':'';
@@ -64,11 +74,18 @@
     const disciplines=selectedMany('.brief-discipline.selected','disc');
     const ar=document.body.dataset.lang==='ar';
 
-    if(!name||!email||!isEmail(email)||!goal){
+    if(!goal){
       e.preventDefault();
       e.stopImmediatePropagation();
-      showError(ar?'أدخل الاسم والبريد الإلكتروني الصحيح ووصف التحدي قبل الإرسال.':'Add your name, a valid email, and the challenge before sending.');
-      document.querySelector('.brief-step[data-key="contact"]')?.scrollIntoView({behavior:'smooth',block:'center'});
+      showError(ar?'اكتب التحدي أو المشكلة قبل الإرسال.':'Describe the challenge before sending.');
+      goToStep('goal');
+      return;
+    }
+    if(!name||!email||!isEmail(email)){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showError(ar?'أدخل الاسم وبريدًا إلكترونيًا صحيحًا قبل الإرسال. الهاتف / واتساب اختياري.':'Add your name and a valid email before sending. Phone / WhatsApp is optional.');
+      goToStep('contact');
       return;
     }
 
