@@ -502,6 +502,12 @@
     }) || null;
   }
 
+  function latestResolvedHelpForMission(missionId) {
+    return state.helpRequests.find(function (r) {
+      return r.mission_id === missionId && r.status === 'resolved' && String(r.admin_note || '').trim() !== '';
+    }) || null;
+  }
+
   function helpTypeLabel(type) {
     if (type === 'blocked') return 'التنفيذ متوقف';
     if (type === 'problem') return 'مشكلة';
@@ -510,11 +516,26 @@
 
   function updateMissionHelpButton() {
     const btn = $('#mission-help-button');
+    const response = $('#mission-help-response');
     if (!btn) return;
     const req = state.focusMissionId ? openHelpForMission(state.focusMissionId) : null;
+    const resolved = state.focusMissionId ? latestResolvedHelpForMission(state.focusMissionId) : null;
     btn.disabled = !!req;
     btn.textContent = req ? 'تم إرسال طلب مساعدة ✓' : 'محتاج مساعدة';
     btn.classList.toggle('requested', !!req);
+
+    if (response) {
+      if (req) {
+        response.className = 'mission-help-response waiting';
+        response.innerHTML = '<b>طلب المساعدة مفتوح</b><span>المسؤول هيراجع الطلب ويظهر الرد هنا.</span>';
+      } else if (resolved) {
+        response.className = 'mission-help-response answered';
+        response.innerHTML = '<b>رد المسؤول</b><span>' + esc(resolved.admin_note) + '</span><small>' + esc(relativeActivityTime(resolved.resolved_at || resolved.created_at)) + '</small>';
+      } else {
+        response.className = 'mission-help-response hidden';
+        response.innerHTML = '';
+      }
+    }
   }
 
   function activityForMission(missionId) {
@@ -1465,7 +1486,7 @@
     const helpBlock = state.access === 'admin' && help
       ? '<div class="mission-help-alert"><div><span>' + esc(helpTypeLabel(help.request_type)) + '</span><b>' + esc(help.message) + '</b><small>' +
         esc(help.stage_title || 'داخل المهمة') + (help.supplier_no ? ' · المورد ' + esc(String(help.supplier_no)) : '') + ' · ' +
-        esc(relativeActivityTime(help.created_at)) + '</small></div><button class="mini-btn help-resolve" type="button" data-resolve-help="' + esc(help.id) + '">تم الحل ✓</button></div>'
+        esc(relativeActivityTime(help.created_at)) + '</small></div><button class="mini-btn help-resolve" type="button" data-answer-help="' + esc(help.id) + '">رد وحل</button></div>'
       : '';
 
     return '<article class="mission-card' + liveClass + (help ? ' needs-help' : '') + '">' +
@@ -1504,6 +1525,27 @@
     $('#mission-form').reset();
     $('#mission-target').value = '3';
     $('#mission-dialog').showModal();
+  });
+
+  $('[data-close-help-response]').forEach(function (btn) {
+    btn.addEventListener('click', function () { $('#mission-help-response-dialog').close(); });
+  });
+
+  $('#mission-help-response-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (state.access !== 'admin') return;
+    const id = $('#mission-help-response-id').value;
+    const note = $('#mission-help-admin-note').value.trim();
+    if (!id || !note) return notify('اكتب الرد أو التعليمات أولًا.', 'error');
+    const r = await state.sb.from('studio_sourcing_help_requests').update({
+      status: 'resolved',
+      admin_note: note,
+      resolved_at: new Date().toISOString()
+    }).eq('id', id);
+    if (r.error) return notify(r.error.message, 'error');
+    $('#mission-help-response-dialog').close();
+    notify('تم إرسال الرد وإغلاق طلب المساعدة ✓');
+    await refreshSupport();
   });
 
   $('#mission-help-button').addEventListener('click', function () {
@@ -1568,15 +1610,16 @@
   });
 
   document.addEventListener('click', async function (e) {
-    const resolveHelp = e.target.closest('[data-resolve-help]');
-    if (resolveHelp && state.access === 'admin') {
-      const r = await state.sb.from('studio_sourcing_help_requests').update({
-        status: 'resolved',
-        resolved_at: new Date().toISOString()
-      }).eq('id', resolveHelp.dataset.resolveHelp);
-      if (r.error) return notify(r.error.message, 'error');
-      notify('تم إغلاق طلب المساعدة.');
-      await refreshSupport();
+    const answerHelp = e.target.closest('[data-answer-help]');
+    if (answerHelp && state.access === 'admin') {
+      const req = state.helpRequests.find(function (x) { return x.id === answerHelp.dataset.answerHelp; });
+      if (!req) return;
+      $('#mission-help-response-id').value = req.id;
+      $('#mission-help-admin-note').value = '';
+      $('#mission-help-response-context').innerHTML =
+        '<b>' + esc(helpTypeLabel(req.request_type)) + '</b><p>' + esc(req.message) + '</p><small>' +
+        esc(req.stage_title || 'داخل المهمة') + (req.supplier_no ? ' · المورد ' + esc(String(req.supplier_no)) : '') + '</small>';
+      $('#mission-help-response-dialog').showModal();
       return;
     }
 
