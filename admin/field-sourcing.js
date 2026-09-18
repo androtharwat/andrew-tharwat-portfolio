@@ -401,6 +401,7 @@
     if (state.access === 'admin') await loadDevices();
     renderEverything();
     $('#sync-status').textContent = 'LIVE SUPABASE';
+    openMissionFromUrl();
   }
 
   async function loadDevices() {
@@ -929,7 +930,8 @@
     ].filter(Boolean);
     const phone = normalizeWhatsAppPhone(m.assigned_phone);
     const base = phone ? 'https://wa.me/' + phone : 'https://wa.me/';
-    window.open(base + '?text=' + encodeURIComponent(parts.join('\n')), '_blank', 'noopener');
+    window.open(base + '?text=' + encodeURIComponent(parts.join('
+')), '_blank', 'noopener');
   }
 
   function openMission(m) {
@@ -1008,7 +1010,8 @@
       '<div class="mission-progress"><div><span>SUPPLIERS</span><strong>' + p.suppliers + ' / ' + p.target + '</strong></div><i><b style="width:' + p.percent + '%"></b></i></div>' +
       '<div class="mission-actions"><span class="status-pill status-' + (m.status === 'active' ? 'complete' : 'draft') + '">' + esc(m.status.toUpperCase()) + '</span>' +
       (state.access === 'admin' && m.status === 'active' ? '<button class="mini-btn" type="button" data-mission-complete="' + esc(m.id) + '">Complete</button>' : '') +
-      (state.access === 'admin' ? '<button class="mini-btn" type="button" data-share-mission="' + esc(m.id) + '">إرسال المهمة</button>' : '') +\n      '<button class="mini-btn" type="button" data-start-mission="' + esc(m.id) + '">زيارة</button></div></article>';
+      (state.access === 'admin' ? '<button class="mini-btn" type="button" data-share-mission="' + esc(m.id) + '">إرسال المهمة</button>' : '') +
+      '<button class="mini-btn" type="button" data-start-mission="' + esc(m.id) + '">زيارة</button></div></article>';
   }
 
   function renderMissions() {
@@ -1038,7 +1041,8 @@
       title: $('#mission-title').value.trim(),
       track: $('#mission-track').value,
       objective: $('#mission-objective').value.trim(),
-      assigned_to: $('#mission-owner').value.trim(),\n      assigned_phone: $('#mission-phone').value.trim(),
+      assigned_to: $('#mission-owner').value.trim(),
+      assigned_phone: $('#mission-phone').value.trim(),
       target_supplier_count: Number($('#mission-target').value || 3),
       due_date: $('#mission-due').value || null,
       notes: $('#mission-notes').value.trim(),
