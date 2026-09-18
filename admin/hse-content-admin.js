@@ -29,15 +29,52 @@
   async function rpc(name,args={}){const {data,error}=await sb.rpc(name,args);if(error)throw error;return data}
   function field(id){return $('#'+id,root)}
   function bilingualReadiness(payload){
-    const pairs=[[payload.title,payload.title_ar],[payload.excerpt,payload.excerpt_ar]];
+    const pairs=[];
+    const add=(a,b,active=true)=>{if(!active)return;pairs.push([a,b])};
+    add(payload.title,payload.title_ar);
+    add(payload.excerpt,payload.excerpt_ar);
+    add(payload.category?.name,payload.category?.name_ar,!!(payload.category?.slug||payload.category?.name||payload.category?.name_ar));
+
     const hero=payload.hero||{},card=payload.card||{},seo=payload.seo||{};
-    [['headline','headline_ar'],['subheadline','subheadline_ar']].forEach(([a,b])=>{if(hero[a]||hero[b])pairs.push([hero[a],hero[b]])});
-    if(card.description||card.description_ar)pairs.push([card.description,card.description_ar]);
-    [['meta_title','meta_title_ar'],['meta_description','meta_description_ar']].forEach(([a,b])=>{if(seo[a]||seo[b])pairs.push([seo[a],seo[b]])});
+    add(hero.headline,hero.headline_ar,!!(hero.headline||hero.headline_ar));
+    add(hero.subheadline,hero.subheadline_ar,!!(hero.subheadline||hero.subheadline_ar));
+    add(card.description,card.description_ar,!!(card.description||card.description_ar));
+    add(seo.meta_title,seo.meta_title_ar,!!(seo.meta_title||seo.meta_title_ar));
+    add(seo.meta_description,seo.meta_description_ar,!!(seo.meta_description||seo.meta_description_ar));
+
     (payload.sections||[]).filter(x=>x.is_visible!==false).forEach(s=>{
-      if(s.title||s.title_ar)pairs.push([s.title,s.title_ar]);
-      if(s.body||s.body_ar)pairs.push([s.body,s.body_ar]);
+      add(s.title,s.title_ar,!!(s.title||s.title_ar));
+      add(s.body,s.body_ar,!!(s.body||s.body_ar));
     });
+    (payload.tags||[]).forEach(t=>add(t.name,t.name_ar,true));
+
+    const gr=payload.guided_review||{};
+    if(gr.enabled){
+      add(gr.intro?.en,gr.intro?.ar,!!(gr.intro?.en||gr.intro?.ar));
+      (Array.isArray(gr.diagnostic_areas)?gr.diagnostic_areas:[]).forEach(a=>{
+        add(a.label_en,a.label_ar,true);
+        add(a.what_to_look_for?.en,a.what_to_look_for?.ar,!!(a.what_to_look_for?.en||a.what_to_look_for?.ar));
+        add(a.why_it_matters?.en,a.why_it_matters?.ar,!!(a.why_it_matters?.en||a.why_it_matters?.ar));
+        add((a.common_weaknesses?.en||[]).join('\n'),(a.common_weaknesses?.ar||[]).join('\n'),!!((a.common_weaknesses?.en||[]).length||(a.common_weaknesses?.ar||[]).length));
+      });
+      (Array.isArray(gr.control_pathways)?gr.control_pathways:[]).forEach(p=>{
+        add(p.question_en,p.question_ar,true);
+        add(p.explanation_en,p.explanation_ar,true);
+        add((p.practical_examples_en||[]).join('\n'),(p.practical_examples_ar||[]).join('\n'),!!((p.practical_examples_en||[]).length||(p.practical_examples_ar||[]).length));
+      });
+      (Array.isArray(gr.self_check_questions)?gr.self_check_questions:[]).forEach(q=>{
+        add(q.question_en,q.question_ar,true);
+        (Array.isArray(q.gap_rules)?q.gap_rules:[]).forEach(rule=>{
+          add(rule.reason_en,rule.reason_ar,!!(rule.reason_en||rule.reason_ar));
+          add((rule.internal_actions_en||[]).join('\n'),(rule.internal_actions_ar||[]).join('\n'),!!((rule.internal_actions_en||[]).length||(rule.internal_actions_ar||[]).length));
+        });
+      });
+      add((gr.good_controlled_state?.weak_state_en||[]).join('\n'),(gr.good_controlled_state?.weak_state_ar||[]).join('\n'),!!((gr.good_controlled_state?.weak_state_en||[]).length||(gr.good_controlled_state?.weak_state_ar||[]).length));
+      add((gr.good_controlled_state?.controlled_state_en||[]).join('\n'),(gr.good_controlled_state?.controlled_state_ar||[]).join('\n'),!!((gr.good_controlled_state?.controlled_state_en||[]).length||(gr.good_controlled_state?.controlled_state_ar||[]).length));
+      add(gr.professional_review_gate?.headline_en,gr.professional_review_gate?.headline_ar,!!(gr.professional_review_gate?.headline_en||gr.professional_review_gate?.headline_ar));
+      add(gr.professional_review_gate?.cta_en,gr.professional_review_gate?.cta_ar,!!(gr.professional_review_gate?.cta_en||gr.professional_review_gate?.cta_ar));
+    }
+
     const complete=pairs.filter(([a,b])=>String(a||'').trim()&&String(b||'').trim()).length;
     return pairs.length?Math.round(complete/pairs.length*100):0;
   }
