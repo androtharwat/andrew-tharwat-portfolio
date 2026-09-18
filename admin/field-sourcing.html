@@ -108,6 +108,7 @@
 
         <form id="visit-form" class="visit-form">
           <input type="hidden" id="visit-id" />
+          <div id="visit-missing-box" class="missing-box"></div>
 
           <section class="panel">
             <div class="section-number">01</div>
@@ -123,6 +124,10 @@
             <div class="section-number">02</div>
             <div class="section-copy"><p class="overline">SUPPLIER</p><h3>بيانات المورد</h3></div>
             <div class="form-grid">
+              <label class="wide">المهمة المرتبطة
+                <select id="mission-select"><option value="">زيارة بدون مهمة محددة</option></select>
+              </label>
+              <label class="wide">اسم مسؤول الزيارة<input id="field-owner" placeholder="اسم عضو الفريق الموجود عند المورد" /></label>
               <label class="wide">مورد موجود
                 <select id="supplier-select"><option value="">+ مورد جديد</option></select>
               </label>
@@ -186,6 +191,8 @@
               <label>التعامل والالتزام<select id="service-rating"><option value="">—</option></select></label>
             </div>
             <div class="form-grid">
+              <label>الخطوة التالية<input id="next-action" placeholder="مثال: طلب Sample / انتظار عرض نهائي" /></label>
+              <label>تاريخ المتابعة<input id="follow-up-date" type="date" /></label>
               <label class="wide">ملاحظاتك<textarea id="visit-notes" rows="4" placeholder="إيه اللي عجبك؟ إيه اللي مقلقك؟ إيه اللي لازم نراجعه؟"></textarea></label>
               <label class="wide">توصيتك<textarea id="recommendation" rows="3" placeholder="مثال: نطلب Sample أولًا / مناسب للكميات / السعر مرتفع لكن الفنش قوي"></textarea></label>
             </div>
