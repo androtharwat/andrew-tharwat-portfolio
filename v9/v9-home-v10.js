@@ -10,7 +10,7 @@
     const nav=$('#main-nav');
     if(nav){
       const links=$$('a',nav).filter(a=>!a.dataset.v10Hse);
-      const map=[['#home','Home','الرئيسية'],['#capabilities','Services','الخدمات'],['#work','Projects','المشاريع'],['#studio','About','عن الاستوديو'],['#contact','Contact','تواصل']];
+      const map=[['#home','Home','الرئيسية'],['#studio','How We Work','كيف نعمل'],['#capabilities','Capabilities','القدرات'],['#work','Projects','المشاريع'],['#contact','Contact','تواصل']];
       links.forEach((a,i)=>{if(!map[i])return;a.href=map[i][0];set(a,map[i][1],map[i][2])});
       let hse=nav.querySelector('[data-v10-hse]');
       if(!hse){hse=document.createElement('a');hse.dataset.v10Hse='1';hse.href='/hse/';nav.querySelector('a[href="#work"]')?.insertAdjacentElement('afterend',hse)}
@@ -146,10 +146,33 @@
     }  }
 
   function capabilities(){
-    const h=$('#capabilities .section-head');if(h){set($('.eyebrow',h),'SERVICES','الخدمات');set($('h2',h),'CHOOSE A DIRECTION.<br><span>WE’LL SHAPE THE SOLUTION.</span>','اختار الاتجاه.<br><span>وإحنا نشكّل الحل.</span>',true);set($('div>p',h),'Four capabilities. One problem-solving direction.','أربع قدرات. اتجاه واحد لحل المشكلة.');}
-    const cards=$$('.discipline-grid article');
-    const short=[['SAFETY & HSE','السلامة وHSE'],['DIGITAL SYSTEMS','الأنظمة الرقمية'],['CREATIVE & BRAND','الإبداع والهوية'],['AI & STORYTELLING','الذكاء الاصطناعي والسرد']];
-    cards.forEach((c,i)=>{c.tabIndex=0;if(short[i])set($('h3',c),short[i][0],short[i][1]);if(c.dataset.v10Bound)return;c.dataset.v10Bound='1';c.addEventListener('click',e=>{if(!touch()||e.target.closest('a,button'))return;c.classList.toggle('is-open')});c.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('a,button')){e.preventDefault();c.classList.toggle('is-open')}})});
+    const h=$('#capabilities .section-head');
+    if(h){
+      set($('.eyebrow',h),'CAPABILITIES · USED WHEN THEY ADD VALUE','القدرات · نستخدمها وقت ما تضيف قيمة');
+      set($('h2',h),'THE RIGHT CAPABILITY.<br><span>AT THE RIGHT MOMENT.</span>','القدرة المناسبة.<br><span>في الوقت المناسب.</span>',true);
+      set($('div>p',h),'Not four separate businesses. Four capability layers we can combine around the problem.','مش أربع خدمات منفصلة. أربع طبقات خبرة نقدر نجمعها حول المشكلة.');
+    }
+    const cards=$('.discipline-grid article');
+    const data=[
+      ['HSE & SAFETY','السلامة وHSE','PEOPLE · RISK · SYSTEMS','أشخاص · مخاطر · أنظمة'],
+      ['DIGITAL SYSTEMS','الأنظمة الرقمية','WEB · AUTOMATION · DATA','ويب · أتمتة · بيانات'],
+      ['CREATIVE & BRAND','الإبداع والهوية','IDENTITY · CONTENT · DIRECTION','هوية · محتوى · توجيه'],
+      ['AI & STORYTELLING','الذكاء الاصطناعي والسرد','INTELLIGENCE · STORY · SPEED','ذكاء · قصة · سرعة']
+    ];
+    cards.forEach((card,i)=>{
+      card.tabIndex=0;
+      card.classList.add('v10-capability-card');
+      if(data[i]){
+        set($('h3',card),data[i][0],data[i][1]);
+        let line=$('.v10-capability-line',card);
+        if(!line){line=document.createElement('small');line.className='v10-capability-line';card.querySelector('h3')?.insertAdjacentElement('afterend',line)}
+        set(line,data[i][2],data[i][3]);
+      }
+      if(card.dataset.v10Bound)return;
+      card.dataset.v10Bound='1';
+      card.addEventListener('click',e=>{if(!touch()||e.target.closest('a,button'))return;card.classList.toggle('is-open')});
+      card.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('a,button')){e.preventDefault();card.classList.toggle('is-open')}});
+    });
   }
 
   function work(){
@@ -158,14 +181,66 @@
   }
 
   function about(){
-    const x=$('.studio-intro-copy');if(x){set($('.eyebrow',x),'ABOUT THE STUDIO','عن الاستوديو');set($('h2',x),'HOW WE THINK.<br><span>PROBLEM FIRST.</span>','إزاي بنفكر.<br><span>المشكلة أولًا.</span>',true);set($('p',x),'Understand first. Choose the right expertise. Build only what the problem needs.','نفهم الأول. نختار الخبرة المناسبة. ونبني فقط اللي المشكلة محتاجاه.');}
-    $$('.studio-principles article').forEach(c=>{c.tabIndex=0;if(c.dataset.v10Bound)return;c.dataset.v10Bound='1';c.addEventListener('click',()=>{if(touch())c.classList.toggle('is-open')})});
+    const section=$('#studio'),wrap=$('.studio-intro-grid',section);
+    if(!section||!wrap)return;
+    wrap.className='studio-intro-grid v10-method-wrap';
+    wrap.innerHTML=`
+      <div class="v10-method-head">
+        <span class="eyebrow">${ar()?'طريقة العمل':'HOW THE STUDIO WORKS'}</span>
+        <h2>${ar()?'مشكلة واحدة.<br><span>ثلاث حركات.</span>':'ONE PROBLEM.<br><span>THREE MOVES.</span>'}</h2>
+        <p>${ar()?'مش بنبدأ ببيع خدمة. بنبدأ بفهم المشكلة، وبعدها نكوّن الطريق المناسب ليها.':'We do not start by selling a service. We start by understanding the problem, then shape the right path around it.'}</p>
+      </div>
+
+      <div class="v10-method-flow" aria-label="${ar()?'مراحل عمل الاستوديو':'Studio working method'}">
+        <article class="v10-method-stage stage-understand">
+          <span class="stage-no">01</span>
+          <div class="stage-visual visual-understand" aria-hidden="true">
+            <i></i><i></i><i></i><b></b>
+          </div>
+          <small>${ar()?'نفهم':'UNDERSTAND'}</small>
+          <h3>${ar()?'إيه اللي بيحصل فعلًا؟':'WHAT IS REALLY HAPPENING?'}</h3>
+          <p>${ar()?'نفصل الأعراض عن المشكلة الحقيقية.':'Separate the symptoms from the real problem.'}</p>
+        </article>
+
+        <div class="v10-method-link" aria-hidden="true"><i></i><b>→</b></div>
+
+        <article class="v10-method-stage stage-assemble">
+          <span class="stage-no">02</span>
+          <div class="stage-visual visual-assemble" aria-hidden="true">
+            <i>HSE</i><i>DEV</i><i>DES</i><i>AI</i><b></b>
+          </div>
+          <small>${ar()?'نكوّن':'ASSEMBLE'}</small>
+          <h3>${ar()?'مين وإيه اللي نحتاجه؟':'WHAT EXPERTISE DOES IT NEED?'}</h3>
+          <p>${ar()?'نختار فقط الخبرة والأدوات اللي تضيف قيمة.':'Bring in only the expertise and tools that add value.'}</p>
+        </article>
+
+        <div class="v10-method-link" aria-hidden="true"><i></i><b>→</b></div>
+
+        <article class="v10-method-stage stage-build">
+          <span class="stage-no">03</span>
+          <div class="stage-visual visual-build" aria-hidden="true">
+            <i></i><b></b><em>✓</em>
+          </div>
+          <small>${ar()?'نبني':'BUILD'}</small>
+          <h3>${ar()?'حل يشتغل في الواقع.':'MAKE THE SOLUTION USEFUL.'}</h3>
+          <p>${ar()?'نحوّل الاتجاه إلى نتيجة واضحة وقابلة للاستخدام.':'Turn the direction into a clear, usable outcome.'}</p>
+        </article>
+      </div>
+
+      <div class="v10-method-rule">
+        <span>${ar()?'مش بنفرض فريق ثابت':'NO FIXED TEAM'}</span>
+        <i></i>
+        <span>${ar()?'مش بنفرض خدمة':'NO SERVICE-FIRST PITCH'}</span>
+        <i></i>
+        <strong>${ar()?'المشكلة هي اللي تحدد الطريق':'THE PROBLEM SHAPES THE PATH'}</strong>
+      </div>
+    `;
   }
 
   function team(){const h=$('#team .section-head');if(h){set($('.eyebrow',h),'STUDIO MODEL','نموذج الاستوديو');set($('h2',h),'THE RIGHT TEAM.<br><span>BUILT AROUND THE PROBLEM.</span>','الفريق المناسب.<br><span>يتكوّن حول المشكلة.</span>',true)}}
   function contact(){const h=$('#contact .section-head');if(h){set($('.eyebrow',h),'START HERE','ابدأ من هنا');set($('h2',h),'TELL US THE PROBLEM.<br><span>WE’LL SHAPE THE NEXT STEP.</span>','احكِ لنا المشكلة.<br><span>وإحنا نحدد الخطوة الجاية.</span>',true);set($('div>p',h),'No need to choose the service first.','مش لازم تختار الخدمة الأول.')}}
 
-  function reorder(){const main=$('#main-content');if(!main)return;['home','capabilities','work','studio','team','contact'].forEach(id=>{const el=document.getElementById(id);if(el)main.appendChild(el)})}
+  function reorder(){const main=$('#main-content');if(!main)return;['home','studio','capabilities','work','team','contact'].forEach(id=>{const el=document.getElementById(id);if(el)main.appendChild(el)})}
   function performance(){$$('img').forEach(img=>{if(!img.closest('.hero')){img.loading='lazy';img.decoding='async'}})}
   function applyStatic(){header();hero();capabilities();work();about();team();contact();reorder();performance()}
 
