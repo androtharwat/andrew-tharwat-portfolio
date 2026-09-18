@@ -63,7 +63,7 @@
     if(!contextAvailable())$('#context-status').textContent=t('The previous Guided Review context is not available. You can change context or continue without preset context.','سياق المراجعة الموجهة السابق غير متاح. يمكنك تغيير السياق أو المتابعة بدون سياق مُسبق.');
   }
   function renderSuccess(){
-    if(!lastResult)return;const data=lastResult,code=data.case_code||data.lead_code||'',fee=Number(data.consultation_fee_usd||offer?.price_usd||75).toFixed(0);
+    if(!lastResult)return;const data=lastResult,code=data.case_code||data.lead_code||'',feeRaw=data.consultation_fee_usd??offer?.price_usd,fee=feeRaw===null||feeRaw===undefined?'—':Number(feeRaw).toFixed(0);
     $('#success-copy').textContent=t('Your case '+code+' is open. Your submitted case details are saved.','تم فتح حالتك '+code+'. تم حفظ بيانات الحالة التي أرسلتها.');
     const box=$('#success-state .next-box');
     box.innerHTML=data.checkout_url?(lang==='ar'?'<b>الخطوة المطلوبة الآن</b><p>إتمام حجز الاستشارة بقيمة $'+fee+'. لا توجد أي خدمات إضافية مضافة.</p><a class="home-link" href="'+escapeHtml(data.checkout_url)+'" target="_blank" rel="noopener">ادفع $'+fee+' واحجز الاستشارة ←</a>':'<b>YOUR NEXT STEP</b><p>Complete the $'+fee+' consultation booking. No additional service has been added.</p><a class="home-link" href="'+escapeHtml(data.checkout_url)+'" target="_blank" rel="noopener">PAY $'+fee+' & BOOK CONSULTATION →</a>'):(lang==='ar'?'<b>الحالة اتفتحت بنجاح</b><p>رابط دفع الاستشارة بقيمة $'+fee+' قيد التجهيز. لا توجد خدمة إضافية مضافة.</p>':'<b>YOUR CASE IS OPEN</b><p>The $'+fee+' consultation payment link is being prepared. No additional service has been added.</p>');
