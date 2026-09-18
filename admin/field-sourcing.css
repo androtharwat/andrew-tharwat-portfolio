@@ -331,3 +331,38 @@ body.mission-focus-mode #guided-nav{display:grid}
   .guided-review-grid{grid-template-columns:1fr}
   body.mission-focus-mode .app{padding-top:10px}
 }
+
+/* Mission Focus readability overrides */
+body.mission-focus-mode #mission-focus-header{display:grid!important}
+body.mission-focus-mode #guided-progress-shell{display:block!important}
+body.mission-focus-mode #guided-nav{display:grid!important}
+body.mission-focus-mode #guided-review-panel.guided-active{display:block!important}
+body.mission-focus-mode .mission-focus-copy>p:not(.overline){font-size:16px;line-height:1.75}
+body.mission-focus-mode .mission-focus-meta span{min-height:36px;padding:0 12px;font-size:13px}
+body.mission-focus-mode .mission-focus-next span{font-size:12px}
+body.mission-focus-mode .mission-focus-next strong{font-size:20px}
+body.mission-focus-mode .mission-focus-next small{font-size:14px}
+body.mission-focus-mode .guided-progress-top strong{font-size:15px}
+body.mission-focus-mode .guided-progress-top span{font-size:14px}
+body.mission-focus-mode .guided-task{min-height:42px;padding:0 13px;font-size:13px}
+body.mission-focus-mode .section-copy .overline{font-size:11px}
+body.mission-focus-mode .section-copy h3{font-size:22px}
+body.mission-focus-mode .form-grid label,
+body.mission-focus-mode .check-field span,
+body.mission-focus-mode .select-field span,
+body.mission-focus-mode .text-field span,
+body.mission-focus-mode .price-box span,
+body.mission-focus-mode .rating-grid label{font-size:15px;line-height:1.55}
+body.mission-focus-mode input,
+body.mission-focus-mode select,
+body.mission-focus-mode textarea{font-size:16px;min-height:48px}
+body.mission-focus-mode .guided-review-block h4{font-size:17px}
+body.mission-focus-mode .guided-review-block p,
+body.mission-focus-mode .guided-review-row{font-size:14px;line-height:1.65}
+body.mission-focus-mode .guided-nav .button{font-size:16px}
+@media(max-width:700px){
+  body.mission-focus-mode .mission-focus-copy h2{font-size:24px}
+  body.mission-focus-mode .mission-focus-copy>p:not(.overline){font-size:16px}
+  body.mission-focus-mode .panel,
+  body.mission-focus-mode .visit-form .panel{padding:18px;padding-top:46px}
+}
