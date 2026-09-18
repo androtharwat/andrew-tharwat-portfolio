@@ -143,8 +143,8 @@
       scores:collectScores(),
       evidence:$$('#evidence-checks input:checked').map(x=>x.value),
       evidenceNote:$('#evidence-note').value.trim(),
-      confidenceTask:Number($('#confidence-task').value||0),
-      confidenceReview:Number($('#confidence-review').value||0),
+      confidenceTask:$('#confidence-task').value===''?null:Number($('#confidence-task').value),
+      confidenceReview:$('#confidence-review').value===''?null:Number($('#confidence-review').value),
       immediateDanger:$('#immediate-danger').value
     };
   }
@@ -165,8 +165,8 @@
     $('#evidence-note').value=d.evidenceNote||'';
     $$('#control-checks input').forEach(x=>x.checked=(d.controls||[]).includes(x.value));
     $$('#evidence-checks input').forEach(x=>x.checked=(d.evidence||[]).includes(x.value));
-    $('#confidence-task').value=d.confidenceTask!==undefined?String(d.confidenceTask):'';
-    $('#confidence-review').value=d.confidenceReview!==undefined?String(d.confidenceReview):'';
+    $('#confidence-task').value=(d.confidenceTask!==undefined&&d.confidenceTask!==null)?String(d.confidenceTask):'';
+    $('#confidence-review').value=(d.confidenceReview!==undefined&&d.confidenceReview!==null)?String(d.confidenceReview):'';
     $('#immediate-danger').value=d.immediateDanger||'';
     step=Math.max(0,Math.min(4,Number(d.step)||0));
     return d.scores||{};
