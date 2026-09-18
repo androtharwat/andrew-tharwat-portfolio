@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#031018">
+  <meta name="description" content="Published HSE knowledge from Andrew Tharwat Studio.">
+  <title>HSE Topic — Andrew Tharwat Studio</title>
+  <link rel="icon" href="/assets/favicon-official.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/hse/hse-world.css?v=1">
+  <link rel="stylesheet" href="/hse/topic.css?v=1">
+</head>
+<body data-lang="en">
+  <header class="topbar">
+    <a class="brand" href="/hse/"><img src="/assets/logo-mark-official.png" alt=""><span><b>ANDREW THARWAT</b><small data-en="HSE WORLD · PUBLISHED CONTENT" data-ar="HSE WORLD · محتوى منشور">HSE WORLD · PUBLISHED CONTENT</small></span></a>
+    <nav><a href="/hse/" data-en="HSE World" data-ar="عالم HSE">HSE World</a><a href="#guided-review" data-en="Guided Review" data-ar="المراجعة الموجهة">Guided Review</a><a href="/v9/" data-en="Studio" data-ar="الاستوديو">Studio</a></nav>
+    <button id="lang-toggle" type="button">EN | عربي</button>
+  </header>
+
+  <main class="topic-shell">
+    <div id="topic-loading" class="topic-loading" data-en="Loading Published Revision…" data-ar="جاري تحميل الإصدار المنشور…">Loading Published Revision…</div>
+    <section id="topic-not-found" class="topic-not-found hidden">
+      <span class="eyebrow">HSE WORLD</span>
+      <h1 data-en="Published topic not found." data-ar="الموضوع المنشور غير موجود.">Published topic not found.</h1>
+      <p data-en="This route never falls back to a Draft Revision. Return to HSE World to explore what is currently published." data-ar="هذا المسار لا يعرض المسودة كبديل. ارجع إلى عالم HSE لاستكشاف المحتوى المنشور حاليًا.">This route never falls back to a Draft Revision. Return to HSE World to explore what is currently published.</p>
+      <a class="button primary" href="/hse/" data-en="BACK TO HSE WORLD →" data-ar="العودة إلى عالم HSE ←">BACK TO HSE WORLD →</a>
+    </section>
+
+    <article id="topic" class="hidden">
+      <header class="topic-hero">
+        <div>
+          <div class="topic-meta"><span id="topic-type"></span><span id="topic-category"></span><span id="topic-published"></span></div>
+          <h1 id="topic-title"></h1>
+          <p id="topic-summary"></p>
+          <div class="topic-actions"><a href="#topic-content" class="button ghost" data-en="READ THE TOPIC" data-ar="اقرأ الموضوع">READ THE TOPIC</a><a href="#guided-review" id="topic-review-link" class="button primary" data-en="START GUIDED REVIEW →" data-ar="ابدأ المراجعة الموجهة ←">START GUIDED REVIEW →</a></div>
+        </div>
+        <aside class="topic-card"><small data-en="SOURCE CONTROL" data-ar="التحكم في المصدر">SOURCE CONTROL</small><b data-en="PUBLISHED REVISION ONLY" data-ar="الإصدار المنشور فقط">PUBLISHED REVISION ONLY</b><p data-en="AI suggestions that were not manually approved are excluded from the public response." data-ar="اقتراحات AI غير المعتمدة يدويًا يتم استبعادها من الاستجابة العامة.">AI suggestions that were not manually approved are excluded from the public response.</p></aside>
+      </header>
+
+      <div class="topic-layout" id="topic-content">
+        <div class="topic-sections" id="topic-sections"></div>
+        <aside class="topic-side">
+          <section><span class="eyebrow" data-en="TAGS" data-ar="الوسوم">TAGS</span><div id="topic-tags" class="tag-list"></div></section>
+          <section><span class="eyebrow" data-en="RELATED PUBLISHED CONTENT" data-ar="محتوى منشور مرتبط">RELATED PUBLISHED CONTENT</span><div id="topic-relations" class="relation-list"></div></section>
+          <div class="safety-note" data-en="Use this content to support understanding. Site-specific decisions still require suitable evidence, competent judgement and applicable legal requirements." data-ar="استخدم المحتوى لدعم الفهم. القرارات الخاصة بالموقع ما زالت تحتاج أدلة مناسبة وحكمًا مختصًا والمتطلبات القانونية المنطبقة.">Use this content to support understanding. Site-specific decisions still require suitable evidence, competent judgement and applicable legal requirements.</div>
+        </aside>
+      </div>
+
+      <section id="guided-review" class="guided-review-host"></section>
+    </article>
+  </main>
+
+  <footer><span>ANDREW THARWAT STUDIO · HSE WORLD</span><a href="/hse/" data-en="Back to HSE World" data-ar="العودة إلى عالم HSE">Back to HSE World</a></footer>
+  <div id="toast" class="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/hse/hse-public-data-adapter.js?v=2"></script>
+  <script src="/hse/guided-review-engine.js?v=1"></script>
+  <script src="/hse/topic.js?v=1"></script>
+</body>
+</html>

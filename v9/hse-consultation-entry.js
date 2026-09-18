@@ -20,7 +20,7 @@
     if(!hseCard||hseCard.querySelector('.hse-mini-cta'))return;
     const link=document.createElement('a');
     link.className='hse-mini-cta';
-    link.href='/hse-world/';
+    link.href='/hse/';
     link.dataset.ieEn='NEED HSE SUPPORT? START WITH HSE WORLD →';
     link.dataset.ieAr='عندك حالة HSE؟ ابدأ من عالم HSE ←';
     link.textContent='NEED HSE SUPPORT? START WITH HSE WORLD →';

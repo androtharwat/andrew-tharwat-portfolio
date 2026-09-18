@@ -84,7 +84,7 @@
   }
 
   function renderStepper(){
-    const labels=lang==='ar'?['الحالة','التحكم','الإدارة','الأدلة','المراجعة']:['CASE','CONTROLS','SYSTEM','EVIDENCE','CHECK'];
+    const labels=lang==='ar'?['افهم','شخّص','مسارات التحكم','التقييم الذاتي','خريطة الفجوات']:['UNDERSTAND','DIAGNOSE','CONTROL PATHWAYS','SELF-CHECK','GAP MAP'];
     $('#stepper').innerHTML=labels.map((x,i)=>{
       const cls=i===step?'active':i<step?'done':'';
       return '<button type="button" class="'+cls+'" tabindex="-1"><b>'+String(i+1).padStart(2,'0')+'</b> <span>'+x+'</span></button>';

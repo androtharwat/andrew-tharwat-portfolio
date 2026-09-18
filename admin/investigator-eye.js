@@ -138,7 +138,7 @@
       cases: ['INVESTIGATOR\'S EYE · CASES','Consultation Cases.','Follow every client from consultation through separately purchased services.'],
       services: ['INVESTIGATOR\'S EYE · CATALOG','Service & Pricing Manager.','Control scope, visibility and launch pricing without changing code.'],
       pricing: ['INVESTIGATOR\'S EYE · MARKET INTELLIGENCE','Market Benchmarks.','Internal source-backed references for commercial pricing decisions.'],
-      content: ['INVESTIGATOR\'S EYE · HSE CONTENT','HSE Content & Review Journey.','Verify the connected public HSE knowledge, Guided Review and consultation entry points.']
+      content: ['INVESTIGATOR\'S EYE · HSE CONTENT','HSE Content Engine.','Create, review, validate and publish bilingual HSE content while the public site reads Published Revisions only.']
     }[view] || [];
     $('#page-kicker').textContent = copy[0] || '';
     $('#page-title').textContent = copy[1] || '';

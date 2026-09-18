@@ -25,11 +25,15 @@
         <h1 data-en-html="ONE CLEAR FIRST STEP.<br><span>THEN ONLY WHAT YOUR CASE NEEDS.</span>" data-ar-html="خطوة أولى واضحة.<br><span>وبعدها فقط ما تحتاجه حالتك.</span>">ONE CLEAR FIRST STEP.<br><span>THEN ONLY WHAT YOUR CASE NEEDS.</span></h1>
         <p data-en="You do not need to choose a report, assessment or control solution before we understand the problem. Start with one focused consultation. Andrew reviews the case, then recommends only the services that make sense." data-ar="مش مطلوب منك تختار تقرير أو تقييم أو حل تحكم قبل ما نفهم المشكلة. البداية باستشارة واحدة مركزة، وبعدها Andrew يحدد فقط الخدمات المناسبة لحالتك.">You do not need to choose a report, assessment or control solution before we understand the problem. Start with one focused consultation. Andrew reviews the case, then recommends only the services that make sense.</p>
       </div>
-      <aside class="price-card">
-        <small data-en="FIRST STEP" data-ar="الخطوة الأولى">FIRST STEP</small>
-        <strong id="consultation-fee"></strong>
-        <b data-en="60-MINUTE PROFESSIONAL CONSULTATION" data-ar="استشارة احترافية لمدة 60 دقيقة">60-MINUTE PROFESSIONAL CONSULTATION</b>
-        <p data-en="Consultation only. Any report, assessment, survey, site visit or technical deliverable is quoted separately after the consultation." data-ar="السعر للاستشارة فقط. أي تقرير أو تقييم أو قياسات أو زيارة موقع أو مخرج فني يتم تسعيره بشكل منفصل بعد الاستشارة.">Consultation only. Any report, assessment, survey, site visit or technical deliverable is quoted separately after the consultation.</p>
+      <aside class="price-card" id="consultation-offer">
+        <small data-en="PROFESSIONAL REVIEW · SCOPE FIRST" data-ar="المراجعة المهنية · النطاق أولًا">PROFESSIONAL REVIEW · SCOPE FIRST</small>
+        <b data-en="60-MINUTE PROFESSIONAL HSE CONSULTATION" data-ar="استشارة HSE مهنية لمدة 60 دقيقة">60-MINUTE PROFESSIONAL HSE CONSULTATION</b>
+        <div class="offer-scope">
+          <section><span data-en="INCLUDES" data-ar="يشمل">INCLUDES</span><ul id="scope-includes"><li data-en="Loading current service scope…" data-ar="جاري تحميل نطاق الخدمة الحالي…">Loading current service scope…</li></ul></section>
+          <section><span data-en="EXCLUDES / PRICED SEPARATELY" data-ar="لا يشمل / يُسعّر منفصلًا">EXCLUDES / PRICED SEPARATELY</span><ul id="scope-excludes"><li data-en="Loading current exclusions…" data-ar="جاري تحميل الاستثناءات الحالية…">Loading current exclusions…</li></ul></section>
+        </div>
+        <div class="fee-line"><span data-en="CONSULTATION FEE" data-ar="سعر الاستشارة">CONSULTATION FEE</span><strong id="consultation-fee">—</strong></div>
+        <p data-en="Nothing beyond this consultation is added automatically. Any follow-on service is recommended, scoped and priced separately." data-ar="لا تتم إضافة أي خدمة بعد الاستشارة تلقائيًا. أي خدمة لاحقة يتم اقتراحها وتحديد نطاقها وتسعيرها بشكل منفصل.">Nothing beyond this consultation is added automatically. Any follow-on service is recommended, scoped and priced separately.</p>
       </aside>
     </section>
 
@@ -46,7 +50,17 @@
         <div class="promise"><b data-en="NO LONG BRIEF" data-ar="بدون بريف طويل">NO LONG BRIEF</b><span>·</span><b data-en="NO SERVICE GUESSING" data-ar="بدون تخمين للخدمة">NO SERVICE GUESSING</b><span>·</span><b data-en="NO REPEATING DETAILS" data-ar="بدون تكرار البيانات">NO REPEATING DETAILS</b></div>
       </div>
 
-      <form id="consultation-form" class="consultation-form">
+      <section id="context-choice" class="context-choice">
+        <div><span class="eyebrow" data-en="CONSULTATION CONTEXT" data-ar="سياق الاستشارة">CONSULTATION CONTEXT</span><h3 data-en="How do you want to start this professional review?" data-ar="تحب تبدأ المراجعة المهنية بأي سياق؟">How do you want to start this professional review?</h3><p data-en="Your Guided Review can be carried forward, changed, or left behind. A Gap Map only applies to the exact context that produced it." data-ar="تقدر تستخدم سياق المراجعة الموجهة أو تغيّره أو تبدأ بدونه. خريطة الفجوات تنطبق فقط على نفس السياق الذي أُنشئت منه.">Your Guided Review can be carried forward, changed, or left behind. A Gap Map only applies to the exact context that produced it.</p></div>
+        <div class="context-actions">
+          <button type="button" data-context-mode="use" data-en="USE GUIDED REVIEW CONTEXT" data-ar="استخدم سياق المراجعة الموجهة">USE GUIDED REVIEW CONTEXT</button>
+          <button type="button" data-context-mode="change" data-en="CHANGE CONTEXT" data-ar="غيّر السياق">CHANGE CONTEXT</button>
+          <button type="button" data-context-mode="fresh" data-en="CONTINUE WITHOUT PRESET CONTEXT" data-ar="كمل بدون سياق مُسبق">CONTINUE WITHOUT PRESET CONTEXT</button>
+        </div>
+        <div id="context-status" class="context-status"></div>
+      </section>
+
+      <form id="consultation-form" class="consultation-form hidden">
         <div class="field-grid two">
           <label><span data-en="YOUR NAME" data-ar="الاسم">YOUR NAME</span><input id="full-name" required autocomplete="name" /></label>
           <label><span data-en="WORK EMAIL" data-ar="البريد الإلكتروني">WORK EMAIL</span><input id="email" type="email" required autocomplete="email" /></label>
@@ -72,6 +86,6 @@
   <div id="toast" class="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/config.js"></script>
-  <script src="/hse-consultation/consultation.js?v=3"></script>
+  <script src="/hse-consultation/consultation.js?v=4"></script>
 </body>
 </html>
