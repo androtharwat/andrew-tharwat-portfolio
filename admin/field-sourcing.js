@@ -930,8 +930,7 @@
     ].filter(Boolean);
     const phone = normalizeWhatsAppPhone(m.assigned_phone);
     const base = phone ? 'https://wa.me/' + phone : 'https://wa.me/';
-    window.open(base + '?text=' + encodeURIComponent(parts.join('
-')), '_blank', 'noopener');
+    window.open(base + '?text=' + encodeURIComponent(parts.join('\n')), '_blank', 'noopener');
   }
 
   function openMission(m) {
