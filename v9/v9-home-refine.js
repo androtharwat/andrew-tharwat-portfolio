@@ -33,7 +33,7 @@
     const note=$('.human-start-note',s);
     if(note){copy($('b',note),'NOT SURE WHERE IT FITS?','مش عارف أنهي اختيار؟');copy($('span',note),'Use the last card and describe the situation. We’ll help frame it.','استخدم آخر كارت واحكِ الموقف، وإحنا نساعدك نحدد المسار.');}
     const cards=$$('.human-need-card',s);
-    if(cards[0]){cards[0].href='/hse-consultation/';copy($('h3',cards[0]),'Solve an HSE or safety issue','حل مشكلة HSE أو سلامة');copy($('.human-card-action span',cards[0]),'OPEN HSE CONSULTATION','ابدأ استشارة HSE');}
+    if(cards[0]){cards[0].href='/hse-world/';copy($('h3',cards[0]),'Solve an HSE or safety issue','حل مشكلة HSE أو سلامة');copy($('.human-card-action span',cards[0]),'OPEN HSE WORLD','افتح عالم HSE');}
     if(cards[1]){copy($('h3',cards[1]),'Build a website or system','ابنِ موقع أو نظام');copy($('.human-card-action span',cards[1]),'SEE DIGITAL CAPABILITIES','شوف القدرات الرقمية');}
     if(cards[2]){copy($('h3',cards[2]),'Strengthen a brand or message','طوّر هوية أو رسالة');copy($('.human-card-action span',cards[2]),'SEE CREATIVE CAPABILITIES','شوف القدرات الإبداعية');}
     if(cards[3]){copy($('h3',cards[3]),'Something else needs solving','عندك تحدٍ مختلف');copy($('p',cards[3]),'Describe the situation in your own words. We’ll help define the right direction before deciding the solution.','احكِ الموقف بطريقتك. نحدد الاتجاه المناسب الأول قبل ما نقرر شكل الحل.');copy($('.human-card-action span',cards[3]),'START A CONVERSATION','ابدأ الحوار');}
