@@ -3,7 +3,6 @@
   const touch=()=>window.matchMedia('(hover:none),(pointer:coarse)').matches;
 
   const serviceRoutes={
-    1:{filter:'safety'},
     2:{filter:'creative'},
     3:{query:'video'},
     4:{filter:'digital'}
