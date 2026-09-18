@@ -20,8 +20,10 @@
     media: [],
     missions: [],
     activities: [],
+    helpRequests: [],
     devices: [],
     activityPollTimer: null,
+    supportPollTimer: null,
     lastActivityKey: '',
     track: 'do_story',
     editingVisitId: null,
@@ -407,6 +409,7 @@
     buildRatingOptions();
     await loadAll();
     startActivityPolling();
+    startSupportPolling();
   }
 
   async function loadAll() {
@@ -418,9 +421,10 @@
     const activityReq = state.access === 'admin'
       ? state.sb.from('studio_sourcing_activity').select('*').order('created_at', { ascending: false }).limit(500)
       : Promise.resolve({ data: [], error: null });
-    const results = await Promise.all([supplierReq, visitReq, mediaReq, missionReq, activityReq]);
-    if (results[0].error || results[1].error || results[2].error || results[3].error || results[4].error) {
-      notify((results[0].error || results[1].error || results[2].error || results[3].error || results[4].error).message, 'error');
+    const helpReq = state.sb.from('studio_sourcing_help_requests').select('*').order('created_at', { ascending: false }).limit(200);
+    const results = await Promise.all([supplierReq, visitReq, mediaReq, missionReq, activityReq, helpReq]);
+    if (results[0].error || results[1].error || results[2].error || results[3].error || results[4].error || results[5].error) {
+      notify((results[0].error || results[1].error || results[2].error || results[3].error || results[4].error || results[5].error).message, 'error');
       $('#sync-status').textContent = 'SYNC ERROR';
       return;
     }
@@ -429,6 +433,7 @@
     state.media = results[2].data || [];
     state.missions = results[3].data || [];
     state.activities = results[4].data || [];
+    state.helpRequests = results[5].data || [];
     if (state.access === 'admin') await loadDevices();
     renderEverything();
     $('#sync-status').textContent = 'LIVE SUPABASE';
@@ -450,6 +455,7 @@
     renderCompare();
     renderDevices();
     updateProgress();
+    updateMissionHelpButton();
   }
 
   async function refreshActivity() {
@@ -468,6 +474,47 @@
     }
     if (state.access !== 'admin') return;
     state.activityPollTimer = setInterval(refreshActivity, 15000);
+  }
+
+  async function refreshSupport() {
+    if (!state.sb) return;
+    const r = await state.sb.from('studio_sourcing_help_requests').select('*').order('created_at', { ascending: false }).limit(200);
+    if (r.error) return;
+    state.helpRequests = r.data || [];
+    updateMissionHelpButton();
+    if (state.access === 'admin') {
+      renderDashboard();
+      renderMissions();
+    }
+  }
+
+  function startSupportPolling() {
+    if (state.supportPollTimer) {
+      clearInterval(state.supportPollTimer);
+      state.supportPollTimer = null;
+    }
+    state.supportPollTimer = setInterval(refreshSupport, 15000);
+  }
+
+  function openHelpForMission(missionId) {
+    return state.helpRequests.find(function (r) {
+      return r.mission_id === missionId && r.status === 'open';
+    }) || null;
+  }
+
+  function helpTypeLabel(type) {
+    if (type === 'blocked') return 'التنفيذ متوقف';
+    if (type === 'problem') return 'مشكلة';
+    return 'سؤال';
+  }
+
+  function updateMissionHelpButton() {
+    const btn = $('#mission-help-button');
+    if (!btn) return;
+    const req = state.focusMissionId ? openHelpForMission(state.focusMissionId) : null;
+    btn.disabled = !!req;
+    btn.textContent = req ? 'تم إرسال طلب مساعدة ✓' : 'محتاج مساعدة';
+    btn.classList.toggle('requested', !!req);
   }
 
   function activityForMission(missionId) {
@@ -1141,6 +1188,7 @@
     $('#mission-focus-owner').textContent = 'المسؤول: ' + (m.assigned_to || '—');
     $('#mission-focus-progress').textContent = 'المورد: ' + supplierNo + ' من ' + p.target;
     $('#mission-focus-due').textContent = m.due_date ? 'الموعد: ' + m.due_date : 'بدون موعد محدد';
+    updateMissionHelpButton();
 
     const panels = Array.from(document.querySelectorAll('#visit-form > section.panel')).filter(function (el) { return el.id !== 'guided-review-panel'; });
     const missionPanel = panels[0];
@@ -1413,8 +1461,14 @@
     const supplierNow = latest && latest.supplier_no ? latest.supplier_no : Math.min(p.target, p.suppliers + 1);
     const currentTask = latest ? missionActivityText(latest) : 'لم تُفتح بعد';
     const liveClass = latest && ['stage','opened'].includes(latest.event_type) ? ' live' : '';
+    const help = openHelpForMission(m.id);
+    const helpBlock = state.access === 'admin' && help
+      ? '<div class="mission-help-alert"><div><span>' + esc(helpTypeLabel(help.request_type)) + '</span><b>' + esc(help.message) + '</b><small>' +
+        esc(help.stage_title || 'داخل المهمة') + (help.supplier_no ? ' · المورد ' + esc(String(help.supplier_no)) : '') + ' · ' +
+        esc(relativeActivityTime(help.created_at)) + '</small></div><button class="mini-btn help-resolve" type="button" data-resolve-help="' + esc(help.id) + '">تم الحل ✓</button></div>'
+      : '';
 
-    return '<article class="mission-card' + liveClass + '">' +
+    return '<article class="mission-card' + liveClass + (help ? ' needs-help' : '') + '">' +
       '<div class="mission-main"><span class="mission-code">' + esc(m.mission_code) + '</span><b>' + esc(m.title) + '</b><small>' +
       esc(trackLabel(m.track)) + ' · ' + esc(m.assigned_to || 'غير محدد') + (m.due_date ? ' · حتى ' + esc(m.due_date) : '') + '</small>' +
       (state.access === 'admin' ? '<div class="mission-live-status">' +
@@ -1424,6 +1478,7 @@
         '<span class="wide"><small>آخر Task</small><b>' + esc(currentTask) + '</b></span>' +
         '<span><small>آخر نشاط</small><b>' + esc(latest ? relativeActivityTime(latest.created_at) : '—') + '</b></span>' +
       '</div>' : '') +
+      helpBlock +
       '</div>' +
       '<div class="mission-progress"><div><span>SUPPLIERS</span><strong>' + p.suppliers + ' / ' + p.target + '</strong></div><i><b style="width:' + p.percent + '%"></b></i></div>' +
       '<div class="mission-actions"><span class="status-pill status-' + (m.status === 'active' ? 'complete' : 'draft') + '">' + esc(m.status.toUpperCase()) + '</span>' +
@@ -1451,6 +1506,43 @@
     $('#mission-dialog').showModal();
   });
 
+  $('#mission-help-button').addEventListener('click', function () {
+    if (state.access !== 'field' || !state.focusMissionId || openHelpForMission(state.focusMissionId)) return;
+    $('#mission-help-form').reset();
+    $('#mission-help-dialog').showModal();
+  });
+
+  $('[data-close-help]').forEach(function (btn) {
+    btn.addEventListener('click', function () { $('#mission-help-dialog').close(); });
+  });
+
+  $('#mission-help-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    if (state.access !== 'field' || !state.focusMissionId) return;
+    const message = $('#mission-help-message').value.trim();
+    if (!message) return notify('اكتب المشكلة أو السؤال أولًا.', 'error');
+    const mission = state.missions.find(function (m) { return m.id === state.focusMissionId; });
+    if (!mission) return;
+    const progress = completedMissionProgress(mission);
+    const stage = state.guidedStages[state.guidedIndex];
+    const payload = {
+      mission_id: mission.id,
+      visit_id: state.editingVisitId || null,
+      device_id: state.device && state.device.id ? state.device.id : '',
+      request_type: $('#mission-help-type').value,
+      message: message,
+      stage_title: stage ? stage.title : '',
+      supplier_no: Math.min(progress.target, progress.suppliers + 1),
+      status: 'open'
+    };
+    const r = await state.sb.from('studio_sourcing_help_requests').insert(payload).select().single();
+    if (r.error) return notify(r.error.message || 'تعذر إرسال طلب المساعدة.', 'error');
+    state.helpRequests.unshift(r.data);
+    $('#mission-help-dialog').close();
+    updateMissionHelpButton();
+    notify('تم إرسال طلب المساعدة للمسؤول ✓');
+  });
+
   $('#mission-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     if (state.access !== 'admin') return;
@@ -1476,6 +1568,18 @@
   });
 
   document.addEventListener('click', async function (e) {
+    const resolveHelp = e.target.closest('[data-resolve-help]');
+    if (resolveHelp && state.access === 'admin') {
+      const r = await state.sb.from('studio_sourcing_help_requests').update({
+        status: 'resolved',
+        resolved_at: new Date().toISOString()
+      }).eq('id', resolveHelp.dataset.resolveHelp);
+      if (r.error) return notify(r.error.message, 'error');
+      notify('تم إغلاق طلب المساعدة.');
+      await refreshSupport();
+      return;
+    }
+
     const share = e.target.closest('[data-share-mission]');
     if (share && state.access === 'admin') {
       const m = state.missions.find(function (x) { return x.id === share.dataset.shareMission; });
