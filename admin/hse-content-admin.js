@@ -9,7 +9,20 @@
   const esc=(v='')=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pretty=v=>JSON.stringify(v??{},null,2);
   const parse=(value,fallback)=>{try{return JSON.parse(value||'')}catch(_e){return fallback}};
-  function invalidJsonField(){const fields=[['hsec-hero','Hero JSON'],['hsec-card','Card JSON'],['hsec-seo','SEO JSON'],['hsec-sections','Sections JSON'],['hsec-guided','Guided Review JSON'],['hsec-tags','Tags JSON']];for(const [id,label] of fields){try{JSON.parse(field(id).value||'{}')}catch(_e){return label}}return''}
+  function invalidJsonField(){
+    const fields=[
+      ['hsec-hero','Hero JSON','object'],['hsec-card','Card JSON','object'],['hsec-seo','SEO JSON','object'],
+      ['hsec-sections','Sections JSON','array'],['hsec-guided','Guided Review JSON','object'],['hsec-tags','Tags JSON','array']
+    ];
+    for(const [id,label,kind] of fields){
+      const raw=(field(id).value||'').trim();
+      let value;
+      try{value=raw?JSON.parse(raw):(kind==='array'?[]:{})}catch(_e){return label+' is not valid JSON'}
+      if(kind==='array'&&!Array.isArray(value))return label+' must be a JSON array';
+      if(kind==='object'&&(value===null||Array.isArray(value)||typeof value!=='object'))return label+' must be a JSON object';
+    }
+    return '';
+  }
   const toast=m=>{const el=$('#toast');if(!el)return;el.textContent=m;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2200)};
   const types=[['knowledge','Knowledge'],['problem','Problem'],['solution','Solution'],['training','Training'],['digital','Digital HSE'],['case','Case Study']];
   const dbType=t=>({knowledge:'knowledge_topic',problem:'solved_problem',solution:'hse_solution',training:'training_awareness',digital:'digital_hse_tool',case:'case_study'}[t]||t);
@@ -89,7 +102,7 @@
     $('#hsec-lock-chips').innerHTML=(p.locked_fields||[]).map(x=>`<span class="hsec-lock">🔒 ${esc(x)}</span>`).join('')||'<span class="hsec-lock">No locked fields</span>';
   }
   async function saveDraft(){
-    const bad=invalidJsonField();if(bad)return toast(bad+' is not valid JSON. Fix it before saving.');
+    const bad=invalidJsonField();if(bad)return toast(bad+'. Fix it before saving.');
     const payload=syncPayloadFromForm();if(!payload.slug)return toast('Slug is required before saving.');
     const b=$('#hsec-save');b.disabled=true;b.textContent='SAVING…';
     try{
@@ -122,7 +135,7 @@
     try{await rpc('hse_editor_discard_draft',{p_content_id:state.current.content_id});toast('Draft discarded · live version unchanged');await loadDashboard();showBrowser()}catch(e){toast(e.message)}
   }
   async function generateAI(){
-    const bad=invalidJsonField();if(bad)return toast(bad+' is not valid JSON.');
+    const bad=invalidJsonField();if(bad)return toast(bad+'.');
     const p=syncPayloadFromForm(),source=p.source_text.trim();if(source.length<20&&!p.title)return toast('Paste source content first.');
     const b=$('#hsec-ai-generate');b.disabled=true;b.textContent='BUILDING DRAFT…';$('#hsec-ai-result').textContent='AI is preparing a draft for human review. It cannot publish.';
     try{
