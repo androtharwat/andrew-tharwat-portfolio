@@ -156,7 +156,7 @@
     if(head&&!document.querySelector('.guided-review-prefill')){
       const note=document.createElement('div');
       note.className='guided-review-prefill';
-      note.innerHTML='<b data-guided-title>GUIDED REVIEW ATTACHED</b><p data-guided-copy>Your issue, jurisdiction and Gap Map snapshot were carried forward. Add your contact details and review the information before sending.</p>';
+      note.innerHTML='<b data-en="GUIDED REVIEW ATTACHED" data-ar="تم إرفاق المراجعة الموجهة">GUIDED REVIEW ATTACHED</b><p data-en="Your issue, jurisdiction and Gap Map snapshot were carried forward. Add your contact details and review the information before sending." data-ar="تم نقل نوع المشكلة وجهة التطبيق وملخص خريطة الفجوات تلقائيًا. أضف بيانات التواصل وراجع المعلومات قبل الإرسال.">Your issue, jurisdiction and Gap Map snapshot were carried forward. Add your contact details and review the information before sending.</p>';
       note.style.cssText='grid-column:1/-1;margin-top:14px;padding:14px 16px;border:1px solid rgba(85,214,255,.3);background:rgba(85,214,255,.06);border-radius:14px;color:#dceaf0;font-size:12px;line-height:1.6';
       head.appendChild(note);
     }
