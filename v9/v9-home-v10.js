@@ -175,9 +175,104 @@
     });
   }
 
+  function enhanceProjectProofs(){
+    const featured=$('#featured-project');
+    if(featured&&!featured.classList.contains('hidden')&&!featured.classList.contains('skeleton')){
+      featured.classList.add('v10-featured-proof');
+      const media=$('.featured-media',featured),copy=$('.featured-copy',featured);
+      const oldLabel=$('.featured-copy small',featured);
+      const rawLabel=(oldLabel?.textContent||'').trim();
+      const nativeLabel=rawLabel.startsWith('FEATURED CASE STUDY');
+      const parsedCategory=nativeLabel&&rawLabel.includes('·')?rawLabel.split('·').slice(1).join('·').trim():'';
+      if(parsedCategory)featured.dataset.proofCategory=parsedCategory;
+      const category=parsedCategory||featured.dataset.proofCategory||'STUDIO CASE';
+      if(oldLabel)set(oldLabel,'FEATURED CASE · SELECTED PROOF','دراسة حالة مختارة · دليل شغل');
+      if(media&&!$('.featured-proof-mark',media)){
+        const mark=document.createElement('div');
+        mark.className='featured-proof-mark';
+        mark.innerHTML='<small></small><b></b>';
+        set($('small',mark),'REAL PROJECT','مشروع حقيقي');
+        $('b',mark).textContent=category|| (ar()?'STUDIO CASE':'STUDIO CASE');
+        media.appendChild(mark);
+      }else if(media){
+        const mark=$('.featured-proof-mark',media);
+        set($('small',mark),'REAL PROJECT','مشروع حقيقي');
+        if($('b',mark))$('b',mark).textContent=category||'STUDIO CASE';
+      }
+      const tags=$('.featured-tags',featured);
+      if(tags){
+        tags.classList.add('featured-proof-tags');
+        let label=$('.featured-tags-label',tags);
+        if(!label){label=document.createElement('small');label.className='featured-tags-label';tags.prepend(label)}
+        set(label,'FOCUS','التركيز');
+      }
+      const cta=$('.featured-copy>a',featured);
+      if(cta){
+        cta.classList.remove('btn','primary');
+        cta.classList.add('featured-proof-cta');
+        cta.innerHTML='<span></span><b>↗</b>';
+        set($('span',cta),'OPEN THE CASE','افتح الحالة');
+      }
+      if(copy&&!$('.featured-proof-signal',copy)){
+        const signal=document.createElement('div');
+        signal.className='featured-proof-signal';
+        signal.innerHTML='<i></i><span></span>';
+        set($('span',signal),'REAL WORK · MULTIDISCIPLINARY BUILD','شغل حقيقي · تنفيذ متعدد التخصصات');
+        copy.prepend(signal);
+      }else if(copy){
+        set($('.featured-proof-signal span',copy),'REAL WORK · MULTIDISCIPLINARY BUILD','شغل حقيقي · تنفيذ متعدد التخصصات');
+      }
+    }
+
+    $('#project-grid .project-card').forEach((card,i)=>{
+      card.classList.add('v10-proof-card');
+      const media=$('.project-media',card),body=$('.project-body',card),cat=$('.project-body>small',card),foot=$('.project-foot',card);
+      if(media){
+        if(!$('.project-media-shade',media)){const shade=document.createElement('div');shade.className='project-media-shade';media.appendChild(shade)}
+        let pill=$('.project-category-pill',media);
+        if(!pill){pill=document.createElement('span');pill.className='project-category-pill';media.appendChild(pill)}
+        pill.textContent=cat?.textContent?.trim()||'PROJECT';
+      }
+      if(body){
+        if(cat)cat.style.display='none';
+        let top=$('.project-proof-top',body);
+        if(!top){
+          top=document.createElement('div');top.className='project-proof-top';top.innerHTML='<small></small><b>↗</b>';body.prepend(top);
+        }
+        set($('small',top),'CASE / PROJECT','CASE / مشروع');
+      }
+      if(foot){
+        foot.classList.add('project-proof-meta');
+        let label=$('.project-proof-label',foot);
+        if(!label){label=document.createElement('small');label.className='project-proof-label';foot.prepend(label)}
+        set(label,'FOCUS','التركيز');
+        const arrow=$('b',foot);if(arrow)arrow.style.display='none';
+      }
+      const index=$('.project-index',card);if(index)index.textContent=String(i+2).padStart(2,'0');
+    });
+  }
+
   function work(){
-    const h=$('#work .section-head');if(h){set($('.eyebrow',h),'FEATURED WORK','أعمال مختارة');set($('h2',h),'PROOF.<br><span>NOT PROMISES.</span>','شغل حقيقي.<br><span>مش وعود.</span>',true);set($('div>p',h),'Selected work across HSE, digital and creative solutions.','أعمال مختارة في HSE والحلول الرقمية والإبداعية.');}
-    const grid=$('#project-grid');if(grid&&!grid.dataset.v10Tap){grid.dataset.v10Tap='1';grid.addEventListener('click',e=>{const card=e.target.closest('.project-card');if(!card||!touch())return;if(!card.classList.contains('is-open')){e.preventDefault();$$('.project-card.is-open',grid).forEach(x=>x.classList.remove('is-open'));card.classList.add('is-open')}})}
+    const h=$('#work .section-head');
+    if(h){
+      set($('.eyebrow',h),'SELECTED PROOF','أعمال تثبت الفكرة');
+      set($('h2',h),'REAL WORK.<br><span>DIFFERENT PROBLEMS.</span>','شغل حقيقي.<br><span>مشكلات مختلفة.</span>',true);
+      set($('div>p',h),'See what was actually built — across HSE, digital systems, creative work and AI.','شوف إيه اللي اتبنى فعلًا عبر HSE والأنظمة الرقمية والإبداع والذكاء الاصطناعي.');
+    }
+    enhanceProjectProofs();
+    const grid=$('#project-grid');
+    if(grid&&!grid.dataset.v10Tap){
+      grid.dataset.v10Tap='1';
+      grid.addEventListener('click',e=>{
+        const card=e.target.closest('.project-card');
+        if(!card||!touch())return;
+        if(!card.classList.contains('is-open')){
+          e.preventDefault();
+          $('.project-card.is-open',grid).forEach(x=>x.classList.remove('is-open'));
+          card.classList.add('is-open');
+        }
+      });
+    }
   }
 
   function about(){
@@ -246,7 +341,7 @@
 
   function observeDynamicWork(){
     const grid=$('#project-grid');if(grid&&!grid.dataset.v10Observed){grid.dataset.v10Observed='1';new MutationObserver(()=>requestAnimationFrame(()=>{work();performance()})).observe(grid,{childList:true})}
-    const featured=$('#featured-project');if(featured&&!featured.dataset.v10Observed){featured.dataset.v10Observed='1';new MutationObserver(()=>requestAnimationFrame(performance)).observe(featured,{childList:true})}
+    const featured=$('#featured-project');if(featured&&!featured.dataset.v10Observed){featured.dataset.v10Observed='1';new MutationObserver(()=>requestAnimationFrame(()=>{work();performance()})).observe(featured,{childList:true})}
   }
 
   applyStatic();observeDynamicWork();
