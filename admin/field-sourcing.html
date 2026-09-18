@@ -107,6 +107,33 @@
       </section>
 
       <section class="view" data-view-panel="visit">
+        <section id="mission-focus-header" class="mission-focus-header hidden">
+          <div class="mission-focus-copy">
+            <p class="overline">بريف المهمة</p>
+            <h2 id="mission-focus-title">—</h2>
+            <p id="mission-focus-objective">—</p>
+            <div class="mission-focus-meta">
+              <span id="mission-focus-owner">المسؤول: —</span>
+              <span id="mission-focus-progress">المورد: —</span>
+              <span id="mission-focus-due">الموعد: —</span>
+            </div>
+          </div>
+          <div class="mission-focus-next">
+            <span>المهمة الحالية</span>
+            <strong id="mission-focus-current-task">بيانات المورد</strong>
+            <small id="mission-focus-next-task">التالي: —</small>
+          </div>
+        </section>
+
+        <section id="guided-progress-shell" class="guided-progress-shell hidden">
+          <div class="guided-progress-top">
+            <strong id="guided-step-label">الخطوة 1 من 1</strong>
+            <span id="guided-step-percent">0%</span>
+          </div>
+          <div class="guided-progress-line"><i id="guided-step-bar"></i></div>
+          <div id="guided-task-strip" class="guided-task-strip"></div>
+        </section>
+
         <div class="view-head">
           <div><p class="overline">NEW / EDIT VISIT</p><h2 id="visit-heading">زيارة مورد جديدة</h2><p>امشِ من فوق لتحت. الأداة تحفظ كل التفاصيل في سجل واحد.</p></div>
           <div class="completion-box"><span>اكتمال البيانات</span><strong id="visit-progress">0%</strong><i><b id="visit-progress-bar"></b></i></div>
@@ -204,6 +231,17 @@
               <label class="wide">توصيتك<textarea id="recommendation" rows="3" placeholder="مثال: نطلب Sample أولًا / مناسب للكميات / السعر مرتفع لكن الفنش قوي"></textarea></label>
             </div>
           </section>
+
+          <section id="guided-review-panel" class="panel guided-review-panel hidden">
+            <div class="section-number">✓</div>
+            <div class="section-copy"><p class="overline">FINAL REVIEW</p><h3>مرجع الزيارة قبل الإغلاق</h3></div>
+            <div id="guided-review-content" class="guided-review-content"></div>
+          </section>
+
+          <div id="guided-nav" class="guided-nav hidden">
+            <button id="guided-back" class="button secondary" type="button">رجوع</button>
+            <button id="guided-next" class="button primary" type="button">التالي</button>
+          </div>
 
           <div class="save-dock">
             <button id="reset-visit" class="button secondary" type="button">تفريغ النموذج</button>
