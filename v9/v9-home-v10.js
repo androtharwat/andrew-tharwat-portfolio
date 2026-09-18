@@ -152,7 +152,7 @@
       set($('h2',h),'THE RIGHT CAPABILITY.<br><span>AT THE RIGHT MOMENT.</span>','القدرة المناسبة.<br><span>في الوقت المناسب.</span>',true);
       set($('div>p',h),'Not four separate businesses. Four capability layers we can combine around the problem.','مش أربع خدمات منفصلة. أربع طبقات خبرة نقدر نجمعها حول المشكلة.');
     }
-    const cards=$('.discipline-grid article');
+    const cards=$$('.discipline-grid article');
     const data=[
       ['HSE & SAFETY','السلامة وHSE','PEOPLE · RISK · SYSTEMS','أشخاص · مخاطر · أنظمة'],
       ['DIGITAL SYSTEMS','الأنظمة الرقمية','WEB · AUTOMATION · DATA','ويب · أتمتة · بيانات'],
@@ -449,7 +449,7 @@
     set($('.v10-contact-entry-copy>small',entry),'NO SERVICE CHOICE REQUIRED','مش لازم تختار خدمة');
     set($('.v10-contact-entry-copy h3',entry),'START WITH THE REAL PROBLEM.','ابدأ بالمشكلة الحقيقية.');
     set($('.v10-contact-entry-copy p',entry),'One clear sentence is enough to start.','جملة واضحة واحدة كفاية علشان نبدأ.');
-    const trust=$('.v10-contact-trust span',entry);
+    const trust=$$('.v10-contact-trust span',entry);
     if(trust[0])set(trust[0],'UNDERSTAND','نفهم');
     if(trust[1])set(trust[1],'SHAPE','نحدد المسار');
     if(trust[2])set(trust[2],'BUILD','نبني');
@@ -464,16 +464,16 @@
 
     const reveal=(prefill=false)=>{
       if(!shell)return;
+      const value=(textarea?.value||'').trim();
+      if(prefill&&!value){textarea?.focus();return}
       shell.classList.remove('v10-brief-gated');
       shell.classList.add('v10-brief-open');
-      const applyGoal=()=>{
-        if(!prefill)return;
-        const value=(textarea?.value||'').trim();
-        if(!value){textarea?.focus();return}
-        const steps=$('#brief-steps .brief-step');
+      if(prefill){
+        const steps=$$('#brief-steps .brief-step');
         const goalIndex=steps.findIndex(step=>step.dataset.key==='goal');
+        const progressButtons=$$('#brief-progress button');
         if(goalIndex>=0){
-          $('#brief-progress button[data-i="'+goalIndex+'"]')?.click();
+          progressButtons[goalIndex]?.click();
           setTimeout(()=>{
             const goal=$('[data-bind="goal"]');
             if(goal){
@@ -483,8 +483,7 @@
             enhanceBriefSummary();
           },30);
         }
-      };
-      applyGoal();
+      }
       setTimeout(()=>shell.scrollIntoView({behavior:'smooth',block:'start'}),45);
     };
 

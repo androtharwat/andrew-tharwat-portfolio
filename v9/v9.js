@@ -62,7 +62,7 @@
   $('#lang-toggle').addEventListener('click',()=>setLang(state.lang==='en'?'ar':'en'));
 
   function renderAll(){
-    document.documentElement.style.setProperty('--grid-cols',Math.max(2,Math.min(4,Number(state.layout.work.columns)||3));
+    document.documentElement.style.setProperty('--grid-cols',Math.max(2,Math.min(4,Number(state.layout.work.columns)||3)));
     document.documentElement.style.setProperty('--founder',(Number(state.layout.team.founderWidth)||38)+'%');
     renderFilters();renderWork();renderRoles();renderBrief();
   }
