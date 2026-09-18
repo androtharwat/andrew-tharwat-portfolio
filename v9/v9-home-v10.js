@@ -182,7 +182,7 @@
       const media=$('.featured-media',featured),copy=$('.featured-copy',featured);
       const oldLabel=$('.featured-copy small',featured);
       const rawLabel=(oldLabel?.textContent||'').trim();
-      const nativeLabel=rawLabel.startsWith('FEATURED CASE STUDY');
+      const nativeLabel=rawLabel.startsWith('FEATURED CASE STUDY')||rawLabel.startsWith('دراسة حالة مميزة');
       const parsedCategory=nativeLabel&&rawLabel.includes('·')?rawLabel.split('·').slice(1).join('·').trim():'';
       if(parsedCategory)featured.dataset.proofCategory=parsedCategory;
       const category=parsedCategory||featured.dataset.proofCategory||'STUDIO CASE';
