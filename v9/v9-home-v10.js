@@ -43,8 +43,33 @@
     const actions=$$('.hero-actions .btn');
     if(actions[0]){set(actions[0],'START WITH YOUR PROBLEM →','ابدأ من مشكلتك ←');actions[0].href='#contact'}
     if(actions[1]){set(actions[1],'SEE WHAT WE BUILD','شوف بنبني إيه');actions[1].href='#work'}
-    const visual=$('.hero-visual>img');if(visual){visual.src='/assets/extracted/hero-portrait3.webp';visual.loading='eager';visual.fetchPriority='high';visual.decoding='async'}
-    const stamp=$('.hero-stamp');if(stamp){set($('b',stamp),'ANDREW THARWAT','ANDREW THARWAT');set($('small',stamp),'HSE ENGINEER · CREATIVE SYSTEMS · PROBLEM SOLVER','مهندس HSE · أنظمة إبداعية · حل المشكلات')}
+    const visual=$('.hero-visual');
+    if(visual){
+      visual.classList.add('v10-identity-visual');
+      visual.innerHTML=`
+        <div class="v10-system-visual" role="img" aria-label="${ar()?'المشكلة تدخل إلى Andrew Tharwat Studio وتتحول عبر خبرات HSE والحلول الرقمية والإبداع والذكاء الاصطناعي إلى حل متكامل':'A problem enters Andrew Tharwat Studio and moves through HSE, digital, creative and AI expertise into a complete solution'}">
+          <div class="v10-system-grid" aria-hidden="true"></div>
+          <svg class="v10-system-lines" viewBox="0 0 680 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <defs>
+              <linearGradient id="v10flow" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="rgba(255,255,255,.16)"/>
+                <stop offset=".48" stop-color="#ef233c"/>
+                <stop offset="1" stop-color="rgba(255,255,255,.20)"/>
+              </linearGradient>
+            </defs>
+            <path class="flow-main" d="M58 280 C150 280 190 280 250 280 M430 280 C492 280 530 280 622 280"/>
+            <path class="flow-branch" d="M340 280 C300 225 265 180 230 132 M340 280 C380 225 415 180 450 132 M340 280 C300 335 265 380 230 428 M340 280 C380 335 415 380 450 428"/>
+          </svg>
+          <div class="v10-flow-node v10-problem"><small>${ar()?'ابدأ هنا':'START HERE'}</small><b>${ar()?'المشكلة':'PROBLEM'}</b><i></i></div>
+          <div class="v10-capability v10-cap-hse"><span>HSE</span><small>${ar()?'سلامة · مخاطر':'SAFETY · RISK'}</small></div>
+          <div class="v10-capability v10-cap-digital"><span>DIGITAL</span><small>${ar()?'أنظمة · ويب':'SYSTEMS · WEB'}</small></div>
+          <div class="v10-studio-core"><div class="core-ring ring-a"></div><div class="core-ring ring-b"></div><div class="core-mark"><img src="/assets/logo-mark-official.png" alt="" /></div><small>ANDREW THARWAT</small><b>${ar()?'STUDIO CORE':'STUDIO CORE'}</b><em>${ar()?'نفهم · نكوّن · نبني':'UNDERSTAND · ASSEMBLE · BUILD'}</em></div>
+          <div class="v10-capability v10-cap-creative"><span>CREATIVE</span><small>${ar()?'هوية · محتوى':'BRAND · CONTENT'}</small></div>
+          <div class="v10-capability v10-cap-ai"><span>AI</span><small>${ar()?'ذكاء · أتمتة':'INTELLIGENCE · AUTOMATION'}</small></div>
+          <div class="v10-flow-node v10-solution"><small>${ar()?'النتيجة':'THE OUTCOME'}</small><b>${ar()?'الحل':'SOLUTION'}</b><i></i></div>
+          <div class="v10-visual-signature"><b>${ar()?'مشكلة واحدة.':'ONE PROBLEM.'}</b><span>${ar()?'الفريق المناسب.':'THE RIGHT TEAM.'}</span><strong>${ar()?'حل متكامل.':'A COMPLETE SOLUTION.'}</strong></div>
+        </div>`;
+    }
     injectEntries(h);
   }
 
