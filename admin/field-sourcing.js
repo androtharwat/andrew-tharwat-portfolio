@@ -536,7 +536,7 @@
       $('#field-owner'), $('#supplier-name'), $('#supplier-phone'), $('#supplier-address'),
       $('#lead-time'), $('#moq'), $('#quoted-total'), $('#visit-notes'), $('#recommendation')
     ];
-    const dynamic = $('[data-check], [data-price]', $('#visit-form'));
+    const dynamic = Array.from($('#visit-form').querySelectorAll('[data-check], [data-price]'));
     const fields = fixed.concat(dynamic);
     if (!fields.length) return 0;
     let done = 0;
@@ -560,7 +560,7 @@
       const el = $('#' + id);
       if (!el || String(el.value || '').trim() === '') missing.push(req.labels[id] || id);
     });
-    const hasPrice = $('[data-price]', $('#pricing-root')).some(function (el) {
+    const hasPrice = Array.from($('#pricing-root').querySelectorAll('[data-price]')).some(function (el) {
       return String(el.value || '').trim() !== '';
     });
     if (!hasPrice) missing.push('سعر واحد على الأقل');
@@ -713,8 +713,31 @@
       }
 
       if (state.pendingFiles.length) await uploadFiles(visit.id);
+      const missionId = payload.mission_id;
       notify(status === 'complete' ? 'تم تسجيل الزيارة كاملة ✓' : 'تم حفظ الزيارة كـ Draft.');
       await loadAll();
+
+      if (status === 'complete' && missionId) {
+        const mission = state.missions.find(function (m) { return m.id === missionId; });
+        if (mission) {
+          const p = completedMissionProgress(mission);
+          if (p.suppliers < p.target) {
+            resetVisit();
+            openMission(mission, true);
+            notify('تم المورد ' + p.suppliers + ' من ' + p.target + ' ✓ — ابدأ المورد ' + (p.suppliers + 1) + '.');
+            return;
+          }
+
+          state.focusMissionId = null;
+          state.guidedStages = [];
+          document.body.classList.remove('mission-focus-mode');
+          resetVisit();
+          go('missions');
+          notify('اكتمل العدد المطلوب: ' + p.suppliers + ' من ' + p.target + '. المهمة جاهزة للمراجعة.');
+          return;
+        }
+      }
+
       resetVisit();
       go('visits');
     } catch (e) {
@@ -1023,7 +1046,7 @@
     $('#mission-focus-progress').textContent = 'المورد: ' + supplierNo + ' من ' + p.target;
     $('#mission-focus-due').textContent = m.due_date ? 'الموعد: ' + m.due_date : 'بدون موعد محدد';
 
-    const panels = $('#visit-form > section.panel').filter(function (el) { return el.id !== 'guided-review-panel'; });
+    const panels = Array.from(document.querySelectorAll('#visit-form > section.panel')).filter(function (el) { return el.id !== 'guided-review-panel'; });
     const missionPanel = panels[0];
     const supplierPanel = panels[1];
     const checklistPanel = panels[2];
@@ -1035,7 +1058,7 @@
     if (missionPanel) missionPanel.classList.remove('guided-active');
     if (checklistPanel) checklistPanel.classList.add('guided-checklist-panel');
 
-    const groups = $('#checklist-root > .check-group');
+    const groups = Array.from(document.querySelectorAll('#checklist-root > .check-group'));
     const stages = [
       { title: 'بيانات المورد', type: 'supplier', el: supplierPanel }
     ];
@@ -1154,10 +1177,10 @@
     if (!stages.length) return;
     const stage = stages[state.guidedIndex];
 
-    $('#visit-form > section.panel').forEach(function (panel) {
+    Array.from(document.querySelectorAll('#visit-form > section.panel')).forEach(function (panel) {
       panel.classList.remove('guided-active', 'guided-active-parent');
     });
-    $('#checklist-root > .check-group').forEach(function (group) {
+    Array.from(document.querySelectorAll('#checklist-root > .check-group')).forEach(function (group) {
       group.classList.remove('guided-active');
     });
 
@@ -1262,7 +1285,9 @@
   $('#compare-track').addEventListener('change', renderCompare);
 
   function missionProgress(m) {
-    const visits = state.visits.filter(function (v) { return v.mission_id === m.id && v.status !== 'rejected'; });
+    const visits = state.visits.filter(function (v) {
+      return v.mission_id === m.id && (v.status === 'complete' || v.status === 'shortlisted');
+    });
     const unique = new Set(visits.map(function (v) { return v.supplier_id; }).filter(Boolean)).size;
     const target = Number(m.target_supplier_count || 1);
     return { visits: visits.length, suppliers: unique, target: target, percent: Math.min(100, Math.round((unique / target) * 100)) };
@@ -1335,7 +1360,7 @@
     if (start) {
       const m = state.missions.find(function (x) { return x.id === start.dataset.startMission; });
       if (!m) return;
-      return openMission(m);
+      return openMission(m, state.access === 'field');
     }
     const complete = e.target.closest('[data-mission-complete]');
     if (complete && state.access === 'admin') {
