@@ -146,12 +146,15 @@
   function prefillFromGuidedReview(){
     const params=new URLSearchParams(location.search);
     if(params.get('source')!=='guided-review')return;
-    const hazard=params.get('hazard')||'';
-    const summary=params.get('summary')||'';
-    const jurisdiction=params.get('jurisdiction')||'';
+    let handoff={};
+    try{handoff=JSON.parse(sessionStorage.getItem('ats_hse_guided_review_handoff_v1')||'{}')||{}}catch(_e){}
+    const hazard=handoff.hazard||params.get('hazard')||'';
+    const summary=handoff.summary||params.get('summary')||'';
+    const jurisdiction=handoff.jurisdiction||params.get('jurisdiction')||'';
     if(hazard&&$('#hazard'))$('#hazard').value=hazard;
     if(summary&&$('#summary'))$('#summary').value=summary;
     if(jurisdiction&&$('#jurisdiction'))$('#jurisdiction').value=jurisdiction;
+    try{sessionStorage.removeItem('ats_hse_guided_review_handoff_v1')}catch(_e){}
     const head=$('.booking-head');
     if(head&&!document.querySelector('.guided-review-prefill')){
       const note=document.createElement('div');
