@@ -731,6 +731,10 @@
           state.focusMissionId = null;
           state.guidedStages = [];
           document.body.classList.remove('mission-focus-mode');
+          const missionLabel = $('#mission-select') && $('#mission-select').closest('label');
+          const ownerLabel = $('#field-owner') && $('#field-owner').closest('label');
+          if (missionLabel) missionLabel.classList.remove('hidden');
+          if (ownerLabel) ownerLabel.classList.remove('hidden');
           resetVisit();
           go('missions');
           notify('اكتمل العدد المطلوب: ' + p.suppliers + ' من ' + p.target + '. المهمة جاهزة للمراجعة.');
@@ -1000,6 +1004,10 @@
     } else {
       state.focusMissionId = null;
       document.body.classList.remove('mission-focus-mode');
+      const missionLabel = $('#mission-select') && $('#mission-select').closest('label');
+      const ownerLabel = $('#field-owner') && $('#field-owner').closest('label');
+      if (missionLabel) missionLabel.classList.remove('hidden');
+      if (ownerLabel) ownerLabel.classList.remove('hidden');
     }
   }
 
@@ -1110,7 +1118,7 @@
     }
 
     if (stage.type === 'price') {
-      const hasPrice = $('[data-price]', $('#pricing-root')).some(function (el) {
+      const hasPrice = Array.from($('#pricing-root').querySelectorAll('[data-price]')).some(function (el) {
         return String(el.value || '').trim() !== '';
       });
       if (!hasPrice) missing.push('سعر واحد على الأقل');
