@@ -19,22 +19,6 @@
     const cta=$('.header-cta');set(cta,'START WITH THE PROBLEM →','ابدأ من المشكلة ←');if(cta)cta.href='#contact';
   }
 
-  const entries=[
-    {code:'HSE',en:'I NEED HSE SUPPORT',ar:'أحتاج دعم HSE',subEn:'Safety · Risk · Systems',subAr:'سلامة · مخاطر · أنظمة',href:'/hse/'},
-    {code:'BLD',en:'I NEED TO BUILD',ar:'أحتاج أن أبني',subEn:'Brand · Web · Content',subAr:'هوية · موقع · محتوى',href:'#work'},
-    {code:'GO',en:'I HAVE A PROBLEM',ar:'عندي مشكلة',subEn:'Start here. We shape the path.',subAr:'ابدأ من هنا وإحنا نحدد المسار.',href:'#contact'}
-  ];
-
-  function injectEntries(hero){
-    $('.v10-service-rail',hero)?.remove();
-    $('.v10-stat-rail',hero)?.remove();
-    $('.v10-swipe-hint',hero)?.remove();
-    let rail=$('.v10-entry-rail',hero);
-    if(!rail){rail=document.createElement('div');rail.className='v10-entry-rail';hero.appendChild(rail)}
-    rail.setAttribute('aria-label',ar()?'ابدأ من احتياجك':'Start from your need');
-    rail.innerHTML=entries.map((x,i)=>`<a class="v10-entry" href="${x.href}" data-entry="${i}"><span>${x.code}</span><div><b>${ar()?x.ar:x.en}</b><small>${ar()?x.subAr:x.subEn}</small></div><i>→</i></a>`).join('');
-  }
-
   function hero(){
     const h=$('.hero');if(!h)return;
     set($('.hero .eyebrow'),'ANDREW THARWAT STUDIO · PROBLEM-SOLVING STUDIO','ANDREW THARWAT STUDIO · استوديو لحل المشكلات');
@@ -45,33 +29,121 @@
     if(actions[1]){set(actions[1],'SEE WHAT WE BUILD','شوف بنبني إيه');actions[1].href='#work'}
     const visual=$('.hero-visual');
     if(visual){
-      visual.classList.add('v10-identity-visual');
+      visual.className='hero-visual v10-identity-visual v10-open-identity';
       visual.innerHTML=`
-        <div class="v10-system-visual" role="img" aria-label="${ar()?'المشكلة تدخل إلى Andrew Tharwat Studio وتتحول عبر خبرات HSE والحلول الرقمية والإبداع والذكاء الاصطناعي إلى حل متكامل':'A problem enters Andrew Tharwat Studio and moves through HSE, digital, creative and AI expertise into a complete solution'}">
-          <div class="v10-system-grid" aria-hidden="true"></div>
-          <svg class="v10-system-lines" viewBox="0 0 680 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <div class="v10-open-system" role="img" aria-label="${ar()?'المشكلة تدخل إلى Andrew Tharwat Studio، وتتجمع حولها خبرات HSE والأنظمة الرقمية والإبداع والذكاء الاصطناعي، ثم تتحول إلى حل متكامل':'A real problem flows into Andrew Tharwat Studio, where HSE, digital, creative and AI expertise combine into a complete solution'}">
+          <div class="v10-ambient-orbit orbit-1" aria-hidden="true"></div>
+          <div class="v10-ambient-orbit orbit-2" aria-hidden="true"></div>
+          <div class="v10-ambient-orbit orbit-3" aria-hidden="true"></div>
+          <div class="v10-planet-arc" aria-hidden="true"></div>
+
+          <svg class="v10-energy-map" viewBox="0 0 760 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
             <defs>
-              <linearGradient id="v10flow" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stop-color="rgba(255,255,255,.16)"/>
-                <stop offset=".48" stop-color="#ef233c"/>
-                <stop offset="1" stop-color="rgba(255,255,255,.20)"/>
+              <linearGradient id="energyMain" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#ff3349" stop-opacity=".32"/>
+                <stop offset=".42" stop-color="#ff3349"/>
+                <stop offset=".62" stop-color="#ffffff"/>
+                <stop offset="1" stop-color="#ff6b7a"/>
               </linearGradient>
+              <radialGradient id="energyGlow">
+                <stop offset="0" stop-color="#ffffff"/>
+                <stop offset=".35" stop-color="#ff3349"/>
+                <stop offset="1" stop-color="#ff3349" stop-opacity="0"/>
+              </radialGradient>
+              <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="5"/>
+              </filter>
             </defs>
-            <path class="flow-main" d="M58 280 C150 280 190 280 250 280 M430 280 C492 280 530 280 622 280"/>
-            <path class="flow-branch" d="M340 280 C300 225 265 180 230 132 M340 280 C380 225 415 180 450 132 M340 280 C300 335 265 380 230 428 M340 280 C380 335 415 380 450 428"/>
+
+            <path class="energy-base" d="M85 286 C175 250 220 275 294 280 C352 284 393 284 458 280 C527 276 588 246 676 286"/>
+            <path class="energy-hot" d="M85 286 C175 250 220 275 294 280 C352 284 393 284 458 280 C527 276 588 246 676 286"/>
+
+            <path class="energy-branch branch-a" d="M377 280 C338 218 312 178 278 132"/>
+            <path class="energy-branch branch-b" d="M377 280 C416 218 444 178 482 132"/>
+            <path class="energy-branch branch-c" d="M377 280 C338 342 312 382 278 428"/>
+            <path class="energy-branch branch-d" d="M377 280 C416 342 444 382 482 428"/>
+
+            <circle class="energy-particle p1" r="4" fill="#fff">
+              <animateMotion dur="3.8s" repeatCount="indefinite" path="M85 286 C175 250 220 275 294 280 C352 284 393 284 458 280 C527 276 588 246 676 286"/>
+            </circle>
+            <circle class="energy-particle p2" r="3.2" fill="#ff3349">
+              <animateMotion dur="3.8s" begin="-1.7s" repeatCount="indefinite" path="M85 286 C175 250 220 275 294 280 C352 284 393 284 458 280 C527 276 588 246 676 286"/>
+            </circle>
+            <circle class="energy-particle p3" r="2.4" fill="#ff8c98">
+              <animateMotion dur="3.8s" begin="-2.8s" repeatCount="indefinite" path="M85 286 C175 250 220 275 294 280 C352 284 393 284 458 280 C527 276 588 246 676 286"/>
+            </circle>
           </svg>
-          <div class="v10-flow-node v10-problem"><small>${ar()?'ابدأ هنا':'START HERE'}</small><b>${ar()?'المشكلة':'PROBLEM'}</b><i></i></div>
-          <div class="v10-capability v10-cap-hse"><span>HSE</span><small>${ar()?'سلامة · مخاطر':'SAFETY · RISK'}</small></div>
-          <div class="v10-capability v10-cap-digital"><span>DIGITAL</span><small>${ar()?'أنظمة · ويب':'SYSTEMS · WEB'}</small></div>
-          <div class="v10-studio-core"><div class="core-ring ring-a"></div><div class="core-ring ring-b"></div><div class="core-mark"><img src="/assets/logo-mark-official.png" alt="" /></div><small>ANDREW THARWAT</small><b>${ar()?'STUDIO CORE':'STUDIO CORE'}</b><em>${ar()?'نفهم · نكوّن · نبني':'UNDERSTAND · ASSEMBLE · BUILD'}</em></div>
-          <div class="v10-capability v10-cap-creative"><span>CREATIVE</span><small>${ar()?'هوية · محتوى':'BRAND · CONTENT'}</small></div>
-          <div class="v10-capability v10-cap-ai"><span>AI</span><small>${ar()?'ذكاء · أتمتة':'INTELLIGENCE · AUTOMATION'}</small></div>
-          <div class="v10-flow-node v10-solution"><small>${ar()?'النتيجة':'THE OUTCOME'}</small><b>${ar()?'الحل':'SOLUTION'}</b><i></i></div>
-          <div class="v10-visual-signature"><b>${ar()?'مشكلة واحدة.':'ONE PROBLEM.'}</b><span>${ar()?'الفريق المناسب.':'THE RIGHT TEAM.'}</span><strong>${ar()?'حل متكامل.':'A COMPLETE SOLUTION.'}</strong></div>
+
+          <div class="v10-problem-world">
+            <div class="problem-halo"></div>
+            <div class="problem-sphere">
+              <i class="crack c1"></i><i class="crack c2"></i><i class="crack c3"></i>
+              <span>${ar()?'المشكلة':'PROBLEM'}</span>
+            </div>
+            <small>${ar()?'مخاطر · تعقيد · احتياج · فكرة':'RISK · COMPLEXITY · NEED · IDEA'}</small>
+          </div>
+
+          <div class="v10-core-world">
+            <div class="core-orbit core-orbit-a"></div>
+            <div class="core-orbit core-orbit-b"></div>
+            <div class="core-orbit core-orbit-c"></div>
+            <div class="core-pulse"></div>
+            <div class="core-brand"><img src="/assets/logo-mark-official.png" alt="" /></div>
+            <small>ANDREW THARWAT</small>
+            <b>STUDIO CORE</b>
+            <em>${ar()?'نفهم · نكوّن · نبني':'UNDERSTAND · ASSEMBLE · BUILD'}</em>
+          </div>
+
+          <div class="v10-expertise expert-hse">
+            <div class="expert-icon">
+              <svg viewBox="0 0 24 24"><path d="M5 14v-2a7 7 0 0 1 14 0v2M3 14h18M9 5v4M15 5v4" /></svg>
+            </div>
+            <b>HSE</b><small>${ar()?'سلامة · مخاطر · أشخاص':'SAFETY · RISK · PEOPLE'}</small>
+          </div>
+          <div class="v10-expertise expert-digital">
+            <div class="expert-icon">
+              <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="11" rx="1"/><path d="M9 20h6M12 16v4"/></svg>
+            </div>
+            <b>DIGITAL</b><small>${ar()?'أنظمة · ويب · أتمتة':'SYSTEMS · WEB · AUTOMATION'}</small>
+          </div>
+          <div class="v10-expertise expert-creative">
+            <div class="expert-icon">
+              <svg viewBox="0 0 24 24"><path d="M4 20l4.5-1 10-10-3.5-3.5-10 10L4 20zM14 6l3.5 3.5"/></svg>
+            </div>
+            <b>CREATIVE</b><small>${ar()?'هوية · محتوى · قصة':'BRAND · CONTENT · STORY'}</small>
+          </div>
+          <div class="v10-expertise expert-ai">
+            <div class="expert-icon">
+              <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/></svg>
+            </div>
+            <b>AI</b><small>${ar()?'ذكاء · تحليل · تسريع':'INTELLIGENCE · INSIGHT · SPEED'}</small>
+          </div>
+
+          <div class="v10-solution-world">
+            <div class="solution-rays"></div>
+            <div class="solution-sphere">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 24l8-10 4 5 4-6 6 11M21 13V7h6M27 7l-4 4"/></svg>
+              <span>${ar()?'الحل':'SOLUTION'}</span>
+            </div>
+            <small>${ar()?'أكثر أمانًا · أذكى · أوضح · قابل للتنفيذ':'SAFER · SMARTER · CLEARER · BUILT TO WORK'}</small>
+          </div>
+
+          <div class="v10-flow-copy v10-flow-copy-left">
+            <b>${ar()?'تحديات حقيقية':'REAL CHALLENGES'}</b>
+            <span>${ar()?'نبدأ من الواقع':'START WITH REALITY'}</span>
+          </div>
+          <div class="v10-flow-copy v10-flow-copy-right">
+            <b>${ar()?'أثر حقيقي':'REAL IMPACT'}</b>
+            <span>${ar()?'نصل لحل قابل للتنفيذ':'END WITH SOMETHING USEFUL'}</span>
+          </div>
+
+          <div class="v10-system-tagline">
+            <span>${ar()?'مشكلة واحدة':'ONE PROBLEM'}</span><i></i>
+            <span>${ar()?'الفريق المناسب':'THE RIGHT TEAM'}</span><i></i>
+            <strong>${ar()?'حل متكامل':'A COMPLETE SOLUTION'}</strong>
+          </div>
         </div>`;
-    }
-    injectEntries(h);
-  }
+    }  }
 
   function capabilities(){
     const h=$('#capabilities .section-head');if(h){set($('.eyebrow',h),'SERVICES','الخدمات');set($('h2',h),'CHOOSE A DIRECTION.<br><span>WE’LL SHAPE THE SOLUTION.</span>','اختار الاتجاه.<br><span>وإحنا نشكّل الحل.</span>',true);set($('div>p',h),'Four capabilities. One problem-solving direction.','أربع قدرات. اتجاه واحد لحل المشكلة.');}
