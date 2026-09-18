@@ -137,6 +137,7 @@
       return;
     }
     lastResult=data||{};
+    try{sessionStorage.removeItem('ats_hse_guided_review_handoff_v1')}catch(_e){}
     $('#consultation-form').classList.add('hidden');
     $('#success-state').classList.remove('hidden');
     renderSuccess();
@@ -154,7 +155,6 @@
     if(hazard&&$('#hazard'))$('#hazard').value=hazard;
     if(summary&&$('#summary'))$('#summary').value=summary;
     if(jurisdiction&&$('#jurisdiction'))$('#jurisdiction').value=jurisdiction;
-    try{sessionStorage.removeItem('ats_hse_guided_review_handoff_v1')}catch(_e){}
     const head=$('.booking-head');
     if(head&&!document.querySelector('.guided-review-prefill')){
       const note=document.createElement('div');
