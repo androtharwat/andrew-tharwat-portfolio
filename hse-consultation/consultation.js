@@ -4,6 +4,19 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const LANG_KEY='andrew_v9_public_lang';
   const PORTFOLIO_LANG_KEY='andrew_portfolio_lang';
+  const HANDOFF_KEY='ats_hse_guided_review_handoff_v1';
+  const params=new URLSearchParams(location.search);
+  let gateHandoff={};
+  try{gateHandoff=JSON.parse(sessionStorage.getItem(HANDOFF_KEY)||'{}')||{}}catch(_e){}
+  const professionalGatePassed=params.get('source')==='guided-review'
+    && typeof gateHandoff.hazard==='string'
+    && gateHandoff.hazard.includes('|')
+    && typeof gateHandoff.summary==='string'
+    && gateHandoff.summary.trim().length>=10;
+  if(!professionalGatePassed){
+    location.replace('/hse-guided-review/?from=professional-review');
+    return;
+  }
   let lang = 'en';
   let lastResult = null;
   const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
@@ -38,11 +51,11 @@
     const cards=$$('.process article');
     const copy=lang==='ar'?[ 
       ['01','احكِ لنا الحالة','وصف بسيط للمشكلة كفاية. مش محتاج تختار تقرير أو خدمة من الأول.'],
-      ['02','احجز الاستشارة بـ 75 دولار','بعد فتح الحالة، تكمل خطوة دفع واحدة فقط لما رابط الحجز يكون جاهز.'],
+      ['02','احجز الاستشارة بـ 75 دولار','بعد الوصول لبوابة المراجعة المهنية، تكمل خطوة دفع واحدة فقط لما رابط الحجز يكون جاهز.'],
       ['03','استلم التوصية المهنية','بعد الاستشارة نوضح الفجوات والخطوة المناسبة، وأي خدمة إضافية تتسعر منفصلة فقط لو احتجتها.']
     ]:[
       ['01','DESCRIBE THE CASE','A simple description is enough. You do not need to choose a report or service first.'],
-      ['02','BOOK THE $75 CONSULTATION','After the case is opened, complete one payment step when the booking link is ready.'],
+      ['02','BOOK THE $75 CONSULTATION','After reaching the Professional Review Gate, complete one payment step when the booking link is ready.'],
       ['03','GET THE PROFESSIONAL RECOMMENDATION','After the consultation, you get the recommended next step. Any extra service is quoted separately only if needed.']
     ];
     cards.forEach((card,i)=>{
@@ -53,6 +66,20 @@
       card.querySelector('b').textContent=c[1];
       card.querySelector('p').textContent=c[2];
     });
+  }
+
+  function renderGatePricing(){
+    const fee='75';
+    const price=$('#consultation-fee');
+    if(price)price.textContent='$'+fee;
+    const summary=$('#request-summary');
+    if(summary){
+      if(lang==='ar'){
+        summary.textContent='استشارة HSE احترافية · 60 دقيقة · '+fee+' دولار. لا يتم شراء أي خدمة إضافية في هذه الخطوة.';
+      }else{
+        summary.textContent='Professional HSE Consultation · 60 minutes · $'+fee+'. No additional service is purchased at this stage.';
+      }
+    }
   }
 
   function localizeHazards(){
@@ -106,6 +133,7 @@
     $('.brand small').textContent=next==='ar'?'استشارة HSE احترافية':'PROFESSIONAL HSE CONSULTATION';
     localizeHazards();
     localizeProcess();
+    renderGatePricing();
     renderSuccess();
     if(save)persistLanguage();
   }
@@ -137,7 +165,7 @@
       return;
     }
     lastResult=data||{};
-    try{sessionStorage.removeItem('ats_hse_guided_review_handoff_v1')}catch(_e){}
+    try{sessionStorage.removeItem(HANDOFF_KEY)}catch(_e){}
     $('#consultation-form').classList.add('hidden');
     $('#success-state').classList.remove('hidden');
     renderSuccess();
@@ -145,13 +173,9 @@
   });
 
   function prefillFromGuidedReview(){
-    const params=new URLSearchParams(location.search);
-    if(params.get('source')!=='guided-review')return;
-    let handoff={};
-    try{handoff=JSON.parse(sessionStorage.getItem('ats_hse_guided_review_handoff_v1')||'{}')||{}}catch(_e){}
-    const hazard=handoff.hazard||params.get('hazard')||'';
-    const summary=handoff.summary||params.get('summary')||'';
-    const jurisdiction=handoff.jurisdiction||params.get('jurisdiction')||'';
+    const hazard=gateHandoff.hazard||'';
+    const summary=gateHandoff.summary||'';
+    const jurisdiction=gateHandoff.jurisdiction||'';
     if(hazard&&$('#hazard'))$('#hazard').value=hazard;
     if(summary&&$('#summary'))$('#summary').value=summary;
     if(jurisdiction&&$('#jurisdiction'))$('#jurisdiction').value=jurisdiction;
