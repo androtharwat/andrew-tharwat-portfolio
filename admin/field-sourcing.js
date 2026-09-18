@@ -22,7 +22,10 @@
     devices: [],
     track: 'do_story',
     editingVisitId: null,
-    pendingFiles: []
+    pendingFiles: [],
+    focusMissionId: null,
+    guidedIndex: 0,
+    guidedStages: []
   };
 
   const REQUIRED = {
@@ -64,6 +67,26 @@
         'supplier-phone':'رقم الهاتف'
       }
     }
+  };
+
+  const GUIDED_REQUIRED = {
+    do_story: [
+      ['a5_full_color','print_method'],
+      ['paper_type','paper_gsm','paper_sample_seen'],
+      ['cover_gsm','lamination','binding'],
+      ['written_quote']
+    ],
+    string_art: [
+      ['wood_type','wood_thickness','wood_sample_seen','router_clean_edge'],
+      ['surface_prep','paint_type','paint_sample_seen'],
+      ['nail_type','rust_resistant','thread_type','thread_quality','hanger'],
+      ['packaging','written_quote']
+    ],
+    opportunity: [
+      ['opportunity_name','opportunity_type'],
+      ['use_case'],
+      ['written_quote']
+    ]
   };
 
   const TRACKS = {
