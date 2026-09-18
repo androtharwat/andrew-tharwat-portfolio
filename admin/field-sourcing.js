@@ -19,7 +19,10 @@
     visits: [],
     media: [],
     missions: [],
+    activities: [],
     devices: [],
+    activityPollTimer: null,
+    lastActivityKey: '',
     track: 'do_story',
     editingVisitId: null,
     pendingFiles: [],
@@ -403,6 +406,7 @@
     renderTrack();
     buildRatingOptions();
     await loadAll();
+    startActivityPolling();
   }
 
   async function loadAll() {
@@ -411,9 +415,12 @@
     const visitReq = state.sb.from('studio_sourcing_visits').select('*').order('visit_date', { ascending: false }).order('created_at', { ascending: false });
     const mediaReq = state.sb.from('studio_sourcing_media').select('*').order('created_at', { ascending: false });
     const missionReq = state.sb.from('studio_sourcing_missions').select('*').order('created_at', { ascending: false });
-    const results = await Promise.all([supplierReq, visitReq, mediaReq, missionReq]);
-    if (results[0].error || results[1].error || results[2].error || results[3].error) {
-      notify((results[0].error || results[1].error || results[2].error || results[3].error).message, 'error');
+    const activityReq = state.access === 'admin'
+      ? state.sb.from('studio_sourcing_activity').select('*').order('created_at', { ascending: false }).limit(500)
+      : Promise.resolve({ data: [], error: null });
+    const results = await Promise.all([supplierReq, visitReq, mediaReq, missionReq, activityReq]);
+    if (results[0].error || results[1].error || results[2].error || results[3].error || results[4].error) {
+      notify((results[0].error || results[1].error || results[2].error || results[3].error || results[4].error).message, 'error');
       $('#sync-status').textContent = 'SYNC ERROR';
       return;
     }
@@ -421,6 +428,7 @@
     state.visits = results[1].data || [];
     state.media = results[2].data || [];
     state.missions = results[3].data || [];
+    state.activities = results[4].data || [];
     if (state.access === 'admin') await loadDevices();
     renderEverything();
     $('#sync-status').textContent = 'LIVE SUPABASE';
@@ -442,6 +450,75 @@
     renderCompare();
     renderDevices();
     updateProgress();
+  }
+
+  async function refreshActivity() {
+    if (state.access !== 'admin' || !state.sb) return;
+    const r = await state.sb.from('studio_sourcing_activity').select('*').order('created_at', { ascending: false }).limit(500);
+    if (r.error) return;
+    state.activities = r.data || [];
+    renderDashboard();
+    renderMissions();
+  }
+
+  function startActivityPolling() {
+    if (state.activityPollTimer) {
+      clearInterval(state.activityPollTimer);
+      state.activityPollTimer = null;
+    }
+    if (state.access !== 'admin') return;
+    state.activityPollTimer = setInterval(refreshActivity, 15000);
+  }
+
+  function activityForMission(missionId) {
+    return state.activities.filter(function (a) { return a.mission_id === missionId; });
+  }
+
+  function latestMissionActivity(missionId) {
+    return activityForMission(missionId)[0] || null;
+  }
+
+  function firstMissionActivity(missionId, type) {
+    const rows = activityForMission(missionId).filter(function (a) { return a.event_type === type; });
+    return rows.length ? rows[rows.length - 1] : null;
+  }
+
+  function relativeActivityTime(value) {
+    if (!value) return '—';
+    const ms = Date.now() - new Date(value).getTime();
+    if (!Number.isFinite(ms) || ms < 0) return 'الآن';
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1) return 'الآن';
+    if (mins < 60) return 'منذ ' + mins + ' د';
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return 'منذ ' + hours + ' س';
+    const days = Math.floor(hours / 24);
+    return 'منذ ' + days + ' يوم';
+  }
+
+  async function logMissionActivity(eventType, data) {
+    if (state.access !== 'field' || !state.sb || !state.focusMissionId) return;
+    const mission = state.missions.find(function (m) { return m.id === state.focusMissionId; });
+    if (!mission) return;
+    const progress = completedMissionProgress(mission);
+    const supplierNo = Math.min(progress.target, progress.suppliers + (eventType === 'supplier_completed' ? 0 : 1));
+    const payload = {
+      mission_id: mission.id,
+      visit_id: data && data.visit_id ? data.visit_id : null,
+      device_id: state.device && state.device.id ? state.device.id : '',
+      event_type: eventType,
+      stage_title: data && data.stage_title ? data.stage_title : '',
+      stage_index: data && Number.isInteger(data.stage_index) ? data.stage_index : null,
+      stage_total: data && Number.isInteger(data.stage_total) ? data.stage_total : null,
+      supplier_no: supplierNo,
+      details: data && data.details ? data.details : {}
+    };
+    const key = [payload.mission_id,eventType,payload.supplier_no,payload.stage_index,payload.stage_title].join(':');
+    if ((eventType === 'opened' || eventType === 'stage') && state.lastActivityKey === key) return;
+    if (eventType === 'opened' || eventType === 'stage') state.lastActivityKey = key;
+    try {
+      await state.sb.from('studio_sourcing_activity').insert(payload);
+    } catch (_e) {}
   }
 
   function go(view) {
@@ -714,6 +791,12 @@
 
       if (state.pendingFiles.length) await uploadFiles(visit.id);
       const missionId = payload.mission_id;
+      if (missionId && state.access === 'field') {
+        await logMissionActivity(status === 'complete' ? 'supplier_completed' : 'draft_saved', {
+          visit_id: visit.id,
+          details: { supplier_id: supplierId, visit_code: visit.visit_code || '' }
+        });
+      }
       notify(status === 'complete' ? 'تم تسجيل الزيارة كاملة ✓' : 'تم حفظ الزيارة كـ Draft.');
       await loadAll();
 
@@ -728,6 +811,10 @@
             return;
           }
 
+          await logMissionActivity('mission_ready', {
+            visit_id: visit.id,
+            details: { completed_suppliers: p.suppliers, target_suppliers: p.target }
+          });
           state.focusMissionId = null;
           state.guidedStages = [];
           document.body.classList.remove('mission-focus-mode');
@@ -1001,6 +1088,7 @@
       state.guidedIndex = 0;
       document.body.classList.add('mission-focus-mode');
       setupGuidedMission(m);
+      logMissionActivity('opened', { details: { source: 'mission_link' } });
     } else {
       state.focusMissionId = null;
       document.body.classList.remove('mission-focus-mode');
@@ -1224,6 +1312,12 @@
     if (active && typeof active.scrollIntoView === 'function') {
       active.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    logMissionActivity('stage', {
+      stage_title: stage.title,
+      stage_index: state.guidedIndex + 1,
+      stage_total: stages.length
+    });
   }
 
   $('#guided-back').addEventListener('click', function () {
