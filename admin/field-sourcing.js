@@ -470,6 +470,7 @@
     r.addEventListener('change', function () {
       state.track = r.value;
       renderTrack();
+      renderMissionOptions();
       updateProgress();
     });
   });
@@ -564,7 +565,7 @@
     const sel = $('#mission-select');
     if (!sel) return;
     const current = sel.value;
-    const active = state.missions.filter(function (m) { return m.status === 'active'; });
+    const active = state.missions.filter(function (m) { return m.status === 'active' && m.track === state.track; });
     sel.innerHTML = '<option value="">زيارة بدون مهمة محددة</option>' + active.map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(m.title) + ' · ' + esc(trackLabel(m.track)) + '</option>';
     }).join('');
