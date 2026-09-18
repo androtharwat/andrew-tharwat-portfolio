@@ -224,7 +224,7 @@
       }
     }
 
-    $('#project-grid .project-card').forEach((card,i)=>{
+    $$('#project-grid .project-card').forEach((card,i)=>{
       card.classList.add('v10-proof-card');
       const media=$('.project-media',card),body=$('.project-body',card),cat=$('.project-body>small',card),foot=$('.project-foot',card);
       if(media){
@@ -268,7 +268,7 @@
         if(!card||!touch())return;
         if(!card.classList.contains('is-open')){
           e.preventDefault();
-          $('.project-card.is-open',grid).forEach(x=>x.classList.remove('is-open'));
+          $$('.project-card.is-open',grid).forEach(x=>x.classList.remove('is-open'));
           card.classList.add('is-open');
         }
       });
@@ -332,8 +332,174 @@
     `;
   }
 
-  function team(){const h=$('#team .section-head');if(h){set($('.eyebrow',h),'STUDIO MODEL','نموذج الاستوديو');set($('h2',h),'THE RIGHT TEAM.<br><span>BUILT AROUND THE PROBLEM.</span>','الفريق المناسب.<br><span>يتكوّن حول المشكلة.</span>',true)}}
-  function contact(){const h=$('#contact .section-head');if(h){set($('.eyebrow',h),'START HERE','ابدأ من هنا');set($('h2',h),'TELL US THE PROBLEM.<br><span>WE’LL SHAPE THE NEXT STEP.</span>','احكِ لنا المشكلة.<br><span>وإحنا نحدد الخطوة الجاية.</span>',true);set($('div>p',h),'No need to choose the service first.','مش لازم تختار الخدمة الأول.')}}
+  function enhanceRoleCards(){
+    $$('#role-grid .role-card').forEach(card=>{
+      card.classList.add('v10-role-node');
+      card.tabIndex=0;
+      if(card.dataset.v10KeyBound)return;
+      card.dataset.v10KeyBound='1';
+      card.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click()}
+      });
+    });
+  }
+
+  function team(){
+    const section=$('#team'),h=$('#team .section-head');
+    if(!section)return;
+    section.classList.add('v10-team-system');
+    if(h){
+      set($('.eyebrow',h),'THE STUDIO NETWORK','شبكة الاستوديو');
+      set($('h2',h),'NOT A FIXED TEAM.<br><span>THE RIGHT TEAM.</span>','مش فريق ثابت.<br><span>الفريق المناسب.</span>',true);
+      set($('div>p',h),'A focused studio core. Specialist expertise joins only when the problem needs it.','نواة واضحة للاستوديو، والخبرة المتخصصة تدخل فقط لما المشكلة تحتاجها.');
+    }
+
+    const model=$('.team-model',section);
+    if(model)model.classList.add('v10-team-model-hidden');
+
+    const founder=$('.founder-card',section);
+    if(founder){
+      founder.className='founder-card v10-team-core-card';
+      founder.innerHTML=`
+        <div class="v10-team-core-visual" aria-hidden="true">
+          <i class="team-orbit orbit-a"></i>
+          <i class="team-orbit orbit-b"></i>
+          <i class="team-orbit orbit-c"></i>
+          <div class="team-core-pulse"></div>
+          <div class="team-core-mark"><img src="/assets/logo-mark-official.png" alt="" /></div>
+          <span class="team-node n1">HSE</span>
+          <span class="team-node n2">DEV</span>
+          <span class="team-node n3">DES</span>
+          <span class="team-node n4">AI</span>
+        </div>
+        <div class="v10-team-core-copy">
+          <small>${ar()?'STUDIO CORE · توجيه واحد':'STUDIO CORE · ONE DIRECTION'}</small>
+          <h3>Andrew Tharwat</h3>
+          <b>${ar()?'توجيه الاستوديو وبناء الحل':'Studio Direction & Solution Architecture'}</b>
+          <p>${ar()?'نحدد المشكلة، نربط التخصصات، ونحافظ على اتجاه واحد للحل من البداية للنهاية.':'Frames the problem, connects the disciplines, and keeps one direction from first question to final solution.'}</p>
+          <div class="founder-focus">
+            <span>${ar()?'تحديد المشكلة':'PROBLEM FRAMING'}</span>
+            <span>${ar()?'تفكير منظومي':'SYSTEMS THINKING'}</span>
+            <span>${ar()?'توجيه الحل':'SOLUTION DIRECTION'}</span>
+          </div>
+        </div>`;
+    }
+
+    const panel=$('.specialist-panel',section);
+    if(panel){
+      set($('.eyebrow',panel),'SPECIALIST NETWORK','شبكة الخبرات');
+      set($('h3',panel),'EXPERTISE JOINS<br>WHEN THE PROBLEM NEEDS IT.','الخبرة تدخل<br>لما المشكلة تحتاجها.',true);
+      set($('p',panel),'Select any area to explore a possible expertise mix. This is a flexible network, not a fixed staff list.','اختار أي مجال علشان تشوف مزيج خبرات محتمل. دي شبكة مرنة، مش قائمة موظفين ثابتة.');
+      const selHead=$('.team-selection-head',panel);
+      if(selHead){
+        set($('b',selHead),'POSSIBLE PROJECT MIX','مزيج محتمل للمشروع');
+        set($('small',selHead),'Tap expertise areas above.','اختار مجالات الخبرة من فوق.');
+      }
+      set($('.network-note',panel),'FLEXIBLE NETWORK · ASSEMBLED BY PROJECT NEED','شبكة مرنة · تتكوّن حسب احتياج المشروع');
+    }
+    enhanceRoleCards();
+  }
+  function enhanceBriefSummary(){
+    const rows=$$('#brief-summary .summary-row');
+    rows.forEach(row=>{
+      const value=$('b,span',row)?.textContent?.trim()||'';
+      row.classList.toggle('v10-empty-summary',!value||value==='—');
+    });
+    const goalValue=rows[1]?($('b,span',rows[1])?.textContent?.trim()||''):'';
+    const shell=$('.brief-shell');
+    if(shell&&goalValue&&goalValue!=='—'){
+      shell.classList.remove('v10-brief-gated');
+      shell.classList.add('v10-brief-open');
+    }
+  }
+
+  function contact(){
+    const section=$('#contact'),h=$('#contact .section-head'),shell=$('.brief-shell');
+    if(!section)return;
+    section.classList.add('v10-contact-system');
+    if(h){
+      set($('.eyebrow',h),'START WITH ONE SENTENCE','ابدأ بجملة واحدة');
+      set($('h2',h),'WHAT NEEDS TO<br><span>CHANGE?</span>','إيه اللي محتاج<br><span>يتغيّر؟</span>',true);
+      set($('div>p',h),'Do not choose a service. Tell us the problem first — we will shape the brief with you.','ما تختارش خدمة. احكِ لنا المشكلة الأول، وإحنا نبني البريف معاك.');
+    }
+
+    let entry=$('.v10-contact-entry',section);
+    if(!entry){
+      entry=document.createElement('div');
+      entry.className='v10-contact-entry';
+      entry.innerHTML=`
+        <div class="v10-contact-entry-copy">
+          <small></small>
+          <h3></h3>
+          <p></p>
+          <div class="v10-contact-trust"><span></span><i></i><span></span><i></i><span></span></div>
+        </div>
+        <div class="v10-contact-entry-action">
+          <label for="v10-problem-start"></label>
+          <textarea id="v10-problem-start" rows="3"></textarea>
+          <div class="v10-contact-entry-buttons">
+            <button class="v10-start-brief" type="button"></button>
+            <button class="v10-open-full-brief" type="button"></button>
+          </div>
+          <small class="v10-contact-entry-note"></small>
+        </div>`;
+      shell?.insertAdjacentElement('beforebegin',entry);
+    }
+
+    set($('.v10-contact-entry-copy>small',entry),'NO SERVICE CHOICE REQUIRED','مش لازم تختار خدمة');
+    set($('.v10-contact-entry-copy h3',entry),'START WITH THE REAL PROBLEM.','ابدأ بالمشكلة الحقيقية.');
+    set($('.v10-contact-entry-copy p',entry),'One clear sentence is enough to start.','جملة واضحة واحدة كفاية علشان نبدأ.');
+    const trust=$('.v10-contact-trust span',entry);
+    if(trust[0])set(trust[0],'UNDERSTAND','نفهم');
+    if(trust[1])set(trust[1],'SHAPE','نحدد المسار');
+    if(trust[2])set(trust[2],'BUILD','نبني');
+    const label=$('label',entry);if(label)set(label,'WHAT IS THE PROBLEM?','إيه المشكلة؟');
+    const textarea=$('#v10-problem-start',entry);
+    if(textarea)textarea.placeholder=ar()?'مثال: عندنا عملية يدوية بتضيع وقت وعايزين نحولها لنظام أبسط...':'Example: We have a manual process wasting time and need a simpler digital workflow...';
+    set($('.v10-start-brief',entry),'SHAPE MY BRIEF →','ابنِ البريف معايا ←');
+    set($('.v10-open-full-brief',entry),'OPEN FULL BRIEF','افتح البريف كامل');
+    set($('.v10-contact-entry-note',entry),'NO PERFECT BRIEF NEEDED · WE BUILD IT STEP BY STEP','مش محتاج بريف كامل · بنبنيه خطوة بخطوة');
+
+    if(shell&&!shell.classList.contains('brief-submitted')&&!shell.classList.contains('v10-brief-open'))shell.classList.add('v10-brief-gated');
+
+    const reveal=(prefill=false)=>{
+      if(!shell)return;
+      shell.classList.remove('v10-brief-gated');
+      shell.classList.add('v10-brief-open');
+      const applyGoal=()=>{
+        if(!prefill)return;
+        const value=(textarea?.value||'').trim();
+        if(!value){textarea?.focus();return}
+        const steps=$('#brief-steps .brief-step');
+        const goalIndex=steps.findIndex(step=>step.dataset.key==='goal');
+        if(goalIndex>=0){
+          $('#brief-progress button[data-i="'+goalIndex+'"]')?.click();
+          setTimeout(()=>{
+            const goal=$('[data-bind="goal"]');
+            if(goal){
+              goal.value=value;
+              goal.dispatchEvent(new Event('input',{bubbles:true}));
+            }
+            enhanceBriefSummary();
+          },30);
+        }
+      };
+      applyGoal();
+      setTimeout(()=>shell.scrollIntoView({behavior:'smooth',block:'start'}),45);
+    };
+
+    const start=$('.v10-start-brief',entry);
+    if(start&&!start.dataset.v10Bound){
+      start.dataset.v10Bound='1';
+      start.addEventListener('click',()=>reveal(true));
+    }
+    const full=$('.v10-open-full-brief',entry);
+    if(full&&!full.dataset.v10Bound){
+      full.dataset.v10Bound='1';
+      full.addEventListener('click',()=>reveal(false));
+    }
+    enhanceBriefSummary();
+  }
 
   function reorder(){const main=$('#main-content');if(!main)return;['home','studio','capabilities','work','team','contact'].forEach(id=>{const el=document.getElementById(id);if(el)main.appendChild(el)})}
   function performance(){$$('img').forEach(img=>{if(!img.closest('.hero')){img.loading='lazy';img.decoding='async'}})}
@@ -342,6 +508,8 @@
   function observeDynamicWork(){
     const grid=$('#project-grid');if(grid&&!grid.dataset.v10Observed){grid.dataset.v10Observed='1';new MutationObserver(()=>requestAnimationFrame(()=>{work();performance()})).observe(grid,{childList:true})}
     const featured=$('#featured-project');if(featured&&!featured.dataset.v10Observed){featured.dataset.v10Observed='1';new MutationObserver(()=>requestAnimationFrame(()=>{work();performance()})).observe(featured,{childList:true})}
+    const roles=$('#role-grid');if(roles&&!roles.dataset.v10Observed){roles.dataset.v10Observed='1';new MutationObserver(()=>requestAnimationFrame(enhanceRoleCards)).observe(roles,{childList:true})}
+    const summary=$('#brief-summary');if(summary&&!summary.dataset.v10Observed){summary.dataset.v10Observed='1';new MutationObserver(()=>requestAnimationFrame(enhanceBriefSummary)).observe(summary,{childList:true,subtree:true})}
   }
 
   applyStatic();observeDynamicWork();
