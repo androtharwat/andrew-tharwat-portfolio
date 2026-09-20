@@ -60,7 +60,11 @@
     renderWork();renderRoles();renderBrief();
     document.dispatchEvent(new CustomEvent('v9:languagechange',{detail:{lang}}));
   }
-  $('#lang-toggle').addEventListener('click',()=>setLang(state.lang==='en'?'ar':'en'));
+  document.addEventListener('v9:setlang',e=>{
+    const lang=e?.detail?.lang==='ar'?'ar':'en';
+    if(lang!==state.lang)setLang(lang);
+    else document.dispatchEvent(new CustomEvent('v9:languagechange',{detail:{lang}}));
+  });
 
   function renderAll(){
     document.documentElement.style.setProperty('--grid-cols',Math.max(2,Math.min(4,Number(state.layout.work.columns)||3));
