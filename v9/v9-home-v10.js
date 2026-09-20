@@ -168,6 +168,12 @@
         if(!line){line=document.createElement('small');line.className='v10-capability-line';card.querySelector('h3')?.insertAdjacentElement('afterend',line)}
         set(line,data[i][2],data[i][3]);
       }
+      if(i===0){
+        let hseLink=$('.v10-hse-world-link',card);
+        if(!hseLink){hseLink=document.createElement('a');hseLink.className='btn ghost v10-hse-world-link';hseLink.href='/hse/';card.appendChild(hseLink)}
+        hseLink.setAttribute('aria-label',ar()?'ادخل عالم HSE':'Enter HSE World');
+        set(hseLink,'ENTER HSE WORLD →','ادخل عالم HSE ←');
+      }
       if(card.dataset.v10Bound)return;
       card.dataset.v10Bound='1';
       card.addEventListener('click',e=>{if(!touch()||e.target.closest('a,button'))return;card.classList.toggle('is-open')});
