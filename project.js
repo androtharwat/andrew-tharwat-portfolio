@@ -1,8 +1,28 @@
 (() => {
   const cfg=window.PORTFOLIO_CONFIG;
   const root=document.getElementById('project-root');
-  if(!cfg || !window.supabase){root.innerHTML='<section class="project-error"><h1>Configuration error</h1></section>';return;}
-  const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
+  if(!cfg){root.innerHTML='<section class="project-error"><h1>Configuration error</h1></section>';return;}
+  const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  async function fetchProject(timeoutMs=5000){
+    const url=new URL(cfg.supabaseUrl+'/rest/v1/portfolio_projects');
+    url.searchParams.set('select','*,portfolio_categories(name,name_ar,color),portfolio_project_media(*)');
+    url.searchParams.set('slug','eq.'+slug);
+    url.searchParams.set('status','eq.published');
+    url.searchParams.set('page_enabled','eq.true');
+    url.searchParams.set('limit','1');
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),timeoutMs);
+    try{
+      const response=await fetch(url.toString(),{
+        headers:{apikey:cfg.supabaseKey,Accept:'application/json'},
+        signal:controller.signal,
+        cache:'no-store'
+      });
+      if(!response.ok)throw new Error('Project request failed: '+response.status);
+      const rows=await response.json();
+      return rows?.[0]||null;
+    }finally{clearTimeout(timer)}
+  }
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const media=(u='')=>{if(!u)return'/assets/app-icon-official.png';if(/^https?:\/\//i.test(u))return u;const clean=String(u).replace(/^\/+/, '');if(window.PORTFOLIO_ASSETS&&window.PORTFOLIO_ASSETS[clean])return window.PORTFOLIO_ASSETS[clean];return '/'+clean;};
   const pathSlug=location.pathname.match(/\/projects\/([^/?#]+)/)?.[1];
@@ -57,9 +77,23 @@
   }
 
   async function load(){
-    if(!slug){fail(isAr()?'المشروع غير موجود':'Project not found');return;}const {data:p,error}=await sb.from('portfolio_projects').select('*,portfolio_categories(name,name_ar,color),portfolio_project_media(*)').eq('slug',slug).eq('status','published').eq('page_enabled',true).single();if(error||!p){fail(isAr()?'صفحة المشروع غير متاحة حاليًا':'Project page is not available yet');return;}currentProject=p;render(p);
+    if(!slug){fail(isAr()?'المشروع غير موجود':'Project not found');return;}
+    try{
+      let p=null;
+      try{p=await fetchProject(5000)}catch(firstError){
+        console.warn('Project fast fetch retry:',firstError);
+        await wait(180);
+        p=await fetchProject(5000);
+      }
+      if(!p){fail(isAr()?'صفحة المشروع غير متاحة حاليًا':'Project page is not available yet');return;}
+      currentProject=p;render(p);
+      document.dispatchEvent(new CustomEvent('portfolio:contentrendered'));
+    }catch(error){
+      console.error('Project load failed:',error);
+      fail(isAr()?'تعذر تحميل المشروع. حاول مرة أخرى.':'Could not load the project. Please try again.');
+    }
   }
-  function fail(msg){const ar=isAr();root.innerHTML=`<section class="project-error" data-i18n-skip="1"><h1>${esc(msg)}</h1><p>${ar?'هذا المشروع إما غير منشور بعد أو أن صفحته العامة غير مفعلة.':'This project is either not published yet or its public page is currently disabled.'}</p><a class="btn btn-primary" href="/work">${ar?'العودة للأعمال':'BACK TO WORK'}</a></section>`;}
+  function fail(msg){const ar=isAr();root.innerHTML=`<section class="project-error" data-i18n-skip="1"><h1>${esc(msg)}</h1><p>${ar?'يمكنك إعادة المحاولة أو الرجوع إلى الأعمال.':'You can retry or return to the work page.'}</p><div class="project-error-actions"><button class="btn btn-primary" id="retry-project" type="button">${ar?'إعادة المحاولة':'RETRY'}</button><a class="btn btn-ghost" href="/work">${ar?'العودة للأعمال':'BACK TO WORK'}</a></div></section>`;document.getElementById('retry-project')?.addEventListener('click',()=>{root.innerHTML='<section class="project-loading"><div class="loader-mark"></div><p>'+(ar?'جاري تحميل المشروع...':'Loading project...')+'</p></section>';load()},{once:true});}
   document.addEventListener('portfolio:languagechange',()=>{if(currentProject)render(currentProject);else load()});
   load();
 })();
