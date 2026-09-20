@@ -20,15 +20,15 @@
   addCss('/v9/v9-home-v10-interactive.css?v=1');
   addCss('/v9/v9-home-v10-responsive.css?v=1');
   addCss('/v9/v9-home-first-impression.css?v=5');
-  addScript('/v9/v9-home-v10.js?v=9');
+  addScript('/v9/v9-home-v10.js?v=10');
 
   function applyOfficialBrandAssets(){
     const logo=$('.site-header .brand img');
     if(logo){logo.src='/assets/logo-mark-official.png';logo.alt='Andrew Tharwat Studio';logo.decoding='async';}
   }
 
-  function persistLanguage(){
-    const current=document.body.dataset.lang==='ar'?'ar':'en';
+  function persistLanguage(lang){
+    const current=lang==='ar'?'ar':'en';
     try{localStorage.setItem(LANG_KEY,current);localStorage.setItem(PORTFOLIO_LANG_KEY,current)}catch(_e){}
   }
 
@@ -37,12 +37,38 @@
     addScript('/v9/v9-arabic-polish.js?v=1');
   }
 
+  function applyPublicLanguage(lang,{persist=true,notify=true}={}){
+    const next=lang==='ar'?'ar':'en';
+    document.body.dataset.lang=next;
+    document.documentElement.lang=next;
+    document.documentElement.dir=next==='ar'?'rtl':'ltr';
+
+    $('[data-en]').forEach(el=>{
+      const value=next==='ar' ? (el.dataset.ar||el.dataset.en) : el.dataset.en;
+      if(typeof value==='string')el.textContent=value;
+    });
+    $('[data-en-html]').forEach(el=>{
+      const value=next==='ar' ? (el.dataset.arHtml||el.dataset.enHtml) : el.dataset.enHtml;
+      if(typeof value==='string')el.innerHTML=value;
+    });
+
+    const toggle=$('#lang-toggle');
+    if(toggle){
+      toggle.textContent=next==='ar'?'English | AR':'EN | عربي';
+      toggle.setAttribute('aria-label',next==='ar'?'Switch to English':'التبديل إلى العربية');
+    }
+    const search=$('#project-search');
+    if(search)search.placeholder=next==='ar'?'ابحث في المشاريع...':'Search projects...';
+
+    if(persist)persistLanguage(next);
+    if(next==='ar')setTimeout(loadArabicPolish,0);
+    if(notify)document.dispatchEvent(new CustomEvent('v9:setlang',{detail:{lang:next}}));
+  }
+
   function restoreLanguage(){
     let saved='en';
     try{saved=localStorage.getItem(LANG_KEY)||localStorage.getItem(PORTFOLIO_LANG_KEY)||'en'}catch(_e){}
-    const toggle=$('#lang-toggle');
-    if(saved==='ar'&&document.body.dataset.lang!=='ar')toggle?.click();
-    if(saved==='ar')setTimeout(loadArabicPolish,0);
+    applyPublicLanguage(saved,{persist:false,notify:true});
   }
 
   function installActiveNav(){
@@ -59,7 +85,12 @@
   }
 
   const langToggle=$('#lang-toggle');
-  langToggle?.addEventListener('click',()=>setTimeout(()=>{persistLanguage();loadArabicPolish()},30));
+  langToggle?.addEventListener('click',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    const next=document.body.dataset.lang==='ar'?'en':'ar';
+    applyPublicLanguage(next,{persist:true,notify:true});
+  });
 
   applyOfficialBrandAssets();
   restoreLanguage();
