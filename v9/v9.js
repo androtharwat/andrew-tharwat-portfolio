@@ -58,6 +58,7 @@
     $('#lang-toggle').textContent=lang==='en'?'EN | عربي':'English | AR';
     $('#project-search').placeholder=lang==='ar'?'ابحث في المشاريع...':'Search projects...';
     renderWork();renderRoles();renderBrief();
+    document.dispatchEvent(new CustomEvent('v9:languagechange',{detail:{lang}}));
   }
   $('#lang-toggle').addEventListener('click',()=>setLang(state.lang==='en'?'ar':'en'));
 
