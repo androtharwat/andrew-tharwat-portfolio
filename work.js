@@ -19,7 +19,8 @@
     const media=(u='')=>{if(!u)return'/assets/app-icon-official.png';if(/^https?:\/\//i.test(u))return u;return '/'+u.replace(/^\//,'')};
     const spriteStyle=slug=>{const order=window.PORTFOLIO_COVER_ORDER||[],idx=order.indexOf(slug);if(!window.PORTFOLIO_COVER_SPRITE||idx<0)return'';const col=idx%4,row=Math.floor(idx/4),x=col*(100/3),y=row*100;return`background-image:url(${window.PORTFOLIO_COVER_SPRITE});background-size:400% 200%;background-position:${x}% ${y}%;`;};
     const lang=()=>window.PORTFOLIO_I18N?.getLang?.()||'en';
-    const local=(obj,key)=>lang()==='ar'&&obj?.[`${key}_ar`]?obj[`${key}_ar`]:obj?.[key]||'';
+    const publicText=(v='')=>String(v).replace(/Andrew Tharwat Studio/gi,'ATS').replace(/\bportfolio\b/gi,'studio').replace(/معرض الأعمال/g,'أعمال ATS');
+    const local=(obj,key)=>publicText(lang()==='ar'&&obj?.[`${key}_ar`]?obj[`${key}_ar`]:(obj?.[key]||''));
     const catName=p=>lang()==='ar'?(p.portfolio_categories?.name_ar||p.portfolio_categories?.name||'مشروع'):(p.portfolio_categories?.name||'Project');
     let projects=[],active='all';
 

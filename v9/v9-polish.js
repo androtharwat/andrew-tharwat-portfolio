@@ -24,7 +24,7 @@
 
   function applyOfficialBrandAssets(){
     const logo=$('.site-header .brand img');
-    if(logo){logo.src='/assets/logo-mark-official.png';logo.alt='Andrew Tharwat Studio';logo.decoding='async';}
+    if(logo){logo.src='/assets/logo-mark-official.png';logo.alt='ATS';logo.decoding='async';}
   }
 
   function persistLanguage(lang){

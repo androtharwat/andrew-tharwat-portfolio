@@ -19,10 +19,10 @@
     const result=clean(blocks[2].querySelector('p'));
     const labels=ar?{
       kicker:'من الفكرة إلى التنفيذ',titleA:'من التحدي',titleB:'إلى أثر حقيقي',intro:'بدل عرض المشروع كمعلومات منفصلة، هذا هو مسار العمل الحقيقي: نفهم المشكلة، نفكر في الطريقة، نبني الحل، ثم نقيس القيمة التي صنعها.',
-      s1:'افهم',h1:'التحدي الحقيقي',s2:'فكّر',h2:'السياق وطريقة التفكير',s3:'ابنِ',h3:'تحويل الفكرة إلى تنفيذ',s4:'الأثر',h4:'ما الذي تغيّر؟',signature:'PROBLEM SOLVING THROUGH CREATIVITY',brand:'ANDREW THARWAT · SAFETY × CREATIVITY × TECHNOLOGY'
+      s1:'افهم',h1:'التحدي الحقيقي',s2:'فكّر',h2:'السياق وطريقة التفكير',s3:'ابنِ',h3:'تحويل الفكرة إلى تنفيذ',s4:'الأثر',h4:'ما الذي تغيّر؟',signature:'PROBLEM SOLVING THROUGH CREATIVITY',brand:'ATS · SAFETY × CREATIVITY × TECHNOLOGY'
     }:{
       kicker:'FROM IDEA TO EXECUTION',titleA:'FROM CHALLENGE',titleB:'TO REAL IMPACT.',intro:'Instead of treating a project as disconnected facts, this is the real working path: understand the problem, shape the thinking, build the solution, then measure the value it creates.',
-      s1:'UNDERSTAND',h1:'THE REAL CHALLENGE',s2:'THINK',h2:'CONTEXT & THINKING',s3:'BUILD',h3:'TURNING THE IDEA REAL',s4:'IMPACT',h4:'WHAT CHANGED?',signature:'PROBLEM SOLVING THROUGH CREATIVITY',brand:'ANDREW THARWAT · SAFETY × CREATIVITY × TECHNOLOGY'
+      s1:'UNDERSTAND',h1:'THE REAL CHALLENGE',s2:'THINK',h2:'CONTEXT & THINKING',s3:'BUILD',h3:'TURNING THE IDEA REAL',s4:'IMPACT',h4:'WHAT CHANGED?',signature:'PROBLEM SOLVING THROUGH CREATIVITY',brand:'ATS · SAFETY × CREATIVITY × TECHNOLOGY'
     };
     const section=document.createElement('section');section.className='identity-project-journey';section.dir=ar?'rtl':'ltr';section.setAttribute('data-i18n-skip','1');
     const step=(cls,small,title,text)=>`<article class="journey-step journey-${cls}"><div class="journey-step-top icon-only"><span class="journey-icon">${icons[cls]}</span></div><small>${small}</small><h3>${title}</h3><p>${text||'—'}</p><span class="journey-arrow">→</span></article>`;

@@ -30,7 +30,8 @@
     const n=name.toLowerCase();if(n.includes('safety'))return'safety';if(n.includes('digital'))return'digital';if(n.includes('creative')||n.includes('design'))return'creative';if(n.includes('story')||n.includes('ai'))return'ai';return'other';
   }
   function categoryEn(name=''){return({Safety:'Safety & HSE',Digital:'Digital',Creative:'Creative','Stories & AI':'AI & Storytelling'}[name]||name||'Project')}
-  function local(p,key){const ar=p?.[key+'_ar'];return state.lang==='ar'&&ar?ar:(p?.[key]||'')}
+  const publicText=(v='')=>String(v).replace(/Andrew Tharwat Studio/gi,'ATS').replace(/\bportfolio\b/gi,'studio').replace(/معرض الأعمال/g,'أعمال ATS');
+  function local(p,key){const ar=p?.[key+'_ar'];return publicText(state.lang==='ar'&&ar?ar:(p?.[key]||''))}
 
   async function load(){
     const [{data:settings},{data:projects,error}]=await Promise.all([
@@ -147,9 +148,9 @@
   $('#brief-next').onclick=()=>{state.briefIndex=Math.min(visibleBriefKeys().length-1,state.briefIndex+1);renderBrief()};
   function renderBriefSummary(){
     const b=state.brief;$('#brief-summary').innerHTML=`<div class="summary-row"><small>PROJECT TYPE</small><b>${esc(b.type||'—')}</b></div><div class="summary-row"><small>GOAL</small><span>${esc(b.goal||'—')}</span></div><div class="summary-row"><small>EXPERTISE</small><span>${esc(b.disciplines.join(' · ')||'—')}</span></div><div class="summary-row"><small>TIMELINE</small><b>${esc(b.timeline||'—')}</b></div><div class="summary-row"><small>CONTACT</small><span>${esc([b.name,b.company,b.email,b.phone].filter(Boolean).join(' · ')||'—')}</span></div>`;
-    const email=$('#send-brief').dataset.email||state.settings.contact?.email||'androsarot3@gmail.com';$('#send-brief').href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Andrew Tharwat Studio — Project Brief')}&body=${encodeURIComponent(briefText())}`;
+    const email=$('#send-brief').dataset.email||state.settings.contact?.email||'androsarot3@gmail.com';$('#send-brief').href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('ATS — Project Brief')}&body=${encodeURIComponent(briefText())}`;
   }
-  function briefText(){const b=state.brief;return`ANDREW THARWAT STUDIO — PROJECT BRIEF\n\nProject Type: ${b.type||'—'}\nGoal: ${b.goal||'—'}\nAudience: ${b.audience||'—'}\nSuccess: ${b.success||'—'}\nExpertise: ${b.disciplines.join(', ')||'—'}\nTimeline: ${b.timeline||'—'}\nBudget: ${b.budget||'—'}\nStage: ${b.stage||'—'}\nContact: ${b.name||'—'} | ${b.company||'—'} | ${b.email||'—'} | ${b.phone||'—'}`}
+  function briefText(){const b=state.brief;return`ATS — PROJECT BRIEF\n\nProject Type: ${b.type||'—'}\nGoal: ${b.goal||'—'}\nAudience: ${b.audience||'—'}\nSuccess: ${b.success||'—'}\nExpertise: ${b.disciplines.join(', ')||'—'}\nTimeline: ${b.timeline||'—'}\nBudget: ${b.budget||'—'}\nStage: ${b.stage||'—'}\nContact: ${b.name||'—'} | ${b.company||'—'} | ${b.email||'—'} | ${b.phone||'—'}`}
   $('#copy-brief').onclick=async()=>{try{await navigator.clipboard.writeText(briefText());toast(state.lang==='ar'?'تم نسخ البريف':'BRIEF COPIED')}catch(e){toast('COPY NOT AVAILABLE')}};
 
   load().catch(err=>console.error('V9 load failed',err));

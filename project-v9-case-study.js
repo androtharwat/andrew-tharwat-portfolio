@@ -12,7 +12,8 @@
   const esc = (value = '') => String(value).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;' }[c]));
   const text = value => esc(value || '').replace(/\n/g, '<br>');
   const isAr = () => (window.PORTFOLIO_I18N?.getLang?.() || document.documentElement.lang || 'en') === 'ar';
-  const local = (obj, key) => isAr() && obj?.[`${key}_ar`] ? obj[`${key}_ar`] : (obj?.[key] || '');
+  const publicText = (value = '') => String(value).replace(/Andrew Tharwat Studio/gi, 'ATS').replace(/\bportfolio\b/gi, 'studio').replace(/معرض الأعمال/g, 'أعمال ATS');
+  const local = (obj, key) => publicText(isAr() && obj?.[`${key}_ar`] ? obj[`${key}_ar`] : (obj?.[key] || ''));
   let project = null;
   let caseStudy = null;
 
@@ -167,7 +168,7 @@
         blocks:[
           {label:'THE CHALLENGE',title:'Stop multiple disciplines feeling like separate profiles'},
           {label:'THE APPROACH',title:'Build one idea around problem solving'},
-          {label:'THE SOLUTION',title:'Turn the identity into a portfolio, CMS and operating system'}
+          {label:'THE SOLUTION',title:'Turn the identity into a studio website, CMS and operating system'}
         ],
         roleLabel:'STRATEGY & BUILD',roleTitle:'What was built behind the identity?',outcomeLabel:'OUTCOME',outcomeTitle:'How did different disciplines gain one home?',
         ctaLabel:'DOES YOUR IDENTITY MISS PART OF WHAT YOU DO?',ctaText:'Build one system for the work, message and experience.',cta:'BUILD YOUR IDENTITY →'
