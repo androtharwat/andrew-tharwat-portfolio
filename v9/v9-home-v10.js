@@ -352,5 +352,5 @@
 
   applyStatic();observeDynamicWork();
   document.addEventListener('DOMContentLoaded',()=>{applyStatic();observeDynamicWork()},{once:true});
-  $('#lang-toggle')?.addEventListener('click',()=>setTimeout(()=>{applyStatic();observeDynamicWork()},70));
+  document.addEventListener('v9:languagechange',()=>requestAnimationFrame(()=>{applyStatic();observeDynamicWork()}));
 })();
