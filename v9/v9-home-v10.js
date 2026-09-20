@@ -352,5 +352,7 @@
 
   applyStatic();observeDynamicWork();
   document.addEventListener('DOMContentLoaded',()=>{applyStatic();observeDynamicWork()},{once:true});
-  document.addEventListener('v9:languagechange',()=>requestAnimationFrame(()=>{applyStatic();observeDynamicWork()}));
+  const refreshForLanguage=()=>requestAnimationFrame(()=>{applyStatic();observeDynamicWork()});
+  document.addEventListener('v9:setlang',refreshForLanguage);
+  document.addEventListener('v9:languagechange',refreshForLanguage);
 })();
