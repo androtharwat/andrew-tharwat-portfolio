@@ -1,6 +1,6 @@
 (()=>{
   const cfg=window.PORTFOLIO_CONFIG,ctx=window.HSE_CONTENT_CONTEXT;
-  const $=(s,r=document)=>r.querySelector(s),$=(s,r=document)=>[...r.querySelectorAll(s)];
+  const $=(s,r=document)=>r.querySelector(s),qsa=(s,r=document)=>[...r.querySelectorAll(s)];
   const root=$('#hse-content-admin');if(!root||!cfg||!ctx?.sb||!ctx?.device)return;
   const device=ctx.device,sb=ctx.sb;
   const state={loaded:false,items:[],current:null,aiDraft:null,validation:null,preview:'split',taxonomy:null};
@@ -279,7 +279,7 @@
     field('hsec-search').addEventListener('input',renderList);field('hsec-type').addEventListener('change',renderList);field('hsec-status').addEventListener('change',renderList);
     root.addEventListener('click',e=>{
       const open=e.target.closest('[data-hsec-open]');if(open)return openContent(open.dataset.hsecOpen);
-      const pv=e.target.closest('[data-hsec-preview]');if(pv){state.preview=pv.dataset.hsecPreview;$$('[data-hsec-preview]',root).forEach(x=>x.classList.toggle('active',x===pv));updatePreview()}
+      const pv=e.target.closest('[data-hsec-preview]');if(pv){state.preview=pv.dataset.hsecPreview;qsa('[data-hsec-preview]',root).forEach(x=>x.classList.toggle('active',x===pv));updatePreview()}
     });
     $('#hsec-new').addEventListener('click',()=>fillEditor(blank()));$('#hsec-fill-en').addEventListener('click',()=>fillMissingLanguage('en'));$('#hsec-fill-ar').addEventListener('click',()=>fillMissingLanguage('ar'));$('#hsec-back').addEventListener('click',showBrowser);$('#hsec-save').addEventListener('click',saveDraft);$('#hsec-validate').addEventListener('click',validate);$('#hsec-publish').addEventListener('click',publish);$('#hsec-discard').addEventListener('click',discard);$('#hsec-ai-generate').addEventListener('click',generateAI);$('#hsec-ai-apply').addEventListener('click',applyAI);
     $('#hsec-editor').addEventListener('input',()=>{state.validation=null;$('#hsec-publish').disabled=true;updatePreview()});
