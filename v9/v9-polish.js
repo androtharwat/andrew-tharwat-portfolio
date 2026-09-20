@@ -43,11 +43,11 @@
     document.documentElement.lang=next;
     document.documentElement.dir=next==='ar'?'rtl':'ltr';
 
-    $('[data-en]').forEach(el=>{
+    $$('[data-en]').forEach(el=>{
       const value=next==='ar' ? (el.dataset.ar||el.dataset.en) : el.dataset.en;
       if(typeof value==='string')el.textContent=value;
     });
-    $('[data-en-html]').forEach(el=>{
+    $$('[data-en-html]').forEach(el=>{
       const value=next==='ar' ? (el.dataset.arHtml||el.dataset.enHtml) : el.dataset.enHtml;
       if(typeof value==='string')el.innerHTML=value;
     });
