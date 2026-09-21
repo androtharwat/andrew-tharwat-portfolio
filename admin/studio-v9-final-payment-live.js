@@ -17,7 +17,7 @@
 })();
 
 (() => {
-  if(document.querySelector('script[data-studio-ux-live]')) return;
+  if(document.querySelector('script[data-studio-ux-live],script[src*="studio-v9-ux-live.js"]')) return;
   const s=document.createElement('script');
   s.src='/admin/studio-v9-ux-live.js?v=1';
   s.async=false;
