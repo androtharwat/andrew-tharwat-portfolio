@@ -247,7 +247,198 @@
     return `<article class="v9-case-block"><span>${String(index).padStart(2,'0')}</span><small>${esc(meta.label)}</small><h3>${esc(meta.title)}</h3><p>${text(body)}</p></article>`;
   }
 
+  function doMarkup() {
+    const ar=isAr();
+    const challenge=local(caseStudy,'challenge');
+    const approach=local(caseStudy,'approach');
+    const solution=local(caseStudy,'solution');
+    const role=local(caseStudy,'role_text');
+    const outcome=local(caseStudy,'outcome');
+    const copy=ar ? {
+      kicker:'ATS CASE STUDY · من فكرة إلى نظام عمل',
+      heroA:'العميل ماطلبش موقع.',
+      heroB:'هو جاء بفكرة.',
+      quote:'«عايز الطفل يبقى بطل قصته هو.»',
+      heroText:'DO بدأت كسؤال بسيط: إزاي نحول صورة طفل وفكرة قصة إلى منتج شخصي حقيقي يمكن طلبه، إنتاجه، وتكراره بدون ما نفقد إحساس الطفل إنه البطل؟',
+      startKicker:'نقطة البداية',startTitle:'كان عندنا فكرة. مش نظام.',
+      startText:'الفكرة الأساسية كانت قوية: صورة طفل + عالم قصصي = الطفل يصبح البطل. لكن علشان تتحول الفكرة إلى منتج قابل للتشغيل، كان لازم نبني الطبقات اللي حوالينها.',
+      missingTitle:'ما الذي لم يكن موجودًا بعد؟',
+      missing:['هوية Brand واضحة','هيكل Product قابل للبيع','رحلة Customer واضحة','AI Production Workflow','Admin & Operations'],
+      problemKicker:'المشكلة الحقيقية',problemTitle:'المشكلة لم تكن «نبني موقع».',
+      problemText:'المشكلة كانت: كيف نحول فكرة قصة مخصصة إلى نظام متصل يربط المنتج بالهوية والطلب والإنتاج والتسليم؟',
+      understandKicker:'01 · نفهم',understandTitle:'نفصل الفكرة عن المشكلة الحقيقية.',
+      questions:[
+        ['لمن المنتج؟','للأهل الذين يريدون هدية شخصية لطفلهم.'],
+        ['ما المنتج؟','قصة مطبوعة مخصصة يكون الطفل بطلها.'],
+        ['ما الفرق الحقيقي؟','الطفل لا يظهر باسمه فقط؛ بل يبقى البطل بصريًا وسرديًا.'],
+        ['كيف تتكرر التجربة؟','من خلال رحلة طلب وإنتاج منظمة يمكن تشغيلها مع أكثر من عالم وقصة.']
+      ],
+      diagnosis:'التشخيص النهائي',
+      diagnosisText:'Personalized Story Idea → Repeatable Customer & Production System',
+      assembleKicker:'02 · نكوّن',assembleTitle:'الفكرة احتاجت أكثر من تخصص واحد.',
+      assembleText:'ATS لا يبدأ بقائمة خدمات. بعد فهم المشكلة، نكوّن فقط الخبرات التي يحتاجها الحل.',
+      capabilities:[
+        ['BRAND','هوية DO · اللغة البصرية · شكل المنتج'],
+        ['PRODUCT','الباقات · العوالم · تجربة القصة المطبوعة'],
+        ['DIGITAL','Landing · الطلب · Checkout · Tracking · Admin'],
+        ['AI','ثبات هوية الطفل · التوليد البصري · Workflow'],
+        ['STORYTELLING','العوالم · المشاهد · بنية القصة']
+      ],
+      buildKicker:'03 · نبني',buildTitle:'حل واحد، مكوّن من أنظمة مترابطة.',
+      systems:[
+        ['BRAND SYSTEM',['DO identity','Visual language','Story-world direction']],
+        ['PRODUCT SYSTEM',['Personalized printed story','Story worlds','Package structure']],
+        ['CUSTOMER PLATFORM',['Landing','Choose World','Child Data + Photo','Package','Checkout + Payment','Order']],
+        ['PRODUCTION SYSTEM',['Admin','Order review','Story production','Review','Print','Delivery']],
+        ['AI DIRECTION',['Child identity consistency','Structured child-as-hero workflow','Scene direction']]
+      ],
+      mapKicker:'خريطة الحل',mapTitle:'الفكرة لم تتحول إلى صفحة. تحولت إلى نظام.',
+      map:['IDEA','DO BRAND','PERSONALIZED PRODUCT','CUSTOMER PLATFORM','AI PRODUCTION','ADMIN & OPERATIONS','WORKING SYSTEM'],
+      proofKicker:'ما الذي تم بناؤه؟',proofTitle:'أشياء موجودة فعلًا، مش وعود.',
+      proof:[
+        'Brand identity','Product architecture','6 story worlds','Personalized ordering journey',
+        'Checkout & payment flow','Order tracking','Admin system','AI production direction','Print product ecosystem'
+      ],
+      roleLabel:'دور ATS في المشروع',roleTitle:'من توجيه الفكرة إلى هندسة الحل.',
+      outcomeLabel:'النتيجة',outcomeTitle:'إطار يمكن تكراره بدل تنفيذ قصة واحدة.',
+      ctaKicker:'عندك فكرة مشابهة؟',ctaTitle:'مش لازم تعرف أنت محتاج أي خدمة.',ctaText:'ابدأ بالمشكلة. وإحنا نبني معاك الطريق المناسب.',cta:'ابدأ بمشكلتك ←'
+    } : {
+      kicker:'ATS CASE STUDY · FROM IDEA TO WORKING SYSTEM',
+      heroA:"THE CLIENT DIDN'T ASK FOR A WEBSITE.",
+      heroB:'THEY CAME WITH AN IDEA.',
+      quote:'“I want a child to become the hero of their own story.”',
+      heroText:'DO started with a simple question: how do we turn one child photo and a story idea into a personalized product that can be ordered, produced and repeated without losing the feeling that the child is truly the hero?',
+      startKicker:'THE STARTING POINT',startTitle:'WE HAD AN IDEA. NOT A SYSTEM.',
+      startText:'The core idea was strong: child photo + story world = the child becomes the hero. Turning that idea into a working product required building the layers around it.',
+      missingTitle:'WHAT DID NOT EXIST YET?',
+      missing:['Clear brand identity','Sellable product structure','Customer journey','AI production workflow','Admin & operations'],
+      problemKicker:'THE REAL PROBLEM',problemTitle:'THE PROBLEM WAS NOT “BUILD A WEBSITE.”',
+      problemText:'The problem was: how do we turn a personalized-story idea into one connected system across product, brand, ordering, production and delivery?',
+      understandKicker:'01 · UNDERSTAND',understandTitle:'SEPARATE THE IDEA FROM THE REAL PROBLEM.',
+      questions:[
+        ['WHO IS IT FOR?','Parents looking for a personal gift for their child.'],
+        ['WHAT IS THE PRODUCT?','A personalized printed story where the child is the hero.'],
+        ['WHAT MAKES IT DIFFERENT?','The child is not just named; they remain the visual and narrative hero.'],
+        ['HOW CAN IT REPEAT?','Through a structured ordering and production flow that can support multiple worlds and stories.']
+      ],
+      diagnosis:'REAL PROBLEM IDENTIFIED',
+      diagnosisText:'Personalized Story Idea → Repeatable Customer & Production System',
+      assembleKicker:'02 · ASSEMBLE',assembleTitle:'THE IDEA NEEDED MORE THAN ONE DISCIPLINE.',
+      assembleText:'ATS does not start with a service list. Once the problem is understood, only the capabilities the solution actually needs are assembled.',
+      capabilities:[
+        ['BRAND','DO identity · visual language · product expression'],
+        ['PRODUCT','Packages · worlds · printed-story experience'],
+        ['DIGITAL','Landing · ordering · checkout · tracking · admin'],
+        ['AI','Child identity consistency · visual generation · workflow'],
+        ['STORYTELLING','Worlds · scenes · story structure']
+      ],
+      buildKicker:'03 · BUILD',buildTitle:'ONE SOLUTION, BUILT FROM CONNECTED SYSTEMS.',
+      systems:[
+        ['BRAND SYSTEM',['DO identity','Visual language','Story-world direction']],
+        ['PRODUCT SYSTEM',['Personalized printed story','Story worlds','Package structure']],
+        ['CUSTOMER PLATFORM',['Landing','Choose World','Child Data + Photo','Package','Checkout + Payment','Order']],
+        ['PRODUCTION SYSTEM',['Admin','Order review','Story production','Review','Print','Delivery']],
+        ['AI DIRECTION',['Child identity consistency','Structured child-as-hero workflow','Scene direction']]
+      ],
+      mapKicker:'SOLUTION MAP',mapTitle:'THE IDEA DID NOT BECOME A PAGE. IT BECAME A SYSTEM.',
+      map:['IDEA','DO BRAND','PERSONALIZED PRODUCT','CUSTOMER PLATFORM','AI PRODUCTION','ADMIN & OPERATIONS','WORKING SYSTEM'],
+      proofKicker:'WHAT WAS BUILT',proofTitle:'REAL COMPONENTS. NOT PROMISES.',
+      proof:[
+        'Brand identity','Product architecture','6 story worlds','Personalized ordering journey',
+        'Checkout & payment flow','Order tracking','Admin system','AI production direction','Print product ecosystem'
+      ],
+      roleLabel:'ATS ROLE',roleTitle:'FROM IDEA DIRECTION TO SOLUTION ARCHITECTURE.',
+      outcomeLabel:'OUTCOME',outcomeTitle:'A REPEATABLE FRAMEWORK, NOT A ONE-OFF STORY.',
+      ctaKicker:'HAVE AN IDEA LIKE THIS?',ctaTitle:"YOU DON'T NEED TO KNOW WHICH SERVICE YOU NEED.",ctaText:'Start with the problem. We will shape the right path around it.',cta:'START WITH YOUR PROBLEM →'
+    };
+
+    const missing=copy.missing.map((item,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span><b>${esc(item)}</b></li>`).join('');
+    const questions=copy.questions.map(([q,a],i)=>`<article><span>${String(i+1).padStart(2,'0')}</span><small>${esc(q)}</small><strong>${esc(a)}</strong></article>`).join('');
+    const caps=copy.capabilities.map(([name,note])=>`<article class="do-capability"><i></i><b>${esc(name)}</b><span>${esc(note)}</span></article>`).join('');
+    const systems=copy.systems.map(([name,items],i)=>`<article class="do-build-system"><span>${String(i+1).padStart(2,'0')}</span><h4>${esc(name)}</h4><ul>${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></article>`).join('');
+    const map=copy.map.map((item,i)=>`<div class="do-map-node${i===copy.map.length-1?' is-outcome':''}"><span>${String(i+1).padStart(2,'0')}</span><b>${esc(item)}</b></div>${i<copy.map.length-1?'<i class="do-map-link">→</i>':''}`).join('');
+    const proof=copy.proof.map(item=>`<li><i>✓</i><span>${esc(item)}</span></li>`).join('');
+
+    return `<section class="v9-case-study do-ats-case" data-v9-case-study style="--case-accent:#22d3a7">
+      <div class="do-case-shell">
+        <header class="do-case-hero">
+          <div class="do-case-hero-copy">
+            <p class="do-case-kicker">${esc(copy.kicker)}</p>
+            <h2>${esc(copy.heroA)}<br><span>${esc(copy.heroB)}</span></h2>
+            <blockquote>${esc(copy.quote)}</blockquote>
+            <p class="do-case-lead">${esc(copy.heroText)}</p>
+          </div>
+          ${metricsMarkup()}
+        </header>
+
+        <section class="do-starting-point">
+          <div class="do-section-copy">
+            <small>${esc(copy.startKicker)}</small>
+            <h3>${esc(copy.startTitle)}</h3>
+            <p>${esc(copy.startText)}</p>
+          </div>
+          <div class="do-idea-object" aria-hidden="true">
+            <div class="do-idea-core"><span>DO</span><b>${ar?'فكرة':'IDEA'}</b></div>
+            <div class="do-idea-ring"></div>
+          </div>
+          <div class="do-missing">
+            <small>${esc(copy.missingTitle)}</small>
+            <ul>${missing}</ul>
+          </div>
+        </section>
+
+        <section class="do-real-problem">
+          <small>${esc(copy.problemKicker)}</small>
+          <h3>${esc(copy.problemTitle)}</h3>
+          <p>${esc(copy.problemText)}</p>
+        </section>
+
+        <section class="do-understand">
+          <div class="do-section-heading"><small>${esc(copy.understandKicker)}</small><h3>${esc(copy.understandTitle)}</h3></div>
+          <div class="do-question-grid">${questions}</div>
+          <div class="do-diagnosis"><small>${esc(copy.diagnosis)}</small><strong>${esc(copy.diagnosisText)}</strong></div>
+        </section>
+
+        <section class="do-assemble">
+          <div class="do-section-heading"><small>${esc(copy.assembleKicker)}</small><h3>${esc(copy.assembleTitle)}</h3><p>${esc(copy.assembleText)}</p></div>
+          <div class="do-capability-system">
+            <div class="do-studio-core"><span>ATS</span><small>STUDIO CORE</small></div>
+            <div class="do-capability-grid">${caps}</div>
+          </div>
+        </section>
+
+        <section class="do-build">
+          <div class="do-section-heading"><small>${esc(copy.buildKicker)}</small><h3>${esc(copy.buildTitle)}</h3></div>
+          <div class="do-build-grid">${systems}</div>
+        </section>
+
+        <section class="do-solution-map">
+          <div class="do-section-heading"><small>${esc(copy.mapKicker)}</small><h3>${esc(copy.mapTitle)}</h3></div>
+          <div class="do-map-flow">${map}</div>
+        </section>
+
+        <section class="do-proof">
+          <div class="do-section-heading"><small>${esc(copy.proofKicker)}</small><h3>${esc(copy.proofTitle)}</h3></div>
+          <ul class="do-proof-list">${proof}</ul>
+        </section>
+
+        <section class="do-case-bottom">
+          <article><small>${esc(copy.roleLabel)}</small><h3>${esc(copy.roleTitle)}</h3><p>${text(role)}</p></article>
+          <article><small>${esc(copy.outcomeLabel)}</small><h3>${esc(copy.outcomeTitle)}</h3><p>${text(outcome)}</p></article>
+        </section>
+
+        ${capabilityMarkup()}
+
+        <section class="do-case-cta">
+          <div><small>${esc(copy.ctaKicker)}</small><h3>${esc(copy.ctaTitle)}</h3><p>${esc(copy.ctaText)}</p></div>
+          <a href="/v9/#contact">${esc(copy.cta)}</a>
+        </section>
+      </div>
+    </section>`;
+  }
+
   function markup() {
+    if (slug === 'do-personalized-stories') return doMarkup();
     const color = project?.portfolio_categories?.color || '#e10613';
     const challenge = local(caseStudy, 'challenge');
     const approach = local(caseStudy, 'approach');
@@ -298,6 +489,10 @@
     host.innerHTML = markup();
     const section = host.firstElementChild;
     const gallery = root.querySelector('.gallery');
+    if (slug === 'do-personalized-stories') {
+      document.body.classList.add('do-expanded-case');
+      if (!gallery) document.body.classList.add('do-case-no-gallery');
+    }
     if (gallery) gallery.insertAdjacentElement('beforebegin', section);
     else root.appendChild(section);
     return true;
