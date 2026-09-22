@@ -74,3 +74,14 @@ body[data-lang=ar] .studio-principles article:hover{padding-left:0;padding-right
   .header-actions{gap:6px}
   #lang-toggle{padding:0 10px}
 }
+
+/* Brief validation focus */
+.brief-step [data-bind].brief-field-error{
+  border-color:#ff314f!important;
+  box-shadow:0 0 0 3px rgba(255,49,79,.12),0 0 28px rgba(255,49,79,.08)!important;
+  outline:none!important;
+}
+.brief-step [data-bind].brief-field-error::placeholder{color:rgba(255,255,255,.42)}
+@media(prefers-reduced-motion:reduce){
+  .brief-step [data-bind].brief-field-error{scroll-behavior:auto}
+}

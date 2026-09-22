@@ -19,13 +19,27 @@
   const selectedMany=(selector,key)=>$$(selector).map(x=>x.dataset?.[key]).filter(Boolean);
   const isEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
-  function goToStep(key){
+  function goToStep(key,bindKey=''){
     const steps=$('.brief-step[data-key]');
     const index=steps.findIndex(step=>step.dataset.key===key);
     if(index<0)return false;
     const buttons=$('#brief-progress button');
     buttons[index]?.click();
-    setTimeout(()=>steps[index]?.scrollIntoView({behavior:'smooth',block:'center'}),30);
+    setTimeout(()=>{
+      const step=document.querySelector(`.brief-step[data-key="${key}"]`);
+      const target=bindKey?step?.querySelector(`[data-bind="${bindKey}"]`):step;
+      (target||step)?.scrollIntoView({behavior:'smooth',block:'center'});
+      if(target){
+        target.classList.add('brief-field-error');
+        target.setAttribute('aria-invalid','true');
+        target.focus({preventScroll:true});
+        clearTimeout(target._briefErrorTimer);
+        target._briefErrorTimer=setTimeout(()=>{
+          target.classList.remove('brief-field-error');
+          target.removeAttribute('aria-invalid');
+        },2600);
+      }
+    },90);
     return true;
   }
 
@@ -78,14 +92,18 @@
       e.preventDefault();
       e.stopImmediatePropagation();
       showError(ar?'اكتب التحدي أو المشكلة قبل الإرسال.':'Describe the challenge before sending.');
-      goToStep('goal');
+      goToStep('goal','goal');
       return;
     }
     if(!name||!email||!isEmail(email)){
       e.preventDefault();
       e.stopImmediatePropagation();
-      showError(ar?'أدخل الاسم وبريدًا إلكترونيًا صحيحًا قبل الإرسال. الهاتف / واتساب اختياري.':'Add your name and a valid email before sending. Phone / WhatsApp is optional.');
-      goToStep('contact');
+      const missing=!name?'name':'email';
+      const message=!name
+        ? (ar?'أدخل الاسم قبل إرسال البريف.':'Add your name before sending the brief.')
+        : (ar?'أدخل بريدًا إلكترونيًا صحيحًا قبل إرسال البريف.':'Add a valid email before sending the brief.');
+      showError(message);
+      goToStep('contact',missing);
       return;
     }
 
