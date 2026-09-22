@@ -36,7 +36,7 @@
       if (error) throw error;
       $('#otp-step').classList.remove('hidden');
       $('#portal-otp').focus();
-      setAuthState('A 6-digit login code was sent to your email. Enter it below.');
+      setAuthState('An 8-digit login code was sent to your email. Enter it below.');
     } catch (error) { setAuthState(error.message, true); }
     finally { button.disabled = false; button.textContent = 'SEND LOGIN CODE'; }
   }
@@ -44,7 +44,7 @@
   async function verifyOtp() {
     const email = $('#portal-email').value.trim().toLowerCase();
     const token = $('#portal-otp').value.trim();
-    if (!/^\d{6}$/.test(token)) return setAuthState('Enter the 6-digit code from your email.', true);
+    if (!/^\d{8}$/.test(token)) return setAuthState('Enter the 8-digit code from your email.', true);
     const button = $('#verify-otp'); button.disabled = true; button.textContent = 'VERIFYING…';
     try {
       const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });

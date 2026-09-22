@@ -20,14 +20,14 @@
       const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
       if(error)throw error;
       $('#otp-wrap').classList.remove('hidden');$('#access-otp').focus();
-      authState('A 6-digit login code was sent to your email.');
+      authState('An 8-digit login code was sent to your email.');
     }catch(error){authState(error.message||'Could not send login code.',true)}
     finally{busy(b,false,'SEND LOGIN CODE →')}
   }
 
   async function verifyOtp(){
     const email=$('#access-email').value.trim().toLowerCase(),token=$('#access-otp').value.trim();
-    if(!/^\d{6}$/.test(token))return authState('Enter the 6-digit code from your email.',true);
+    if(!/^\d{8}$/.test(token))return authState('Enter the 8-digit code from your email.',true);
     const b=$('#verify-code');busy(b,true,'VERIFYING…');
     try{
       const {error}=await sb.auth.verifyOtp({email,token,type:'email'});if(error)throw error;

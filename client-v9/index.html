@@ -26,7 +26,7 @@
         <label><span>CLIENT EMAIL</span><input id="portal-email" type="email" autocomplete="email" placeholder="name@company.com" /></label>
         <button id="send-otp" class="portal-button" type="button">SEND LOGIN CODE</button>
         <div id="otp-step" class="hidden">
-          <label><span>6-DIGIT LOGIN CODE</span><div class="otp-row"><input id="portal-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" /><button id="verify-otp" class="portal-button" type="button">OPEN CLIENT PORTAL</button></div></label>
+          <label><span>8-DIGIT LOGIN CODE</span><div class="otp-row"><input id="portal-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="00000000" /><button id="verify-otp" class="portal-button" type="button">OPEN CLIENT PORTAL</button></div></label>
         </div>
       </div>
       <div id="portal-auth-state" class="portal-auth-state">Only verified client emails can access project records.</div>
@@ -74,7 +74,7 @@
   <div id="portal-toast" class="portal-toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/config.js"></script>
-  <script src="/client-v9/portal-live.js?v=2"></script>
+  <script src="/client-v9/portal-live.js?v=3"></script>
   <script src="/client-v9/portal-hse.js?v=4"></script>
   <script src="/client-v9/portal-hse-bridge.js?v=3"></script>
   <script src="/client-v9/portal-files-live.js?v=1"></script>
