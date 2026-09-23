@@ -38,7 +38,7 @@
       $('#otp-step').classList.remove('hidden');
       $('#portal-otp').focus();
       setAuthState('An ' + OTP_LENGTH + '-digit login code was sent to your email. Enter it below.');
-    } catch (error) { setAuthState(error.message, true); }
+    } catch (error) { console.error('OTP send failed', error); setAuthState('We couldn’t send the login code right now. Please try again in a moment.', true); }
     finally { button.disabled = false; button.textContent = 'SEND LOGIN CODE'; }
   }
 
