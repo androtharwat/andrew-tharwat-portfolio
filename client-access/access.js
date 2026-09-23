@@ -4,6 +4,7 @@
   const money = v => new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt = v => v ? new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)) : '—';
   const esc = (v='') => String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
+  const OTP_LENGTH = Number(window.ATS_AUTH?.otpLength || 8);
   let sb = null, context = null;
 
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1900)}
@@ -20,14 +21,14 @@
       const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
       if(error)throw error;
       $('#otp-wrap').classList.remove('hidden');$('#access-otp').focus();
-      authState('An 8-digit login code was sent to your email.');
+      authState('An ' + OTP_LENGTH + '-digit login code was sent to your email.');
     }catch(error){authState(error.message||'Could not send login code.',true)}
     finally{busy(b,false,'SEND LOGIN CODE →')}
   }
 
   async function verifyOtp(){
     const email=$('#access-email').value.trim().toLowerCase(),token=$('#access-otp').value.trim();
-    if(!/^\d{8}$/.test(token))return authState('Enter the 8-digit code from your email.',true);
+    if(!new RegExp('^\\d{' + OTP_LENGTH + '}$').test(token))return authState('Enter the ' + OTP_LENGTH + '-digit code from your email.',true);
     const b=$('#verify-code');busy(b,true,'VERIFYING…');
     try{
       const {error}=await sb.auth.verifyOtp({email,token,type:'email'});if(error)throw error;
@@ -117,6 +118,20 @@
     sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     const {data:{session}}=await sb.auth.getSession();if(!session){showAuth();return}
     try{await loadContext()}catch(error){authState(error.message||'No Studio request is linked to this account.',true);showAuth()}
+  }
+
+  const otpInput=$('#access-otp');
+  if(otpInput){
+    otpInput.maxLength=OTP_LENGTH;
+    otpInput.minLength=OTP_LENGTH;
+    otpInput.setAttribute('pattern','[0-9]{' + OTP_LENGTH + '}');
+    otpInput.setAttribute('aria-label',OTP_LENGTH + '-digit login code');
+    otpInput.placeholder='0'.repeat(OTP_LENGTH);
+    otpInput.addEventListener('input',()=>{
+      otpInput.value=otpInput.value.replace(/\D/g,'').slice(0,OTP_LENGTH);
+    });
+    const otpLabel=otpInput.closest('label')?.querySelector('span');
+    if(otpLabel)otpLabel.textContent=OTP_LENGTH + '-DIGIT LOGIN CODE';
   }
 
   $('#send-code')?.addEventListener('click',sendOtp);$('#verify-code')?.addEventListener('click',verifyOtp);$('#sign-out')?.addEventListener('click',signOut);$('#refresh-access')?.addEventListener('click',()=>loadContext().catch(e=>toast(e.message)));

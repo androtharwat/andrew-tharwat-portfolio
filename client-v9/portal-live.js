@@ -6,6 +6,7 @@
   const money = v => new Intl.NumberFormat('en-US').format(Number(v || 0));
   const publicStages = ['Onboarding','Design','Development','Client Review','Delivery'];
   const publicStageFor = stage => ['Onboarding','Content Preparation'].includes(stage) ? 'Onboarding' : stage === 'Design' ? 'Design' : ['Development','Internal QA'].includes(stage) ? 'Development' : ['Client Review','Revisions','Final Approval','Final Payment'].includes(stage) ? 'Client Review' : 'Delivery';
+  const OTP_LENGTH = Number(window.ATS_AUTH?.otpLength || 8);
   let sb = null, currentClient = null, currentProject = null;
   let data = { projects: [], payments: [], updates: [], reviews: [], revisions: [], files: [], company: null };
 
@@ -36,7 +37,7 @@
       if (error) throw error;
       $('#otp-step').classList.remove('hidden');
       $('#portal-otp').focus();
-      setAuthState('An 8-digit login code was sent to your email. Enter it below.');
+      setAuthState('An ' + OTP_LENGTH + '-digit login code was sent to your email. Enter it below.');
     } catch (error) { setAuthState(error.message, true); }
     finally { button.disabled = false; button.textContent = 'SEND LOGIN CODE'; }
   }
@@ -44,7 +45,7 @@
   async function verifyOtp() {
     const email = $('#portal-email').value.trim().toLowerCase();
     const token = $('#portal-otp').value.trim();
-    if (!/^\d{8}$/.test(token)) return setAuthState('Enter the 8-digit code from your email.', true);
+    if (!new RegExp('^\\d{' + OTP_LENGTH + '}$').test(token)) return setAuthState('Enter the ' + OTP_LENGTH + '-digit code from your email.', true);
     const button = $('#verify-otp'); button.disabled = true; button.textContent = 'VERIFYING…';
     try {
       const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
@@ -218,6 +219,20 @@
     const {data:{session}}=await sb.auth.getSession();
     if(!session){showAuth();return;}
     try{await activateAndLoad()}catch(error){setAuthState(error.message,true);showAuth();}
+  }
+
+  const otpInput=$('#portal-otp');
+  if(otpInput){
+    otpInput.maxLength=OTP_LENGTH;
+    otpInput.minLength=OTP_LENGTH;
+    otpInput.setAttribute('pattern','[0-9]{' + OTP_LENGTH + '}');
+    otpInput.setAttribute('aria-label',OTP_LENGTH + '-digit login code');
+    otpInput.placeholder='0'.repeat(OTP_LENGTH);
+    otpInput.addEventListener('input',()=>{
+      otpInput.value=otpInput.value.replace(/\D/g,'').slice(0,OTP_LENGTH);
+    });
+    const otpLabel=otpInput.closest('label')?.querySelector('span');
+    if(otpLabel)otpLabel.textContent=OTP_LENGTH + '-DIGIT LOGIN CODE';
   }
 
   $('#send-otp')?.addEventListener('click',sendOtp);$('#verify-otp')?.addEventListener('click',verifyOtp);$('#portal-signout')?.addEventListener('click',signOut);$('#new-project-form')?.addEventListener('submit',submitRepeatProject);
