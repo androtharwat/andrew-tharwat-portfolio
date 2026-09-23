@@ -22,7 +22,7 @@
       if(error)throw error;
       $('#otp-wrap').classList.remove('hidden');$('#access-otp').focus();
       authState('An ' + OTP_LENGTH + '-digit login code was sent to your email.');
-    }catch(error){authState(error.message||'Could not send login code.',true)}
+    }catch(error){console.error('OTP send failed',error);authState('We couldn’t send the login code right now. Please try again in a moment.',true)}
     finally{busy(b,false,'SEND LOGIN CODE →')}
   }
 
