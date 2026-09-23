@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="/v9/v9-phase4.css?v=1" />
   <link rel="stylesheet" href="/v9/v9-phase5.css?v=1" />
   <link rel="stylesheet" href="/v9/v9-polish.css?v=1" />
+  <link rel="stylesheet" href="/v9/v9-concierge.css?v=1" />
 </head>
 <body data-lang="en">
   <a class="skip-link" href="#main-content" data-en="Skip to content" data-ar="انتقل إلى المحتوى">Skip to content</a>
@@ -103,8 +104,106 @@
 
     <section class="section contact grid-bg" id="contact">
       <div class="container">
-        <div class="section-head split"><div><span class="eyebrow" data-en="START A PROJECT" data-ar="ابدأ مشروعًا">START A PROJECT</span><h2 data-en-html="BRING US THE PROBLEM.<br><span>WE’LL BUILD THE RIGHT SOLUTION.</span>" data-ar-html="احكِ لنا عن المشكلة.<br><span>ونبني الحل المناسب.</span>">BRING US THE PROBLEM.<br><span>WE’LL BUILD THE RIGHT SOLUTION.</span></h2><p data-en="You do not need to know which discipline the project belongs to. Start with the challenge, context and outcome — we’ll shape the right path from there." data-ar="لا تحتاج أن تعرف لأي تخصص ينتمي المشروع. ابدأ بالتحدي والسياق والنتيجة المطلوبة، ونحن نبني المسار المناسب من هناك.">You do not need to know which discipline the project belongs to. Start with the challenge, context and outcome — we’ll shape the right path from there.</p></div><aside><b data-en="A BETTER BRIEF CREATES A BETTER START." data-ar="بريف أوضح يعني بداية أفضل.">A BETTER BRIEF CREATES A BETTER START.</b><p data-en="CONTEXT · GOALS · EXPERTISE · TIMING" data-ar="السياق · الأهداف · الخبرات · التوقيت">CONTEXT · GOALS · EXPERTISE · TIMING</p></aside></div>
-        <div class="brief-shell"><section class="brief-builder"><nav id="brief-progress" class="brief-progress" aria-label="Project brief progress"></nav><div id="brief-steps"></div><div class="brief-nav"><button id="brief-back" class="btn ghost" type="button">← BACK</button><button id="brief-next" class="btn primary" type="button">NEXT →</button></div></section><aside class="brief-summary"><small data-en="LIVE PROJECT BRIEF" data-ar="بريف المشروع">LIVE PROJECT BRIEF</small><h3 data-en="Start with the problem. Build the brief as we go." data-ar="ابدأ بالمشكلة، وابنِ البريف خطوة بخطوة.">Start with the problem. Build the brief as we go.</h3><div id="brief-summary"></div><button id="copy-brief" class="btn ghost" type="button">COPY BRIEF</button><a id="send-brief" class="btn primary" href="#">SEND PROJECT BRIEF →</a><p class="summary-note" data-en="Your project brief is sent securely to Andrew Tharwat Studio and added directly to Studio OS." data-ar="يتم إرسال بريف المشروع بأمان إلى Andrew Tharwat Studio وإضافته مباشرة إلى Studio OS.">Your project brief is sent securely to Andrew Tharwat Studio and added directly to Studio OS.</p></aside></div>
+        <div class="section-head split concierge-section-head"><div><span class="eyebrow" data-en="ATS STUDIO CONCIERGE" data-ar="ATS STUDIO CONCIERGE">ATS STUDIO CONCIERGE</span><h2 data-en-html="TELL US WHAT’S HAPPENING.<br><span>WE’LL FIGURE OUT THE REST.</span>" data-ar-html="احكي لنا إيه اللي حاصل.<br><span>وإحنا نفهم الباقي.</span>">TELL US WHAT’S HAPPENING.<br><span>WE’LL FIGURE OUT THE REST.</span></h2><p data-en="No service menus. No long brief. Start in your own words — ATS will organize the problem, show you what we understood, and only ask what actually changes the next decision." data-ar="من غير قوائم خدمات ولا بريف طويل. احكي بطريقتك، وATS هيرتب المشكلة ويوريك فهمنا ويسألك فقط عن الحاجة اللي فعلًا بتغيّر القرار التالي.">No service menus. No long brief. Start in your own words — ATS will organize the problem, show you what we understood, and only ask what actually changes the next decision.</p></div><aside><b data-en="LESS FORM. MORE UNDERSTANDING." data-ar="أسئلة أقل. فهم أكتر.">LESS FORM. MORE UNDERSTANDING.</b><p data-en="TELL US → WE UNDERSTAND → WE CLARIFY → WE SHAPE THE PATH" data-ar="احكي لنا ← نفهم ← نوضح المهم ← نحدد الطريق">TELL US → WE UNDERSTAND → WE CLARIFY → WE SHAPE THE PATH</p></aside></div>
+
+        <section id="studio-concierge" class="concierge-shell" aria-live="polite">
+          <div class="concierge-progress" aria-label="Studio Concierge progress">
+            <span class="active" data-concierge-progress="tell"><b>01</b><i data-en="TELL US" data-ar="احكي لنا">TELL US</i></span>
+            <span data-concierge-progress="understand"><b>02</b><i data-en="UNDERSTAND" data-ar="نفهم">UNDERSTAND</i></span>
+            <span data-concierge-progress="snapshot"><b>03</b><i data-en="SNAPSHOT" data-ar="الخلاصة">SNAPSHOT</i></span>
+            <span data-concierge-progress="contact"><b>04</b><i data-en="START" data-ar="نبدأ">START</i></span>
+          </div>
+
+          <section class="concierge-stage active" data-concierge-stage="tell">
+            <div class="concierge-stage-copy">
+              <small data-en="START IN YOUR OWN WORDS" data-ar="ابدأ بطريقتك">START IN YOUR OWN WORDS</small>
+              <h3 data-en="What are you trying to do — or what isn’t working the way you want?" data-ar="إيه اللي بتحاول تعمله، أو إيه اللي مش ماشي بالشكل اللي أنت عايزه؟">What are you trying to do — or what isn’t working the way you want?</h3>
+              <p data-en="You don’t need to know the service, solution, budget or technical terms. Tell us the situation as you would explain it to a person." data-ar="مش لازم تعرف اسم الخدمة أو الحل أو الميزانية أو المصطلحات الفنية. احكي الموقف زي ما هتحكيه لشخص قدامك.">You don’t need to know the service, solution, budget or technical terms. Tell us the situation as you would explain it to a person.</p>
+            </div>
+            <div class="concierge-mode-row" role="group" aria-label="Conversation style">
+              <button type="button" class="concierge-mode active" data-mode="quick"><b data-en="QUICK" data-ar="سريع">QUICK</b><span data-en="Ask me as little as possible." data-ar="اسألني أقل عدد ممكن.">Ask me as little as possible.</span></button>
+              <button type="button" class="concierge-mode" data-mode="guided"><b data-en="GUIDED" data-ar="موجّه">GUIDED</b><span data-en="Help me think it through." data-ar="ساعدني أرتب الفكرة.">Help me think it through.</span></button>
+              <button type="button" class="concierge-mode" data-mode="unsure"><b data-en="I’M NOT SURE" data-ar="مش عارف أبدأ">I’M NOT SURE</b><span data-en="I have something in mind, but it’s not clear yet." data-ar="عندي حاجة في دماغي بس لسه مش واضحة.">I have something in mind, but it’s not clear yet.</span></button>
+            </div>
+            <div class="concierge-input-card">
+              <label for="concierge-problem" data-en="TELL ATS WHAT’S HAPPENING" data-ar="احكي لـ ATS إيه اللي حاصل">TELL ATS WHAT’S HAPPENING</label>
+              <textarea id="concierge-problem" rows="7" maxlength="4500" data-en-placeholder="Example: I have an idea for a product, but I’m not sure how to turn it into something people can understand, buy and use..." data-ar-placeholder="مثال: عندي فكرة منتج، بس مش عارف أحولها لحاجة الناس تفهمها وتشتريها وتستخدمها..."></textarea>
+              <div class="concierge-input-tools">
+                <button id="concierge-voice" type="button" class="concierge-tool"><span>◉</span><b data-en="VOICE" data-ar="صوت">VOICE</b></button>
+                <button id="concierge-context-toggle" type="button" class="concierge-tool"><span>＋</span><b data-en="ADD CONTEXT" data-ar="أضف حاجة تساعدنا">ADD CONTEXT</b></button>
+                <span class="concierge-reassurance" data-en="No polished brief needed." data-ar="مش محتاج تكتب بريف مرتب.">No polished brief needed.</span>
+              </div>
+              <div id="concierge-context" class="concierge-context hidden">
+                <label for="concierge-link" data-en="WEBSITE / INSTAGRAM / REFERENCE LINK — OPTIONAL" data-ar="موقع / إنستجرام / لينك مرجعي — اختياري">WEBSITE / INSTAGRAM / REFERENCE LINK — OPTIONAL</label>
+                <input id="concierge-link" type="url" inputmode="url" placeholder="https://" />
+                <label for="concierge-extra" data-en="ANY EXTRA CONTEXT — OPTIONAL" data-ar="أي سياق إضافي — اختياري">ANY EXTRA CONTEXT — OPTIONAL</label>
+                <textarea id="concierge-extra" rows="3" maxlength="1500" data-en-placeholder="Anything you think might help us understand." data-ar-placeholder="أي حاجة شايف إنها ممكن تساعدنا نفهم."></textarea>
+              </div>
+            </div>
+            <div id="concierge-tell-error" class="concierge-message hidden" role="alert"></div>
+            <div class="concierge-actions"><button id="concierge-understand" class="btn primary" type="button" data-en="LET ATS UNDERSTAND →" data-ar="خلّي ATS يفهم ←">LET ATS UNDERSTAND →</button></div>
+          </section>
+
+          <section class="concierge-stage" data-concierge-stage="understand">
+            <div class="concierge-stage-copy">
+              <small data-en="HERE’S WHAT WE UNDERSTAND SO FAR" data-ar="ده اللي فهمناه لحد دلوقتي">HERE’S WHAT WE UNDERSTAND SO FAR</small>
+              <h3 data-en="Before we ask anything else, let’s make sure we understood you." data-ar="قبل ما نسأل أي حاجة تانية، خلينا نتأكد إننا فهمناك صح.">Before we ask anything else, let’s make sure we understood you.</h3>
+            </div>
+            <div id="concierge-understanding" class="concierge-understanding"></div>
+            <div class="concierge-confirm-row">
+              <button id="concierge-confirm" class="btn primary" type="button" data-en="THAT’S RIGHT →" data-ar="بالضبط ←">THAT’S RIGHT →</button>
+              <button id="concierge-adjust" class="btn ghost" type="button" data-en="ADJUST MY WORDS" data-ar="عايز أعدل كلامي">ADJUST MY WORDS</button>
+            </div>
+            <div id="concierge-clarify" class="concierge-clarify hidden"></div>
+          </section>
+
+          <section class="concierge-stage" data-concierge-stage="snapshot">
+            <div class="concierge-stage-copy">
+              <small data-en="DISCOVERY SNAPSHOT" data-ar="DISCOVERY SNAPSHOT">DISCOVERY SNAPSHOT</small>
+              <h3 data-en="We have enough to start." data-ar="عندنا معلومات كفاية نبدأ بيها.">We have enough to start.</h3>
+              <p data-en="This is not a final scope or proposal. It is the first clear map of the problem — so the next conversation starts from understanding, not from zero." data-ar="دي مش Scope نهائية ولا عرض سعر. دي أول خريطة واضحة للمشكلة، علشان الحوار الجاي يبدأ من فهم مش من الصفر.">This is not a final scope or proposal. It is the first clear map of the problem — so the next conversation starts from understanding, not from zero.</p>
+            </div>
+            <div id="concierge-problem-map" class="concierge-problem-map"></div>
+            <div id="concierge-capabilities" class="concierge-capabilities"></div>
+            <div class="concierge-actions concierge-actions-split">
+              <button id="concierge-snapshot-back" class="btn ghost" type="button" data-en="← CHANGE SOMETHING" data-ar="تعديل حاجة →">← CHANGE SOMETHING</button>
+              <button id="concierge-contact-next" class="btn primary" type="button" data-en="LET’S START →" data-ar="نبدأ ←">LET’S START →</button>
+            </div>
+          </section>
+
+          <section class="concierge-stage" data-concierge-stage="contact">
+            <div class="concierge-stage-copy">
+              <small data-en="ONE LAST THING" data-ar="آخر حاجة">ONE LAST THING</small>
+              <h3 data-en="Where should we send the next step?" data-ar="نبعت لك الخطوة الجاية فين؟">Where should we send the next step?</h3>
+              <p data-en="Name and email are enough. Phone / WhatsApp is optional." data-ar="الاسم والإيميل كفاية. الهاتف / واتساب اختياري.">Name and email are enough. Phone / WhatsApp is optional.</p>
+            </div>
+            <div class="concierge-contact-grid">
+              <label><span data-en="NAME" data-ar="الاسم">NAME</span><input id="concierge-name" autocomplete="name" /></label>
+              <label><span data-en="EMAIL" data-ar="البريد الإلكتروني">EMAIL</span><input id="concierge-email" type="email" autocomplete="email" /></label>
+              <label><span data-en="PHONE / WHATSAPP — OPTIONAL" data-ar="الهاتف / واتساب — اختياري">PHONE / WHATSAPP — OPTIONAL</span><input id="concierge-phone" inputmode="tel" autocomplete="tel" /></label>
+              <label><span data-en="COMPANY / ORGANIZATION — OPTIONAL" data-ar="الشركة / الجهة — اختياري">COMPANY / ORGANIZATION — OPTIONAL</span><input id="concierge-company" autocomplete="organization" /></label>
+            </div>
+            <div id="concierge-submit-error" class="concierge-message hidden" role="alert"></div>
+            <div class="concierge-actions concierge-actions-split">
+              <button id="concierge-contact-back" class="btn ghost" type="button" data-en="← BACK TO SNAPSHOT" data-ar="الرجوع للخلاصة →">← BACK TO SNAPSHOT</button>
+              <button id="concierge-submit" class="btn primary" type="button" data-en="SEND TO ATS →" data-ar="إرسال إلى ATS ←">SEND TO ATS →</button>
+            </div>
+          </section>
+
+          <section class="concierge-stage concierge-success" data-concierge-stage="success">
+            <div class="concierge-success-mark">✓</div>
+            <small data-en="REQUEST RECEIVED" data-ar="تم استلام الطلب">REQUEST RECEIVED</small>
+            <h3 data-en="We have enough to start." data-ar="عندنا معلومات كفاية نبدأ بيها.">We have enough to start.</h3>
+            <p data-en="Your original words and the Discovery Snapshot are now inside Studio OS. We’ll review the problem before suggesting a service or scope." data-ar="كلامك الأصلي وDiscovery Snapshot بقوا داخل Studio OS. هنراجع المشكلة الأول قبل ما نقترح خدمة أو Scope.">Your original words and the Discovery Snapshot are now inside Studio OS. We’ll review the problem before suggesting a service or scope.</p>
+            <div class="concierge-request-id"><span data-en="REQUEST ID" data-ar="رقم الطلب">REQUEST ID</span><b id="concierge-request-code">—</b></div>
+            <div class="concierge-actions">
+              <a id="concierge-track" class="btn primary" href="/client-access/" data-en="TRACK REQUEST →" data-ar="متابعة الطلب ←">TRACK REQUEST →</a>
+              <button id="concierge-new" class="btn ghost" type="button" data-en="START ANOTHER REQUEST" data-ar="إرسال طلب آخر">START ANOTHER REQUEST</button>
+            </div>
+          </section>
+        </section>
+
+        <div class="brief-shell concierge-legacy-brief" hidden aria-hidden="true"><section class="brief-builder"><nav id="brief-progress" class="brief-progress" aria-label="Project brief progress"></nav><div id="brief-steps"></div><div class="brief-nav"><button id="brief-back" class="btn ghost" type="button">← BACK</button><button id="brief-next" class="btn primary" type="button">NEXT →</button></div></section><aside class="brief-summary"><small>LEGACY BRIEF</small><h3>Legacy brief compatibility layer.</h3><div id="brief-summary"></div><button id="copy-brief" class="btn ghost" type="button">COPY BRIEF</button><a id="send-brief" class="btn primary" href="#">SEND PROJECT BRIEF →</a><p class="summary-note">Legacy brief compatibility.</p></aside></div>
       </div>
     </section>
   </main>
@@ -118,6 +217,7 @@
   <script src="/v9/v9-brief-recovery.js?v=1"></script>
   <script src="/v9/v9-phase2.js?v=4"></script>
   <script src="/v9/v9-lead-submit.js?v=4"></script>
+  <script src="/v9/v9-concierge.js?v=1"></script>
   <script src="/v9/v9-polish.js?v=11"></script>
 </body>
 </html>
