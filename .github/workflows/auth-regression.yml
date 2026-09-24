@@ -1,0 +1,17 @@
+name: Auth regression
+on:
+  push:
+    branches: [preview/v9-new-hero-do-case]
+  pull_request:
+    branches: [main, preview/v9-new-hero-do-case]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test

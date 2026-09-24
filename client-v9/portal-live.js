@@ -7,7 +7,7 @@
   const publicStages = ['Onboarding','Design','Development','Client Review','Delivery'];
   const publicStageFor = stage => ['Onboarding','Content Preparation'].includes(stage) ? 'Onboarding' : stage === 'Design' ? 'Design' : ['Development','Internal QA'].includes(stage) ? 'Development' : ['Client Review','Revisions','Final Approval','Final Payment'].includes(stage) ? 'Client Review' : 'Delivery';
   const OTP_LENGTH = Number(window.ATS_AUTH?.otpLength || 8);
-  let sb = null, currentClient = null, currentProject = null;
+  let sb = null, currentClient = null, currentProject = null, sentEmail = null;
   let data = { projects: [], payments: [], updates: [], reviews: [], revisions: [], files: [], company: null };
 
   function toast(message) {
@@ -30,38 +30,40 @@
 
   async function sendOtp() {
     const email = $('#portal-email').value.trim().toLowerCase();
-    if (!email || !email.includes('@')) return setAuthState('Enter a valid email address.', true);
-    const button = $('#send-otp'); button.disabled = true; button.textContent = 'SENDING…';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('#portal-email').focus(); return setAuthState('Enter a valid email address.', true); }
+    const button = $('#send-otp'); if(button.disabled)return; button.disabled = true; button.textContent = 'SENDING…'; $('#portal-email').disabled=true; $('#verify-otp').disabled=true;
     try {
       const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
       if (error) throw error;
+      sentEmail=email; $('#portal-otp').value='';
       $('#otp-step').classList.remove('hidden');
       $('#portal-otp').focus();
       setAuthState('An ' + OTP_LENGTH + '-digit login code was sent to your email. Enter it below.');
-    } catch (error) { console.error('OTP send failed', error); setAuthState('We couldn’t send the login code right now. Please try again in a moment.', true); }
-    finally { button.disabled = false; button.textContent = 'SEND LOGIN CODE'; }
+    } catch (error) { window.ATS_AUTH_CLIENT.logError('send', error); setAuthState('We couldn’t send the login code right now. Please try again in a moment.', true); }
+    finally { $('#portal-email').disabled=false; $('#verify-otp').disabled=false; button.disabled = false; button.textContent = 'SEND LOGIN CODE'; }
   }
 
   async function verifyOtp() {
     const email = $('#portal-email').value.trim().toLowerCase();
     const token = $('#portal-otp').value.trim();
+    if(!sentEmail || email!==sentEmail){$('#portal-email').focus();return setAuthState('Send a login code to this email first.',true);}
     if (!new RegExp('^\\d{' + OTP_LENGTH + '}$').test(token)) return setAuthState('Enter the ' + OTP_LENGTH + '-digit code from your email.', true);
-    const button = $('#verify-otp'); button.disabled = true; button.textContent = 'VERIFYING…';
+    const button = $('#verify-otp'); if(button.disabled)return; button.disabled = true; button.textContent = 'VERIFYING…'; $('#portal-email').disabled=true; $('#send-otp').disabled=true;
     try {
       const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
       if (error) throw error;
-      await activateAndLoad();
-    } catch (error) { setAuthState(error.message, true); }
-    finally { button.disabled = false; button.textContent = 'OPEN CLIENT PORTAL'; }
+      try { await activateAndLoad(); } catch(error) { window.ATS_AUTH_CLIENT.logError('lookup',error); setAuthState(window.ATS_AUTH_CLIENT.lookupMessage(error),true); }
+    } catch (error) { window.ATS_AUTH_CLIENT.logError('verify',error); setAuthState('The code could not be verified. Check it or request a new code.', true); }
+    finally { $('#portal-email').disabled=false; $('#send-otp').disabled=false; button.disabled = false; button.textContent = 'OPEN CLIENT PORTAL'; }
   }
 
   async function activateAndLoad() {
     setAuthState('Verifying your client access…');
     const { data: claim, error: claimError } = await sb.rpc('studio_claim_client_by_verified_email');
     if (claimError) {
-      await sb.auth.signOut();
-      showAuth();
-      throw new Error('This verified email does not have an active Client Portal yet. Please contact Andrew Tharwat Studio.');
+      // Prospects continue through request lookup; database failures must not revoke a valid session.
+      if(claimError.code==='P0002'){location.replace('/client-access/');return;}
+      throw claimError;
     }
     await loadClientData(claim);
   }
@@ -215,10 +217,10 @@
 
   async function boot(){
     if(!cfg?.supabaseUrl||!cfg?.supabaseKey||!window.supabase){showAuth();return setAuthState('Portal configuration could not be loaded.',true);}
-    sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    sb=window.ATS_AUTH_CLIENT.getClient();
     const {data:{session}}=await sb.auth.getSession();
     if(!session){showAuth();return;}
-    try{await activateAndLoad()}catch(error){setAuthState(error.message,true);showAuth();}
+    try{await activateAndLoad()}catch(error){window.ATS_AUTH_CLIENT.logError('lookup',error);setAuthState(window.ATS_AUTH_CLIENT.lookupMessage(error),true);showAuth();}
   }
 
   const otpInput=$('#portal-otp');
@@ -238,5 +240,6 @@
   $('#send-otp')?.addEventListener('click',sendOtp);$('#verify-otp')?.addEventListener('click',verifyOtp);$('#portal-signout')?.addEventListener('click',signOut);$('#new-project-form')?.addEventListener('submit',submitRepeatProject);
   $('#home-action-button')?.addEventListener('click',()=>{const p=currentProject;if(!p)return;const review=projectReviews(p).find(r=>r.status==='awaiting_review');if(review)return renderProjectDetail(p.id);if((p.client_action||'').toLowerCase().includes('pay'))return navigate('payments');renderProjectDetail(p.id)});
   window.addEventListener('hashchange',()=>{if(currentClient)handleHash()});
-  boot().catch(error=>{console.error(error);showAuth();setAuthState(error.message,true)});
+  $('#portal-email')?.addEventListener('input',()=>{if(sentEmail && $('#portal-email').value.trim().toLowerCase()!==sentEmail){sentEmail=null;$('#portal-otp').value='';$('#otp-step').classList.add('hidden');setAuthState('Send a new login code for the updated email.')}});
+  boot().catch(error=>{window.ATS_AUTH_CLIENT.logError('boot',error);showAuth();setAuthState('Client Portal could not be loaded. Please reload and try again.',true)});
 })();

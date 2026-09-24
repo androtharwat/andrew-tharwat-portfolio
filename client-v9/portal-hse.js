@@ -3,7 +3,7 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (v = '') => String(v).replace(/[&<>'"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;' }[c]));
-  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
+  const sb = window.ATS_AUTH_CLIENT.getClient();
   let currentClient = null;
   let cases = [];
   let payments = [];

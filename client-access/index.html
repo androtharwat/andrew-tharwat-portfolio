@@ -29,7 +29,7 @@
         <label><span>LOGIN CODE</span><input id="access-otp" inputmode="numeric" autocomplete="one-time-code" /></label>
         <button id="verify-code" class="primary" type="button">OPEN CLIENT ACCESS →</button>
       </div>
-      <div id="auth-state" class="state">Only verified emails linked to a Studio request can continue.</div>
+      <div id="auth-state" role="status" aria-live="polite" class="state">Only verified emails linked to a Studio request can continue.</div>
     </section>
 
     <section id="access-app" class="access-app hidden">
@@ -76,10 +76,11 @@
   </main>
 
   <div id="toast" class="toast"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
   <script src="/config.js"></script>
   <script src="/auth-otp-config.js?v=2"></script>
+  <script src="/auth-client.js?v=1"></script>
   <script src="/client-access/prefill.js?v=1"></script>
-  <script src="/client-access/access.js?v=4"></script>
+  <script src="/client-access/access.js?v=5"></script>
 </body>
 </html>

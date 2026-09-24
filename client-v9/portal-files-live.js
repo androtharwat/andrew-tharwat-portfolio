@@ -40,7 +40,7 @@
     try{const signed=await sb.storage.from('studio-client-files').createSignedUrl(path,120);if(signed.error)throw signed.error;window.open(signed.data.signedUrl,'_blank','noopener')}catch(e){toast(e.message)}finally{button.disabled=false}
   }
 
-  function boot(){if(!cfg?.supabaseUrl||!cfg?.supabaseKey||!window.supabase)return;sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});setTimeout(render,400)}
+  function boot(){if(!cfg?.supabaseUrl||!cfg?.supabaseKey||!window.supabase)return;sb=window.ATS_AUTH_CLIENT.getClient();setTimeout(render,400)}
   document.addEventListener('click',e=>{const nav=e.target.closest('[data-portal-nav="files"]');if(nav)setTimeout(render,120);const upload=e.target.closest('#client-file-upload');if(upload){e.preventDefault();upload&&window.setTimeout(()=>void 0,0);void uploadFileProxy()}const dl=e.target.closest('[data-file-download]');if(dl){e.preventDefault();void openFile(dl)}});
   async function uploadFileProxy(){await upload()}
   window.addEventListener('hashchange',()=>{if(location.hash==='#files')setTimeout(render,120)});
