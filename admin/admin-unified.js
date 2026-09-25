@@ -334,6 +334,16 @@
     renderList('#system-facts',evidence.facts,'No confirmed facts extracted yet.');
     renderList('#system-assumptions',evidence.assumptions,'No explicit assumptions extracted yet.');
     renderList('#system-contradictions',evidence.contradictions,'No contradictions identified yet.');
+    const ledger=Array.isArray(analysis.evidence_ledger)?analysis.evidence_ledger:[];
+    const ledgerEl=$('#system-evidence-ledger');
+    if(ledgerEl){
+      ledgerEl.innerHTML=ledger.length?ledger.map(item=>{
+        const cls=String(item.classification||'unknown').replaceAll('_',' ').toUpperCase();
+        const source=String(item.source||'unknown').replaceAll('_',' ').toUpperCase();
+        const strength=String(item.strength||'unknown').toUpperCase();
+        return '<article class="evidence-ledger-row '+esc(String(item.classification||''))+'"><div class="evidence-ref">'+esc(item.ref_id||'E?')+'</div><div class="evidence-ledger-main"><div class="evidence-ledger-meta"><span>'+esc(cls)+'</span><span>'+esc(source)+'</span><span>'+esc(strength)+'</span></div><b>'+esc(item.statement||'')+'</b><p>'+esc(item.why_it_matters||'')+'</p>'+(item.verification_needed?'<small><strong>VERIFY:</strong> '+esc(item.verification_needed)+'</small>':'')+'</div></article>'
+      }).join(''):'<div class="ops-empty">Evidence will appear after analysis.</div>';
+    }
 
     const q=analysis.next_best_question||c.system_next_question||{};
     $('#system-next-question').textContent=q.question||'—';
@@ -404,6 +414,15 @@
     $('#diagnosis-root-problem').value=c.root_problem||'';$('#diagnosis-summary').value=c.diagnosis_summary||'';$('#diagnosis-confidence').value=Number(c.diagnosis_confidence||0);
     $('#diagnosis-next-question').textContent=c.system_next_question?.question?'System next question: '+c.system_next_question.question:(next?'Next client question: '+next[2]:'Discovery questions complete · validate the root cause.');
     renderSystemDiagnosis();
+    const evidenceIndex=new Map((state.diagnosticRun?.analysis?.evidence_ledger||[]).map(x=>[String(x.ref_id||''),x]));
+    const evidenceRefsHtml=refs=>{
+      const arr=Array.isArray(refs)?refs.filter(Boolean):[];
+      if(!arr.length)return '';
+      return '<div class="evidence-ref-line"><strong>EVIDENCE:</strong> '+arr.map(ref=>{
+        const item=evidenceIndex.get(String(ref));
+        return '<span title="'+esc(item?.statement||'')+'">'+esc(ref)+'</span>';
+      }).join('')+'</div>';
+    };
 
     const gateItems=[
       ['Current analysis',gate.analysisCurrent,String(c.analysis_state||'never_analyzed').replaceAll('_',' ')],
@@ -432,7 +451,7 @@
 
     $('#root-cause-list').innerHTML=state.rootCauses.length?state.rootCauses.map(x=>{
       const ai=x.source_type==='ai',level=x.causal_level||'contributing';
-      return '<article class="cause-row '+(ai?'ai-suggested':'')+'"><div class="cause-row-head"><div><b>'+esc(x.statement)+'</b><div class="cause-meta">'+(ai?'<span class="ai-source">AI SUGGESTED</span>':'<span>ATS</span>')+'<span>'+esc(level)+'</span><span>'+esc(x.category)+'</span><span>'+esc(String(x.confidence||0))+'% confidence</span><span class="'+esc(x.status)+'">'+esc(x.status.toUpperCase())+'</span></div></div></div>'+(x.evidence_for?'<p><strong>EVIDENCE FOR:</strong> '+esc(x.evidence_for)+'</p>':'')+(x.evidence_against?'<p><strong>GAPS / AGAINST:</strong> '+esc(x.evidence_against)+'</p>':'')+(x.validation_method?'<div class="cause-validation"><strong>VALIDATE BY:</strong> '+esc(x.validation_method)+'</div>':'')+'<div class="cause-actions">'+(x.status!=='validated'?'<button data-cause-status="'+esc(x.id)+':validated">VALIDATE</button>':'')+(x.status!=='suspected'?'<button data-cause-status="'+esc(x.id)+':suspected">SUSPECTED</button>':'')+(x.status!=='rejected'?'<button data-cause-status="'+esc(x.id)+':rejected">REJECT</button>':'')+'</div></article>'
+      return '<article class="cause-row '+(ai?'ai-suggested':'')+'"><div class="cause-row-head"><div><b>'+esc(x.statement)+'</b><div class="cause-meta">'+(ai?'<span class="ai-source">AI SUGGESTED</span>':'<span>ATS</span>')+'<span>'+esc(level)+'</span><span>'+esc(x.category)+'</span><span>'+esc(String(x.confidence||0))+'% confidence</span><span class="'+esc(x.status)+'">'+esc(x.status.toUpperCase())+'</span></div></div></div>'+(x.evidence_for?'<p><strong>EVIDENCE FOR:</strong> '+esc(x.evidence_for)+'</p>':'')+(x.evidence_against?'<p><strong>GAPS / AGAINST:</strong> '+esc(x.evidence_against)+'</p>':'')+(x.validation_method?'<div class="cause-validation"><strong>VALIDATE BY:</strong> '+esc(x.validation_method)+'</div>':'')+evidenceRefsHtml(x.evidence_refs)+(Array.isArray(x.missing_evidence_refs)&&x.missing_evidence_refs.length?'<div class="evidence-ref-line missing"><strong>MISSING:</strong> '+x.missing_evidence_refs.map(ref=>'<span>'+esc(ref)+'</span>').join('')+'</div>':'')+'<div class="cause-actions">'+(x.status!=='validated'?'<button data-cause-status="'+esc(x.id)+':validated">VALIDATE</button>':'')+(x.status!=='suspected'?'<button data-cause-status="'+esc(x.id)+':suspected">SUSPECTED</button>':'')+(x.status!=='rejected'?'<button data-cause-status="'+esc(x.id)+':rejected">REJECT</button>':'')+'</div></article>'
     }).join(''):'<div class="ops-empty">No root-cause hypotheses yet. Run ATS diagnosis first.</div>';
 
     const causeSelect=$('#solution-task-cause'),selected=causeSelect?.value||'';
@@ -443,7 +462,7 @@
       if(x.status==='proposed')actions='<button data-task-status="'+esc(x.id)+':todo">APPROVE TASK</button><button data-task-status="'+esc(x.id)+':rejected">REJECT</button>';
       else if(x.status==='todo')actions='<button data-task-status="'+esc(x.id)+':in_progress">START</button><button data-task-status="'+esc(x.id)+':done">DONE</button>';
       else if(x.status==='in_progress'||x.status==='blocked')actions='<button data-task-status="'+esc(x.id)+':done">DONE</button>'+(x.status==='blocked'?'<button data-task-status="'+esc(x.id)+':in_progress">UNBLOCK</button>':'');
-      return '<article class="solution-task-row '+(ai?'ai-suggested':'')+'"><div class="task-row-head"><div><b>'+esc(x.title)+'</b><div class="task-meta">'+(ai?'<span class="ai-source">AI PROPOSED</span>':'<span>ATS</span>')+'<span>'+esc(x.task_type)+'</span><span>'+esc(x.owner_type)+'</span><span>'+esc(x.priority)+'</span><span>'+esc(x.status)+'</span></div></div></div>'+(x.rationale?'<p>'+esc(x.rationale)+'</p>':'')+(cause?'<p><strong>CAUSE:</strong> '+esc(cause.statement)+'</p>':'')+(x.expected_effect?'<p class="task-effect"><strong>EXPECTED EFFECT:</strong> '+esc(x.expected_effect)+'</p>':'')+(x.dependency_note?'<p><strong>DEPENDENCY:</strong> '+esc(x.dependency_note)+'</p>':'')+(x.acceptance_criteria?'<p><strong>DONE WHEN:</strong> '+esc(x.acceptance_criteria)+'</p>':'')+'<div class="task-actions">'+actions+'</div></article>'
+      return '<article class="solution-task-row '+(ai?'ai-suggested':'')+'"><div class="task-row-head"><div><b>'+esc(x.title)+'</b><div class="task-meta">'+(ai?'<span class="ai-source">AI PROPOSED</span>':'<span>ATS</span>')+'<span>'+esc(x.task_type)+'</span><span>'+esc(x.owner_type)+'</span><span>'+esc(x.priority)+'</span><span>'+esc(x.status)+'</span></div></div></div>'+(x.rationale?'<p>'+esc(x.rationale)+'</p>':'')+(cause?'<p><strong>CAUSE:</strong> '+esc(cause.statement)+'</p>':'')+(x.expected_effect?'<p class="task-effect"><strong>EXPECTED EFFECT:</strong> '+esc(x.expected_effect)+'</p>':'')+(x.dependency_note?'<p><strong>DEPENDENCY:</strong> '+esc(x.dependency_note)+'</p>':'')+(x.acceptance_criteria?'<p><strong>DONE WHEN:</strong> '+esc(x.acceptance_criteria)+'</p>':'')+evidenceRefsHtml(x.evidence_refs)+'<div class="task-actions">'+actions+'</div></article>'
     }).join(''):'<div class="ops-empty">No task sequence yet. Run ATS diagnosis first.</div>';
     updateLeadWorkspaceState();
   }

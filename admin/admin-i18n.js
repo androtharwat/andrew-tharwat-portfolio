@@ -368,6 +368,14 @@
     'STALE':'يحتاج تحديث','READY':'جاهز','ERROR':'خطأ','ANALYZING':'جارٍ التحليل',
     'never analyzed':'لم يتم التحليل بعد','stale':'يحتاج تحديث','ready':'جاهز','error':'خطأ','analyzing':'جارٍ التحليل',
     'needs evidence':'يحتاج أدلة','needs validation':'يحتاج تحقق','solution ready':'جاهز للحل','execution':'تنفيذ',
+    'EVIDENCE LEDGER':'سجل الأدلة',
+    'What the system is using to make the decision':'المعلومات التي يعتمد عليها النظام في اتخاذ القرار',
+    'Automatic · no extra client input':'تلقائي · بدون مدخلات إضافية من العميل',
+    'Evidence will appear after analysis.':'ستظهر الأدلة بعد التحليل.',
+    'VERIFIED FACT':'حقيقة متحقق منها','CLIENT STATEMENT':'إفادة العميل','ADMIN OBSERVATION':'ملاحظة ATS',
+    'ASSUMPTION':'افتراض','GAP':'فجوة معلومات','CONTRADICTION':'تناقض',
+    'INTAKE':'الطلب الأولي','CLIENT DISCOVERY':'استكشاف العميل','ADMIN CONTACT':'تواصل ATS','DOCUMENT':'مستند','METRIC':'مؤشر','SYSTEM INFERENCE':'استنتاج النظام','UNKNOWN':'غير معروف',
+    'STRONG':'قوي','MEDIUM':'متوسط','WEAK':'ضعيف','VERIFY:':'تحقق:','EVIDENCE:':'الأدلة:','MISSING:':'الناقص:',
     'admin only':'للإدارة فقط','client visible':'ظاهر للعميل'
   };
 

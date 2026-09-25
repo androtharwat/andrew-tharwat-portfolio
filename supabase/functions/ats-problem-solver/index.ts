@@ -25,6 +25,122 @@ function parseTextAsJson(text:string){
 function safeUpstreamMessage(body:any){
   return clean(body?.error?.message||body?.message||body?.error||'Unknown Gemini API error',280)
 }
+function sanitizeGeminiSchema(value:any):any{
+  if(Array.isArray(value))return value.map(sanitizeGeminiSchema)
+  if(!value||typeof value!=='object')return value
+  const out:any={}
+  for(const [k,v] of Object.entries(value)){
+    if(k==='additionalProperties')continue
+    out[k]=sanitizeGeminiSchema(v)
+  }
+  return out
+}
+function buildDeterministicAnalysis(snapshot:any){
+  const d=snapshot?.discovery||{}
+  const ar=/[\u0600-\u06ff]/.test(JSON.stringify(snapshot))
+  const dimensions=[
+    ['current_state',ar?'إيه اللي بيحصل دلوقتي ومفروض مايحصلش؟':'What is happening now that should not be happening?','current situation'],
+    ['impact',ar?'إيه التأثير الحقيقي للمشكلة؟':'What is the real impact of this problem?','impact'],
+    ['evidence',ar?'إيه الدليل أو المثال الحقيقي اللي بيثبت المشكلة؟':'What evidence or real example proves the problem?','evidence'],
+    ['affected_people',ar?'مين أكتر ناس متأثرين بالمشكلة؟':'Who is most affected by the problem?','people affected'],
+    ['process_point',ar?'المشكلة بتظهر فين بالظبط داخل العملية؟':'Where exactly does the problem appear in the process?','failure point'],
+    ['prior_attempts',ar?'إيه اللي اتجرب قبل كده وإيه اللي حصل؟':'What has already been tried, and what happened?','previous attempts'],
+    ['desired_outcome',ar?'لو المشكلة اتحلت صح، إيه اللي لازم يتغير؟':'If solved correctly, what should be different?','desired outcome'],
+    ['constraints',ar?'إيه القيود اللي لازم الحل يلتزم بيها؟':'What constraints must the solution respect?','constraints']
+  ]
+  const facts:string[]=[]
+  const missing:any[]=[]
+  const ledger:any[]=[]
+  const answers=Array.isArray(snapshot?.answers)?snapshot.answers:[]
+  let refNo=1
+  for(const [key,q,label] of dimensions){
+    const value=clean(d?.[key],4000)
+    const latest=[...answers].reverse().find((x:any)=>x?.question_key===key)
+    const ref='E'+refNo++
+    if(value){
+      const actor=String(latest?.actor_type||'system')
+      const sourceChannel=String(latest?.source_channel||'intake')
+      const classification=actor==='admin'?'admin_observation':'client_statement'
+      const strength=sourceChannel==='portal'||sourceChannel==='call'||sourceChannel==='whatsapp'||sourceChannel==='email'?'medium':'weak'
+      facts.push((ar?label+': ':label+': ')+value)
+      ledger.push({
+        ref_id:ref,classification,
+        source:sourceChannel==='portal'?'client_discovery':sourceChannel==='call'||sourceChannel==='whatsapp'||sourceChannel==='email'?'admin_contact':'intake',
+        strength,statement:value,
+        why_it_matters:ar?'المعلومة دي تدخل مباشرة في فهم المشكلة واتجاه التشخيص.':'This input directly shapes the problem framing and diagnostic direction.',
+        verification_needed:classification==='client_statement'?(ar?'تحتاج تأكيد أو دليل إذا كانت مؤثرة على قرار الحل.':'Confirm with evidence if it materially affects the solution decision.'):''
+      })
+    }else{
+      missing.push({key,question:q,label,ref})
+      ledger.push({
+        ref_id:ref,classification:'gap',source:'system_inference',strength:'unknown',
+        statement:ar?'المعلومة الناقصة: '+label:'Missing information: '+label,
+        why_it_matters:ar?'نقصها يقلل دقة التشخيص وقد يؤدي لاختيار حل مبكر.':'Its absence lowers diagnostic confidence and may cause premature solution selection.',
+        verification_needed:q
+      })
+    }
+  }
+  const score=Math.max(0,Math.min(100,Number(d?.readiness_score||0)))
+  const first=missing[0]||null
+  const current=clean(d?.current_state||snapshot?.lead?.project_goal,3500)
+  const desired=clean(d?.desired_outcome,2500)
+  const impact=clean(d?.impact,2500)
+  const tasks=missing.slice(0,6).map((m:any,i:number)=>({
+    root_cause_index:-1,
+    evidence_refs:[m.ref],
+    task_type:m.key==='constraints'||m.key==='prior_attempts'?'investigate':'client_action',
+    title:ar?'استكمال '+m.label:'Collect '+m.label,
+    rationale:ar?'المعلومة دي ناقصة، وأي حل قبل جمعها هيبقى مبني على افتراضات.':'This information is missing; choosing a solution before collecting it would rely on assumptions.',
+    owner_type:m.key==='evidence'||m.key==='prior_attempts'||m.key==='constraints'?'shared':'client',
+    priority:i===0?'high':'medium',
+    expected_effect:ar?'تقليل عدم اليقين وتحسين دقة التشخيص.':'Reduce uncertainty and improve diagnostic confidence.',
+    dependency_note:i===0?'':(ar?'يفضل بعد استكمال السؤال الأعلى أولوية.':'Prefer after the highest-priority missing item is answered.'),
+    acceptance_criteria:ar?'إجابة محددة مدعومة بمثال أو دليل كلما أمكن.':'A specific answer, supported by an example or evidence where possible.'
+  }))
+  return {
+    decision_stage:score>=75?'needs_validation':'needs_evidence',
+    problem_framing:{
+      symptom_summary:current|| (ar?'المشكلة لم تتحدد بما يكفي بعد.':'The problem is not sufficiently defined yet.'),
+      current_state:current||'',
+      desired_state:desired||'',
+      gap:[current,desired].filter(Boolean).join(ar?' ← ':' -> '),
+      impact_summary:impact|| (ar?'التأثير لم يتم توثيقه بعد.':'Impact is not documented yet.'),
+      root_problem_candidate:current||'',
+      confidence:Math.min(45,Math.round(score*0.45))
+    },
+    evidence_assessment:{
+      facts,
+      assumptions:missing.map((m:any)=>ar?'غير مؤكد حتى الآن: '+m.label:'Not confirmed yet: '+m.label),
+      contradictions:[],
+      evidence_quality:score>=75?'good':score>=50?'partial':'weak'
+    },
+    evidence_ledger:ledger,
+    next_best_question:{
+      question:first?.question|| (ar?'ما الدليل الأقوى الذي يثبت السبب المحتمل؟':'What is the strongest evidence that would validate the suspected cause?'),
+      reason:ar?'ده أعلى نقص معلوماتي مؤثر على القرار الحالي.':'This is the highest-value information gap affecting the current decision.',
+      decision_value:ar?'الإجابة هتحدد هل نكمل جمع أدلة ولا نبدأ اختبار أسباب محتملة.':'The answer determines whether to keep collecting evidence or start validating causal hypotheses.'
+    },
+    root_causes:[],
+    recommended_tasks:tasks,
+    solution_direction:{
+      strategy:ar?'لا تبدأ تنفيذ حل نهائي بعد. استكمل الأدلة أولًا ثم اختبر الأسباب المحتملة.':'Do not implement a final solution yet. Complete the evidence base, then test causal hypotheses.',
+      why_this_direction:ar?'المعطيات الحالية غير كافية لإثبات سبب جذري بشكل مهني.':'The current evidence is insufficient to validate a root cause professionally.',
+      risks:[ar?'القفز للحل قد يعالج العرض بدل السبب الحقيقي.':'Jumping to implementation may treat the symptom instead of the real cause.'],
+      not_yet_justified:[ar?'أي تنفيذ نهائي قبل استكمال البيانات والتحقق من السبب.':'Final implementation before completing evidence and validating a cause.']
+    },
+    verification_plan:{
+      success_signals:desired?[desired]:[],
+      failure_signals:[ar?'استمرار نفس الأثر بعد التنفيذ.':'The same impact continues after implementation.'],
+      review_point:ar?'بعد استكمال الأدلة والتحقق من سبب واحد على الأقل.':'After completing evidence collection and validating at least one cause.'
+    },
+    executive_summary:ar
+      ?'البيانات الحالية تسمح بتحديد اتجاه المشكلة، لكنها غير كافية لإثبات السبب الجذري. الأولوية الآن هي استكمال فجوات الأدلة قبل اعتماد حل.'
+      :'The current data identifies the problem direction but is not sufficient to validate a root cause. The priority is to close evidence gaps before approving a solution.',
+    next_best_action:first
+      ?(ar?'اجمع المعلومة التالية: '+first.label:'Collect the next missing input: '+first.label)
+      :(ar?'ابدأ التحقق من فرضيات الأسباب المحتملة.':'Begin validating causal hypotheses.')
+  }
+}
 
 Deno.serve(async(req:Request)=>{
   if(req.method==='OPTIONS')return new Response('ok',{headers:cors})
@@ -102,7 +218,7 @@ Deno.serve(async(req:Request)=>{
     const inputHash=await sha256hex(JSON.stringify(snapshot))
 
     const {data:cached}=await admin.from('studio_diagnostic_runs')
-      .select('id,analysis,model,completed_at').eq('case_id',caseRow.id).eq('input_hash',inputHash).eq('status','completed')
+      .select('id,analysis,model,completed_at').eq('case_id',caseRow.id).eq('input_hash',inputHash).eq('status','completed').neq('model','deterministic-fallback')
       .order('created_at',{ascending:false}).limit(1).maybeSingle()
     if(cached?.analysis){
       await admin.from('studio_discovery_cases').update({
@@ -137,11 +253,12 @@ NON-NEGOTIABLE RULES:
 3. Never invent data, metrics, client facts, causes, constraints, or outcomes.
 4. If evidence is insufficient, say so and prioritize investigation rather than proposing implementation.
 5. Every recommended task must either reduce uncertainty, address a specific suspected/validated cause, implement a supported solution, or verify effectiveness.
-6. Prefer the smallest next action that increases decision quality.
-7. A solution is not complete without measurable acceptance/verification criteria.
-8. The client's requested output may be a symptom-treatment. Reframe it when evidence points to a deeper need.
-9. Consider safety, operational, human, technical, commercial, content and experience causes only when supported by the case.
-10. Be concise and operational. ATS must be able to act on the output.
+6. Every causal hypothesis and task must cite the relevant evidence ledger refs (E1, E2...). Never invent a ref.
+7. Prefer the smallest next action that increases decision quality.
+8. A solution is not complete without measurable acceptance/verification criteria.
+9. The client's requested output may be a symptom-treatment. Reframe it when evidence points to a deeper need.
+10. Consider safety, operational, human, technical, commercial, content and experience causes only when supported by the case.
+11. Be concise and operational. ATS must be able to act on the output.
 
 DECISION STAGES:
 - needs_evidence: key facts are missing; investigate first.
@@ -151,6 +268,7 @@ DECISION STAGES:
 
 Return:
 - a clear problem framing,
+- an evidence ledger with stable refs E1, E2, E3...; each item must show classification, source, strength, why it matters and whether verification is needed,
 - facts / assumptions / contradictions,
 - the single highest-value next question,
 - 1-5 causal hypotheses,
@@ -173,6 +291,13 @@ ${JSON.stringify(snapshot)}`
           facts:{type:'array',items:{type:'string'}},assumptions:{type:'array',items:{type:'string'}},contradictions:{type:'array',items:{type:'string'}},
           evidence_quality:{type:'string',enum:['weak','partial','good','strong']}
         },required:['facts','assumptions','contradictions','evidence_quality']},
+        evidence_ledger:{type:'array',maxItems:20,items:{type:'object',additionalProperties:false,properties:{
+          ref_id:{type:'string'},
+          classification:{type:'string',enum:['verified_fact','client_statement','admin_observation','assumption','gap','contradiction']},
+          source:{type:'string',enum:['intake','client_discovery','admin_contact','document','metric','system_inference','unknown']},
+          strength:{type:'string',enum:['strong','medium','weak','unknown']},
+          statement:{type:'string'},why_it_matters:{type:'string'},verification_needed:{type:'string'}
+        },required:['ref_id','classification','source','strength','statement','why_it_matters','verification_needed']}},
         next_best_question:{type:'object',additionalProperties:false,properties:{
           question:{type:'string'},reason:{type:'string'},decision_value:{type:'string'}
         },required:['question','reason','decision_value']},
@@ -180,15 +305,16 @@ ${JSON.stringify(snapshot)}`
           category:{type:'string',enum:['strategy','process','people','technology','content','experience','environment','hse','commercial','other']},
           causal_level:{type:'string',enum:['symptom','contributing','root']},
           statement:{type:'string'},evidence_for:{type:'string'},evidence_against:{type:'string'},
+          evidence_refs:{type:'array',items:{type:'string'}},missing_evidence_refs:{type:'array',items:{type:'string'}},
           confidence:{type:'integer',minimum:0,maximum:100},validation_method:{type:'string'}
-        },required:['category','causal_level','statement','evidence_for','evidence_against','confidence','validation_method']}},
+        },required:['category','causal_level','statement','evidence_for','evidence_against','evidence_refs','missing_evidence_refs','confidence','validation_method']}},
         recommended_tasks:{type:'array',maxItems:12,items:{type:'object',additionalProperties:false,properties:{
           root_cause_index:{type:'integer',minimum:-1,maximum:4},
           task_type:{type:'string',enum:['investigate','solution','implementation','verification','client_action']},
           title:{type:'string'},rationale:{type:'string'},owner_type:{type:'string',enum:['ats','client','shared']},
           priority:{type:'string',enum:['critical','high','medium','low']},expected_effect:{type:'string'},
-          dependency_note:{type:'string'},acceptance_criteria:{type:'string'}
-        },required:['root_cause_index','task_type','title','rationale','owner_type','priority','expected_effect','dependency_note','acceptance_criteria']}},
+          dependency_note:{type:'string'},acceptance_criteria:{type:'string'},evidence_refs:{type:'array',items:{type:'string'}}
+        },required:['root_cause_index','task_type','title','rationale','owner_type','priority','expected_effect','dependency_note','acceptance_criteria','evidence_refs']}},
         solution_direction:{type:'object',additionalProperties:false,properties:{
           strategy:{type:'string'},why_this_direction:{type:'string'},risks:{type:'array',items:{type:'string'}},
           not_yet_justified:{type:'array',items:{type:'string'}}
@@ -200,34 +326,80 @@ ${JSON.stringify(snapshot)}`
         executive_summary:{type:'string'},
         next_best_action:{type:'string'}
       },
-      required:['decision_stage','problem_framing','evidence_assessment','next_best_question','root_causes','recommended_tasks','solution_direction','verification_plan','executive_summary','next_best_action']
+      required:['decision_stage','problem_framing','evidence_assessment','evidence_ledger','next_best_question','root_causes','recommended_tasks','solution_direction','verification_plan','executive_summary','next_best_action']
     }
 
-    const models=[Deno.env.get('GEMINI_MODEL')||'gemini-2.5-flash','gemini-2.5-flash']
+    const configuredModel=clean(Deno.env.get('GEMINI_MODEL')||'',120)
+    const stableFallbacks=['gemini-3.8-flash','gemini-3.7-flash','gemini-3.5-flash','gemini-3.5-flash-lite']
+    const models=[...new Set([
+      ...(configuredModel&&!configuredModel.includes('2.5')?[configuredModel]:[]),
+      ...stableFallbacks
+    ])]
     let analysis:any=null,usedModel='',lastError=''
-    for(const model of [...new Set(models)]){
-      try{
-        const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
-          method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
-          body:JSON.stringify({
-            contents:[{role:'user',parts:[{text:prompt}]}],
-            generationConfig:{temperature:0.15,responseMimeType:'application/json',responseSchema:schema}
+    const attempts:any[]=[]
+    const safeSchema=sanitizeGeminiSchema(schema)
+    for(const model of models){
+      const configs=[
+        {mode:'schema',value:{temperature:0.15,responseMimeType:'application/json',responseSchema:safeSchema}},
+        {mode:'json',value:{temperature:0.15,responseMimeType:'application/json'}}
+      ]
+      let skipModel=false
+      for(const config of configs){
+        try{
+          const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
+            method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+            body:JSON.stringify({
+              contents:[{role:'user',parts:[{text:prompt}]}],
+              generationConfig:config.value
+            })
           })
-        })
-        const body=await response.json().catch(()=>null)
-        if(!response.ok){lastError=safeUpstreamMessage(body);continue}
-        const text=(body?.candidates?.[0]?.content?.parts||[]).map((p:any)=>p?.text||'').join('\n').trim()
-        if(!text){lastError='No model output';continue}
-        analysis=parseTextAsJson(text);usedModel=model;break
-      }catch(error){lastError=clean((error as any)?.message||error,280)}
+          const body=await response.json().catch(()=>null)
+          if(!response.ok){
+            const message=safeUpstreamMessage(body)
+            lastError=message
+            attempts.push({model,mode:config.mode,status:response.status,error:message})
+            const transient=response.status===429||response.status>=500||/high demand|temporar|overload|unavailable/i.test(message)
+            const modelUnavailable=response.status===404||/model .*not .*available|not found|no longer available/i.test(message)
+            if(transient||modelUnavailable){skipModel=true;break}
+            continue
+          }
+          const text=(body?.candidates?.[0]?.content?.parts||[]).map((p:any)=>p?.text||'').join('\n').trim()
+          if(!text){lastError='No model output';attempts.push({model,mode:config.mode,status:200,error:lastError});continue}
+          try{
+            analysis=parseTextAsJson(text);usedModel=model;attempts.push({model,mode:config.mode,status:200,ok:true});break
+          }catch(parseError){
+            lastError='Model returned invalid diagnostic JSON'
+            attempts.push({model,mode:config.mode,status:200,error:lastError})
+            continue
+          }
+        }catch(error){
+          lastError=clean((error as any)?.message||error,280)
+          attempts.push({model,mode:config.mode,status:0,error:lastError})
+          skipModel=true
+          break
+        }
+      }
+      if(analysis)break
+      if(skipModel)continue
     }
 
+    let fallbackUsed=false
     if(!analysis){
-      await admin.from('studio_diagnostic_runs').update({status:'failed',error_text:lastError||'AI analysis failed',completed_at:new Date().toISOString()}).eq('id',run.id)
-      await admin.from('studio_discovery_cases').update({analysis_state:'error'}).eq('id',caseRow.id)
-      return json({error:'Diagnostic analysis failed',detail:lastError},502)
+      analysis=buildDeterministicAnalysis(snapshot)
+      usedModel='deterministic-fallback'
+      fallbackUsed=true
+      lastError=(lastError||'AI provider unavailable')+' | attempts: '+attempts.map((x:any)=>x.model+':'+x.status).join(', ')
     }
 
+    const ledger=Array.isArray(analysis.evidence_ledger)?analysis.evidence_ledger.slice(0,20):[]
+    const validEvidenceRefs=new Set<string>()
+    ledger.forEach((item:any,i:number)=>{
+      const ref='E'+(i+1)
+      item.ref_id=ref
+      validEvidenceRefs.add(ref)
+    })
+    analysis.evidence_ledger=ledger
+    const keepRefs=(refs:any)=>Array.isArray(refs)?refs.map((x:any)=>String(x)).filter((x:string)=>validEvidenceRefs.has(x)):[]
     const stage=allowedStage.has(analysis.decision_stage)?analysis.decision_stage:'needs_evidence'
     const confidence=Math.max(0,Math.min(100,Number(analysis?.problem_framing?.confidence||0)))
     const rootCandidate=clean(analysis?.problem_framing?.root_problem_candidate,5000)
@@ -253,6 +425,7 @@ ${JSON.stringify(snapshot)}`
         case_id:caseRow.id,category:allowedCategory.has(c.category)?c.category:'other',
         statement:clean(c.statement,3000)||'Unspecified causal hypothesis',
         evidence_for:clean(c.evidence_for,5000)||null,evidence_against:clean(c.evidence_against,5000)||null,
+        evidence_refs:keepRefs(c.evidence_refs),missing_evidence_refs:keepRefs(c.missing_evidence_refs),
         confidence:Math.max(0,Math.min(100,Number(c.confidence||0))),status:'suspected',source_type:'ai',
         diagnostic_run_id:run.id,causal_level:allowedLevel.has(c.causal_level)?c.causal_level:'contributing',
         validation_method:clean(c.validation_method,4000)||null,system_rank:i+1
@@ -272,6 +445,7 @@ ${JSON.stringify(snapshot)}`
         owner_type:allowedOwner.has(t.owner_type)?t.owner_type:'ats',
         priority:allowedPriority.has(t.priority)?t.priority:'medium',
         status:'proposed',acceptance_criteria:clean(t.acceptance_criteria,5000)||null,
+        evidence_refs:keepRefs(t.evidence_refs),
         expected_effect:clean(t.expected_effect,5000)||null,dependency_note:clean(t.dependency_note,3000)||null,
         source_type:'ai',diagnostic_run_id:run.id,sort_order:(i+1)*10
       })
@@ -279,7 +453,7 @@ ${JSON.stringify(snapshot)}`
 
     const completedAt=new Date().toISOString()
     await admin.from('studio_diagnostic_runs').update({
-      status:'completed',model:usedModel,analysis,completed_at:completedAt
+      status:'completed',model:usedModel,analysis,error_text:fallbackUsed?lastError:null,completed_at:completedAt
     }).eq('id',run.id)
     await admin.from('studio_discovery_cases').update({
       analysis_state:'ready',decision_stage:stage,system_problem_statement:rootCandidate||null,
@@ -292,7 +466,7 @@ ${JSON.stringify(snapshot)}`
       metadata:{run_id:run.id,decision_stage:stage,system_confidence:confidence,root_causes:insertedCauses.length,tasks:tasks.length}
     })
 
-    return json({ok:true,cached:false,run_id:run.id,analysis,model:usedModel,root_causes:insertedCauses.length,tasks:tasks.length})
+    return json({ok:true,cached:false,fallback:fallbackUsed,run_id:run.id,analysis,model:usedModel,root_causes:insertedCauses.length,tasks:tasks.length})
   }catch(error){
     console.error('ATS diagnostic engine failed',{message:(error as any)?.message})
     return json({error:'ATS diagnostic engine failed',detail:clean((error as any)?.message||error,280)},500)
