@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#071a29" />
   <title>ATS — Control Center</title>
-  <link rel="icon" href="/assets/favicon-official.png" />
+  <link rel="icon" href="/assets/ats-favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin.css?v=5" />
+  <link rel="stylesheet" href="/ats-brand.css?v=1" />
 </head>
 <body>
   <div id="toast" class="toast"></div>
   <section id="auth-view" class="auth-shell">
     <div class="auth-card device-card">
-      <img src="/assets/logo-mark.png" alt="ATS" />
+      <img class="ats-logo-mark" src="/assets/ats-logo-mark.webp" alt="ATS" />
       <span>ATS</span>
       <h1>CONTROL CENTER.</h1>
       <p id="device-message">No email. No password. Approve this browser once and it will open the Control Center automatically every time.</p>
@@ -34,7 +35,7 @@
 
   <section id="admin-view" class="admin-shell hidden">
     <aside class="sidebar">
-      <a class="admin-brand" href="/"><img src="/assets/logo-mark.png" alt=""><div><b>ATS</b><span>CONTROL CENTER</span></div></a>
+      <a class="admin-brand ats-brand-lockup" href="/"><img class="ats-logo-compact" src="/assets/ats-logo-compact.webp" alt="ATS"><div><b>ATS</b><span>CONTROL CENTER</span></div></a>
       <nav id="admin-nav">
         <button data-tab="dashboard" class="active">◫ <span>Dashboard</span></button>
         <button data-tab="projects">◆ <span>Projects</span></button>
