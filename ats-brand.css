@@ -1,0 +1,65 @@
+/* ATS Brand System — approved master-derived web assets */
+.ats-brand-lockup{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:max-content;
+}
+.ats-brand-lockup > img.ats-logo-compact{
+  display:block;
+  width:116px !important;
+  height:52px !important;
+  max-width:none;
+  object-fit:contain !important;
+  object-position:center;
+  padding:0 !important;
+  margin:0;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+.ats-brand-lockup > span,
+.ats-brand-lockup > div,
+.ats-brand-lockup .brand-copy{
+  min-width:0;
+}
+.ats-brand-lockup > span > b:first-child,
+.ats-brand-lockup > div > b:first-child,
+.ats-brand-lockup .brand-copy > strong:first-child{
+  display:none !important;
+}
+.ats-brand-lockup > span > small,
+.ats-brand-lockup > div > span,
+.ats-brand-lockup .brand-copy > span{
+  display:block;
+  margin-top:0 !important;
+  color:#8ea1ad;
+  font-size:7px;
+  font-weight:800;
+  line-height:1.25;
+  letter-spacing:.15em;
+  white-space:nowrap;
+}
+.ats-logo-mark{
+  display:block;
+  width:72px;
+  height:72px;
+  object-fit:contain;
+  border:0;
+  border-radius:16px;
+  background:#06131e;
+  box-shadow:none;
+}
+@media(max-width:700px){
+  .ats-brand-lockup{gap:8px}
+  .ats-brand-lockup > img.ats-logo-compact{
+    width:96px !important;
+    height:43px !important;
+  }
+  .ats-brand-lockup > span > small,
+  .ats-brand-lockup > div > span,
+  .ats-brand-lockup .brand-copy > span{
+    display:none !important;
+  }
+}
