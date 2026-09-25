@@ -57,8 +57,15 @@
   });
   $('#sign-out').addEventListener('click',()=>{localStorage.removeItem(DEVICE_KEY);location.reload()});
 
-  $$('#admin-nav button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
-  $$('[data-goto]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.goto)));
+  const loadedEnhancements=new Set();
+  function lazyScript(key,src){if(loadedEnhancements.has(key)||document.querySelector('script[data-admin-extra="'+key+'"]'))return;loadedEnhancements.add(key);const s=document.createElement('script');s.src=src;s.defer=true;s.dataset.adminExtra=key;document.head.appendChild(s)}
+  function loadEnhancementsFor(tab){
+    if(tab==='projects'){lazyScript('bilingual','/admin/bilingual-fields.js?v=1');lazyScript('ai','/admin/ai-project-assist.js?v=4');lazyScript('access','/admin/page-access-control.js?v=1')}
+    if(tab==='media')lazyScript('media-editor','/admin/media-content-editor.js?v=3');
+    if(tab==='content')lazyScript('content-manager','/admin/content-manager.js?v=1');
+  }
+  $('#admin-nav button').forEach(b=>b.addEventListener('click',()=>{switchTab(b.dataset.tab);loadEnhancementsFor(b.dataset.tab)}));
+  $('[data-goto]').forEach(b=>b.addEventListener('click',()=>{switchTab(b.dataset.goto);loadEnhancementsFor(b.dataset.goto)}));
   function switchTab(tab){const names={dashboard:'Dashboard',leads:'Leads',clients:'Clients','studio-projects':'Client Projects',proposals:'Proposals',payments:'Payments',projects:'Website Projects',categories:'Categories',content:'Site Content',v9:'V9 Layout',media:'Media Library'};$('#admin-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$('.tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===tab));$('#page-title').textContent=names[tab]||tab;if(tab==='media')loadMedia();}
 
   async function refreshAll(){await Promise.all([loadCategories(),loadProjects(),loadSettings()]);renderDashboard();}
