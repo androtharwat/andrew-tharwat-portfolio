@@ -339,6 +339,7 @@
     'Client Access Code generated':'تم إنشاء كود دخول العميل','Access code copied':'تم نسخ كود الدخول',
     'Could not generate Client Access Code':'تعذر إنشاء كود دخول العميل','Copy failed — select the code manually':'تعذر النسخ — حدد الكود يدويًا',
     'Client Access Code issued':'تم إصدار كود دخول العميل','Client Access opened':'تم فتح دخول العميل',
+    'Project evidence analyzed':'تم تحليل ملفات وأدلة المشروع',
     'One-time access code':'كود دخول لمرة واحدة','Client authenticated with temporary access':'تم دخول العميل باستخدام الكود المؤقت',
     'Add an email before generating Client Access':'أضف البريد الإلكتروني قبل إنشاء دخول العميل',
 
@@ -376,6 +377,16 @@
     'ASSUMPTION':'افتراض','GAP':'فجوة معلومات','CONTRADICTION':'تناقض',
     'INTAKE':'الطلب الأولي','CLIENT DISCOVERY':'استكشاف العميل','ADMIN CONTACT':'تواصل ATS','DOCUMENT':'مستند','METRIC':'مؤشر','SYSTEM INFERENCE':'استنتاج النظام','UNKNOWN':'غير معروف',
     'STRONG':'قوي','MEDIUM':'متوسط','WEAK':'ضعيف','VERIFY:':'تحقق:','EVIDENCE:':'الأدلة:','MISSING:':'الناقص:',
+    'DOCUMENT EVIDENCE':'دليل من مستند',
+    'EVIDENCE & REASONING':'الأدلة ومنطق التحليل','Source data, facts, assumptions and contradictions':'مصادر البيانات والحقائق والافتراضات والتناقضات',
+    'Open when you need to audit the diagnosis':'افتح عند الحاجة لمراجعة أساس التشخيص',
+    'INFORMATION GAPS':'فجوات المعلومات','What is still missing before a reliable decision':'ما الذي لا يزال ناقصًا قبل اتخاذ قرار موثوق',
+    'ATS REVIEW':'مراجعة ATS','Working diagnosis and manual refinement':'تشخيص العمل والمراجعة اليدوية',
+    'Review only when the system framing needs adjustment':'راجع فقط عندما تحتاج صياغة النظام إلى تعديل',
+    'ROOT CAUSE REVIEW':'مراجعة السبب الجذري','Validate or reject causal hypotheses':'تحقق من فرضيات الأسباب أو ارفضها',
+    'AI suggestions remain hypotheses until ATS validates them':'اقتراحات الذكاء الاصطناعي تظل فرضيات حتى تتحقق منها ATS',
+    'WORK PLAN':'خطة العمل','Tasks justified by evidence and validated causes':'المهام التي تبررها الأدلة والأسباب المتحقق منها',
+    'Approve only the work supported by the diagnosis':'اعتمد فقط العمل الذي يدعمه التشخيص',
     'admin only':'للإدارة فقط','client visible':'ظاهر للعميل'
   };
 
@@ -446,6 +457,7 @@
     if((m=core.match(/^(\d+) task\(s\) defined$/))) return m[1]+' مهام محددة';
     if((m=core.match(/^Valid until (.+) · one-time use · max 5 attempts$/))) return 'صالح حتى '+m[1]+' · استخدام مرة واحدة · بحد أقصى 5 محاولات';
     if((m=core.match(/^Temporary access issued · (\d+) minutes$/))) return 'تم إصدار دخول مؤقت · '+m[1]+' دقيقة';
+    if((m=core.match(/^(.+) · (strong|medium|weak|unclear) · (\d+) discovery field\(s\) added$/))) return m[1]+' · قوة الدليل '+m[2]+' · تمت إضافة '+m[3]+' حقول استكشاف';
     if((m=core.match(/^(\d+) approved task\(s\)$/))) return m[1]+' مهمة معتمدة';
     if((m=core.match(/^(\d+) approved$/))) return m[1]+' معتمدة';
     if((m=core.match(/^System next question:\s*(.+)$/))) return 'سؤال النظام التالي: '+m[1];
@@ -475,7 +487,7 @@
     const el=node.parentElement;if(!el)return true;
     if(el.closest('script,style,pre,code,[data-i18n-skip]'))return true;
     if(el.closest('textarea,input'))return true;
-    if(el.matches('.entity-title b,.entity-title small,.lead-contact-summary b,.lead-brief-grid p,.asset-chip-list span,.message-bubble p,.collab-row p,.diagnosis-dimension p,.cause-row b,.cause-row p,.solution-task-row b,.solution-task-row p,.recent-item h3,.project-row h3,.category-row h3,.text-cms-card-head strong,.text-cms-card-head small'))return true;
+    if(el.matches('.entity-title b,.entity-title small,.lead-contact-summary b,.lead-brief-grid p,.asset-chip-list span,.message-bubble p,.collab-row p,.diagnosis-dimension p,.cause-row b,.cause-row p,.solution-task-row b,.solution-task-row p,.evidence-ledger-main b,.evidence-ledger-main p,.evidence-ledger-main small,.recent-item h3,.project-row h3,.category-row h3,.text-cms-card-head strong,.text-cms-card-head small'))return true;
     if(el.matches('td')&&!el.closest('th'))return true;
     return false;
   }

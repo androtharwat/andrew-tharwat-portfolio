@@ -80,6 +80,43 @@ function buildDeterministicAnalysis(snapshot:any){
       })
     }
   }
+  const files=Array.isArray(snapshot?.files)?snapshot.files:[]
+  for(const f of files.slice(0,12)){
+    if(f?.analysis_status!=='ready')continue
+    const a=f?.analysis_json||{}
+    const strength=['strong','medium','weak'].includes(String(a.evidence_strength))?String(a.evidence_strength):'medium'
+    const baseRef='E'+refNo++
+    const summary=clean(f?.analysis_summary||a?.summary,3500)
+    if(summary){
+      ledger.push({
+        ref_id:baseRef,classification:'document_evidence',source:'document',strength,
+        statement:(ar?'ملف ':'File ')+String(f.file_name||'')+': '+summary,
+        why_it_matters:ar?'محتوى الملف تم تحليله ويضيف دليلًا مباشرًا لفهم المشروع.':'The uploaded file was analyzed and contributes direct project evidence.',
+        verification_needed:ar?'راجع المصدر الأصلي إذا كانت المعلومة حاسمة للقرار.':'Review the source file if this evidence is decision-critical.'
+      })
+      facts.push((ar?'ملف ':'File ')+String(f.file_name||'')+': '+summary)
+    }
+    const observations=Array.isArray(a.observations)?a.observations.slice(0,3):[]
+    for(const ob of observations){
+      const ref='E'+refNo++
+      ledger.push({
+        ref_id:ref,classification:'document_evidence',source:'document',strength,
+        statement:clean(ob?.statement,2200),
+        why_it_matters:ar?'معلومة مستخرجة مباشرة من الملف المرفوع.':'Evidence extracted directly from the uploaded file.',
+        verification_needed:clean(ob?.location,500)?(ar?'الموقع داخل الملف: ':'File location: ')+clean(ob.location,500):''
+      })
+    }
+    const metrics=Array.isArray(a.metrics)?a.metrics.slice(0,3):[]
+    for(const m of metrics){
+      const ref='E'+refNo++
+      ledger.push({
+        ref_id:ref,classification:'verified_fact',source:'metric',strength:'strong',
+        statement:[clean(m?.name,500),clean(m?.value,500),clean(m?.context,1200)].filter(Boolean).join(' · '),
+        why_it_matters:ar?'قيمة رقمية أو مؤشر صريح داخل الملف.':'An explicit metric or numeric value found in the file.',
+        verification_needed:clean(m?.location,500)?(ar?'الموقع داخل الملف: ':'File location: ')+clean(m.location,500):''
+      })
+    }
+  }
   const score=Math.max(0,Math.min(100,Number(d?.readiness_score||0)))
   const first=missing[0]||null
   const current=clean(d?.current_state||snapshot?.lead?.project_goal,3500)
@@ -189,13 +226,14 @@ Deno.serve(async(req:Request)=>{
     const {data:caseRow,error:caseError}=await admin.from('studio_discovery_cases').select('*').eq('lead_id',leadId).maybeSingle()
     if(caseError||!caseRow)return json({error:'Discovery case not found'},404)
 
-    const [answersRes,causesRes,tasksRes,activityRes]=await Promise.all([
+    const [answersRes,causesRes,tasksRes,activityRes,filesRes]=await Promise.all([
       admin.from('studio_discovery_answers').select('question_key,answer,actor_type,source_channel,created_at').eq('case_id',caseRow.id).order('created_at',{ascending:true}).limit(300),
-      admin.from('studio_root_causes').select('id,category,statement,evidence_for,evidence_against,confidence,status,source_type,causal_level,validation_method,created_at').eq('case_id',caseRow.id).order('created_at',{ascending:true}),
-      admin.from('studio_solution_tasks').select('id,root_cause_id,task_type,title,rationale,owner_type,priority,status,acceptance_criteria,expected_effect,dependency_note,created_at').eq('case_id',caseRow.id).order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
-      admin.from('studio_activity').select('actor_type,action,metadata,created_at').eq('entity_type','lead').eq('entity_id',leadId).order('created_at',{ascending:false}).limit(80)
+      admin.from('studio_root_causes').select('id,category,statement,evidence_for,evidence_against,confidence,status,source_type,causal_level,validation_method,evidence_refs,missing_evidence_refs,created_at').eq('case_id',caseRow.id).order('created_at',{ascending:true}),
+      admin.from('studio_solution_tasks').select('id,root_cause_id,task_type,title,rationale,owner_type,priority,status,acceptance_criteria,expected_effect,dependency_note,evidence_refs,created_at').eq('case_id',caseRow.id).order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
+      admin.from('studio_activity').select('actor_type,action,metadata,created_at').eq('entity_type','lead').eq('entity_id',leadId).order('created_at',{ascending:false}).limit(80),
+      admin.from('studio_files').select('id,file_name,mime_type,file_size,analysis_status,analysis_summary,analysis_json,analysis_model,analyzed_at,created_at').eq('lead_id',leadId).eq('category','client_upload').order('created_at',{ascending:true}).limit(50)
     ])
-    const failed=[answersRes,causesRes,tasksRes,activityRes].find(x=>x.error)
+    const failed=[answersRes,causesRes,tasksRes,activityRes,filesRes].find(x=>x.error)
     if(failed)return json({error:'Could not load diagnosis evidence'},500)
 
     const caseFields={
@@ -211,6 +249,11 @@ Deno.serve(async(req:Request)=>{
       },
       discovery:caseFields,
       answers:answersRes.data||[],
+      files:(filesRes.data||[]).map((f:any)=>({
+        id:f.id,file_name:f.file_name,mime_type:f.mime_type,file_size:f.file_size,
+        analysis_status:f.analysis_status,analysis_summary:f.analysis_summary,
+        analysis_json:f.analysis_json,analysis_model:f.analysis_model,analyzed_at:f.analyzed_at,created_at:f.created_at
+      })),
       existing_causes:(causesRes.data||[]).filter((x:any)=>x.source_type!=='ai'||x.status!=='suspected'),
       existing_tasks:(tasksRes.data||[]).filter((x:any)=>x.source_type!=='ai'||x.status!=='proposed'),
       recent_activity:(activityRes.data||[]).map((x:any)=>({action:x.action,metadata:x.metadata,created_at:x.created_at}))
@@ -251,14 +294,15 @@ NON-NEGOTIABLE RULES:
 1. Separate symptoms, contributing factors, and root-cause hypotheses.
 2. Never label an AI hypothesis as validated. Every generated cause is only suspected until ATS validates it with evidence.
 3. Never invent data, metrics, client facts, causes, constraints, or outcomes.
-4. If evidence is insufficient, say so and prioritize investigation rather than proposing implementation.
-5. Every recommended task must either reduce uncertainty, address a specific suspected/validated cause, implement a supported solution, or verify effectiveness.
-6. Every causal hypothesis and task must cite the relevant evidence ledger refs (E1, E2...). Never invent a ref.
-7. Prefer the smallest next action that increases decision quality.
-8. A solution is not complete without measurable acceptance/verification criteria.
-9. The client's requested output may be a symptom-treatment. Reframe it when evidence points to a deeper need.
-10. Consider safety, operational, human, technical, commercial, content and experience causes only when supported by the case.
-11. Be concise and operational. ATS must be able to act on the output.
+4. Uploaded file analysis in SNAPSHOT.files is evidence extracted from client-provided documents. Use it before asking the client to repeat information already present in those files. Treat document evidence as source-grounded but not automatically independently verified.
+5. If evidence is insufficient, say so and prioritize investigation rather than proposing implementation.
+6. Every recommended task must either reduce uncertainty, address a specific suspected/validated cause, implement a supported solution, or verify effectiveness.
+7. Every causal hypothesis and task must cite the relevant evidence ledger refs (E1, E2...). Never invent a ref.
+8. Prefer the smallest next action that increases decision quality.
+9. A solution is not complete without measurable acceptance/verification criteria.
+10. The client's requested output may be a symptom-treatment. Reframe it when evidence points to a deeper need.
+11. Consider safety, operational, human, technical, commercial, content and experience causes only when supported by the case.
+12. Be concise and operational. ATS must be able to act on the output.
 
 DECISION STAGES:
 - needs_evidence: key facts are missing; investigate first.
@@ -293,7 +337,7 @@ ${JSON.stringify(snapshot)}`
         },required:['facts','assumptions','contradictions','evidence_quality']},
         evidence_ledger:{type:'array',maxItems:20,items:{type:'object',additionalProperties:false,properties:{
           ref_id:{type:'string'},
-          classification:{type:'string',enum:['verified_fact','client_statement','admin_observation','assumption','gap','contradiction']},
+          classification:{type:'string',enum:['verified_fact','document_evidence','client_statement','admin_observation','assumption','gap','contradiction']},
           source:{type:'string',enum:['intake','client_discovery','admin_contact','document','metric','system_inference','unknown']},
           strength:{type:'string',enum:['strong','medium','weak','unknown']},
           statement:{type:'string'},why_it_matters:{type:'string'},verification_needed:{type:'string'}

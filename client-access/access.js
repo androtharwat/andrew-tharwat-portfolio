@@ -5,7 +5,68 @@
   const fmt = v => v ? new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)) : '—';
   const esc = (v='') => String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const OTP_LENGTH = Number(window.ATS_AUTH?.accessCodeLength || window.ATS_AUTH?.otpLength || 6);
-  let sb = null, context = null, diagnosticRefreshPromise = null;
+  let sb = null, context = null, diagnosticRefreshPromise = null, leadEvidenceFiles = [];
+
+  function safeName(name='file'){return String(name).normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'').slice(-120)||'file'}
+  function mimeForFile(file){
+    if(file.type)return file.type;
+    const ext=(file.name.split('.').pop()||'').toLowerCase();
+    return ({pdf:'application/pdf',txt:'text/plain',csv:'text/csv',json:'application/json',xml:'text/xml',md:'text/markdown',html:'text/html',rtf:'text/rtf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',zip:'application/zip',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime',mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/m4a',ogg:'audio/ogg'})[ext]||'application/octet-stream';
+  }
+  function fileSize(v){const n=Number(v||0);if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';return (n/1048576).toFixed(1)+' MB'}
+  function renderLeadEvidenceFiles(files=[]){
+    leadEvidenceFiles=files;
+    const root=$('#discovery-file-list');if(!root)return;
+    const l=preferredDiscoveryLang(context?.lead||{});
+    if(!files.length){root.innerHTML='<div class="discovery-file-empty">'+(l==='ar'?'لم يتم رفع ملفات للمشروع حتى الآن.':'No project files shared yet.')+'</div>';return}
+    root.innerHTML=files.map(f=>{
+      const status=String(f.analysis_status||'not_analyzed');
+      const statusLabel=l==='ar'?({ready:'تم التحليل',analyzing:'جارٍ التحليل',error:'تعذر التحليل',not_analyzed:'بانتظار التحليل',unsupported:'يحتاج مراجعة'}[status]||status):status.replaceAll('_',' ').toUpperCase();
+      const summary=String(f.analysis_summary||'').trim();
+      return '<article class="discovery-file-row '+esc(status)+'"><div><b>'+esc(f.file_name||'File')+'</b><span>'+esc(fileSize(f.file_size))+' · '+esc(statusLabel)+'</span>'+(summary?'<p>'+esc(summary.slice(0,260))+'</p>':'')+'</div><i></i></article>';
+    }).join('');
+  }
+  async function loadLeadEvidenceFiles(leadId){
+    if(!leadId)return;
+    const q=await sb.from('studio_files').select('id,lead_id,file_name,storage_path,mime_type,file_size,analysis_status,analysis_summary,analysis_model,analyzed_at,created_at').eq('lead_id',leadId).eq('category','client_upload').order('created_at',{ascending:false});
+    if(q.error){window.ATS_AUTH_CLIENT.logError('lead-files',q.error);return}
+    renderLeadEvidenceFiles(q.data||[]);
+  }
+  async function uploadLeadEvidenceFiles(input){
+    const lead=context?.lead;if(!lead?.id||!input?.files?.length)return;
+    const selected=[...input.files].slice(0,10);
+    input.value='';
+    const tooLarge=selected.find(f=>f.size>26214400);
+    if(tooLarge)return toast(tooLarge.name+' exceeds the 25 MB limit');
+    const picker=$('#discovery-file-picker');picker?.classList.add('busy');
+    try{
+      const {data:userData,error:userError}=await sb.auth.getUser();if(userError||!userData?.user)throw userError||new Error('Authentication required');
+      for(const file of selected){
+        const mime=mimeForFile(file);
+        const path='leads/'+lead.id+'/client_upload/'+crypto.randomUUID()+'_'+safeName(file.name);
+        toast('Uploading '+file.name+'…');
+        const up=await sb.storage.from('studio-client-files').upload(path,file,{upsert:false,contentType:mime});
+        if(up.error)throw up.error;
+        const meta=await sb.from('studio_files').insert({
+          lead_id:lead.id,uploaded_by:userData.user.id,file_name:file.name,storage_path:path,
+          category:'client_upload',visibility:'client_visible',mime_type:mime,file_size:file.size,analysis_status:'not_analyzed'
+        }).select('*').single();
+        if(meta.error){await sb.storage.from('studio-client-files').remove([path]);throw meta.error}
+        await loadLeadEvidenceFiles(lead.id);
+        toast('Analyzing '+file.name+'…');
+        const analyzed=await sb.functions.invoke('ats-lead-file-analyzer',{body:{file_id:meta.data.id}});
+        if(analyzed.error)window.ATS_AUTH_CLIENT.logError('file-analysis',analyzed.error);
+        await loadLeadEvidenceFiles(lead.id);
+      }
+      toast('Project evidence added · ATS is updating the diagnosis');
+      await refreshDiagnosticFromClient(false);
+      await loadContext();
+    }catch(error){
+      window.ATS_AUTH_CLIENT.logError('file-upload',error);
+      toast(error.message||'Could not upload the project file');
+      if(lead?.id)await loadLeadEvidenceFiles(lead.id);
+    }finally{picker?.classList.remove('busy')}
+  }
 
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1900)}
   function authState(message,error=false){const el=$('#auth-state');if(!el)return;el.textContent=message;el.classList.toggle('error',error)}
@@ -78,6 +139,7 @@
     $('#discovery-known').innerHTML=known.length?known.map(([k,v])=>'<article><span>'+esc(k.toUpperCase())+'</span><p>'+esc(v)+'</p></article>').join(''):'';
 
     const q=discovery.next_question,locked=!!proposal;
+    $('#discovery-file-picker')?.classList.toggle('hidden',locked);
     const card=$('#discovery-question-card'),waiting=$('#discovery-waiting');
     card.classList.toggle('hidden',!q||locked);
     waiting.classList.toggle('hidden',!!q&&!locked);
@@ -150,6 +212,7 @@
     $('#journey-status').textContent=status;$('#journey-copy').textContent=copy;
     $('#current-action').textContent='No action required';$('#current-action-copy').textContent='ATS will update this area whenever you need to take action.';
     renderDiscovery(discovery,p,lead);
+    void loadLeadEvidenceFiles(lead.id);
     if(!p&&['never_analyzed','stale'].includes(String(discovery.analysis_state||''))&&!diagnosticRefreshPromise){
       void refreshDiagnosticFromClient(true);
     }
@@ -221,6 +284,7 @@
   }
 
   $('#verify-code')?.addEventListener('click',openWithAccessCode);$('#sign-out')?.addEventListener('click',signOut);$('#refresh-access')?.addEventListener('click',()=>loadContext().catch(e=>toast(e.message)));$('#submit-discovery')?.addEventListener('click',submitDiscoveryAnswer);
+  $('#discovery-files')?.addEventListener('change',e=>uploadLeadEvidenceFiles(e.currentTarget));
   document.addEventListener('click',e=>{if(e.target.closest('#accept-proposal'))proposalAction('accept');if(e.target.closest('#decline-proposal'))proposalAction('decline')});
   $('#access-otp')?.addEventListener('keydown',e=>{if(e.key==='Enter')openWithAccessCode()});
   boot().catch(error=>{window.ATS_AUTH_CLIENT.logError('boot',error);showAuth();authState('Client Access could not be loaded. Please reload and try again.',true)});

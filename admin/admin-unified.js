@@ -257,7 +257,7 @@
   }
   function localToIso(value){return value?new Date(value).toISOString():null}
   function humanActivity(action,meta={}){
-    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',diagnostic_engine_completed:'ATS diagnostic engine completed',working_diagnosis_accepted:'Working diagnosis accepted',client_access_code_issued:'Client Access Code issued',client_access_code_redeemed:'Client Access opened',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
+    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',diagnostic_engine_completed:'ATS diagnostic engine completed',working_diagnosis_accepted:'Working diagnosis accepted',lead_file_analyzed:'Project evidence analyzed',client_access_code_issued:'Client Access Code issued',client_access_code_redeemed:'Client Access opened',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
     const title=labels[action]||String(action||'Activity').replaceAll('_',' ');
     let detail=meta.summary||meta.note||'';
     if(action==='lead_status_changed')detail=(leadStatusLabels[meta.from]||meta.from||'—')+' → '+(leadStatusLabels[meta.to]||meta.to||'—');
@@ -272,6 +272,7 @@
     if(action==='solution_task_status_changed')detail=(meta.title||'Solution task')+' · '+String(meta.status||'');
     if(action==='diagnostic_engine_completed')detail=String(meta.decision_stage||'analysis').replaceAll('_',' ')+' · '+String(meta.system_confidence||0)+'% confidence · '+String(meta.root_causes||0)+' cause hypothesis(es) · '+String(meta.tasks||0)+' proposed task(s)';
     if(action==='working_diagnosis_accepted')detail=(meta.root_problem||'Working diagnosis')+' · '+String(meta.confidence||0)+'% confidence';
+    if(action==='lead_file_analyzed')detail=(meta.file_name||'Project file')+' · '+String(meta.evidence_strength||'evidence')+' · '+String(meta.discovery_signals_added||0)+' discovery field(s) added';
     if(action==='client_access_code_issued')detail='Temporary access issued · '+(meta.ttl_minutes||60)+' minutes';
     if(action==='client_access_code_redeemed')detail='Client authenticated with temporary access';
     return {title,detail};
