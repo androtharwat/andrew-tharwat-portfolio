@@ -9,7 +9,7 @@
   const slugify=s=>String(s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
   const arr=v=>String(v||'').split(',').map(x=>x.trim()).filter(Boolean);
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
-  const resolveMedia=u=>{const raw=u||'';const clean=raw.replace(/^\//,'');if(window.PORTFOLIO_ASSETS&&window.PORTFOLIO_ASSETS[clean])return window.PORTFOLIO_ASSETS[clean];return /^https?:\/\//i.test(raw)?raw:(clean?('../'+clean):'../assets/logo-mark.png')};
+  const resolveMedia=u=>{const raw=u||'';const clean=raw.replace(/^\//,'');if(window.PORTFOLIO_ASSETS&&window.PORTFOLIO_ASSETS[clean])return window.PORTFOLIO_ASSETS[clean];return /^https?:\/\//i.test(raw)?raw:(clean?('../'+clean):'../assets/ats-logo-mark.webp')};
   function notify(msg,type='success'){toast.textContent=msg;toast.className=`toast show ${type}`;setTimeout(()=>toast.className='toast',2600)}
   function makeClient(d){
     const headers=d?{'x-portfolio-device-id':d.id,'x-portfolio-device-secret':d.secret}:{};
