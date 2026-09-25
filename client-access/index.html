@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/client-access/access.css?v=2" />
+  <link rel="stylesheet" href="/client-access/access.css?v=3" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
 </head>
 <body>
@@ -23,14 +23,14 @@
     <section id="auth-card" class="auth-card">
       <p class="eyebrow">SECURE CLIENT ACCESS</p>
       <h1>Follow your request.<br><span>Review your proposal.</span></h1>
-      <p class="lede">Use the same email you used when you submitted your project request. We’ll send you a one-time login code.</p>
+      <p class="lede">Use the same email you used when you submitted your project request, then enter the 6-digit ATS Access Code shared with you by the Studio.</p>
+      <div class="preview-access-note"><b>PREVIEW ACCESS</b><span>No login email is sent during testing. Your code is issued directly by ATS and expires automatically.</span></div>
       <label><span>EMAIL ADDRESS</span><input id="access-email" type="email" autocomplete="email" placeholder="name@company.com" /></label>
-      <button id="send-code" class="primary" type="button">SEND LOGIN CODE →</button>
-      <div id="otp-wrap" class="otp-wrap hidden">
-        <label><span>LOGIN CODE</span><input id="access-otp" inputmode="numeric" autocomplete="one-time-code" /></label>
+      <div id="otp-wrap" class="otp-wrap">
+        <label><span>ATS ACCESS CODE</span><input id="access-otp" inputmode="numeric" autocomplete="one-time-code" /></label>
         <button id="verify-code" class="primary" type="button">OPEN CLIENT ACCESS →</button>
       </div>
-      <div id="auth-state" role="status" aria-live="polite" class="state">Only verified emails linked to a Studio request can continue.</div>
+      <div id="auth-state" role="status" aria-live="polite" class="state">Only an active code issued by ATS for this email can continue.</div>
     </section>
 
     <section id="access-app" class="access-app hidden">
@@ -98,9 +98,9 @@
   <div id="toast" class="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
   <script src="/config.js"></script>
-  <script src="/auth-otp-config.js?v=2"></script>
+  <script src="/auth-otp-config.js?v=3"></script>
   <script src="/auth-client.js?v=1"></script>
   <script src="/client-access/prefill.js?v=1"></script>
-  <script src="/client-access/access.js?v=6"></script>
+  <script src="/client-access/access.js?v=7"></script>
 </body>
 </html>

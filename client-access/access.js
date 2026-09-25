@@ -4,8 +4,8 @@
   const money = v => new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt = v => v ? new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)) : '—';
   const esc = (v='') => String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
-  const OTP_LENGTH = Number(window.ATS_AUTH?.otpLength || 8);
-  let sb = null, context = null, sentEmail = null;
+  const OTP_LENGTH = Number(window.ATS_AUTH?.accessCodeLength || window.ATS_AUTH?.otpLength || 6);
+  let sb = null, context = null;
 
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1900)}
   function authState(message,error=false){const el=$('#auth-state');if(!el)return;el.textContent=message;el.classList.toggle('error',error)}
@@ -13,29 +13,26 @@
   function showAuth(){ $('#auth-card')?.classList.remove('hidden'); $('#access-app')?.classList.add('hidden'); }
   function showApp(){ $('#auth-card')?.classList.add('hidden'); $('#access-app')?.classList.remove('hidden'); }
 
-  async function sendOtp(){
-    const email=$('#access-email').value.trim().toLowerCase();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $('#access-email').focus(); return authState('Enter a valid email address.',true); }
-    const b=$('#send-code');if(b.disabled)return;busy(b,true,'SENDING…');$('#access-email').disabled=true;$('#verify-code').disabled=true;
-    try{
-      const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
-      if(error)throw error;
-      sentEmail=email;$('#access-otp').value='';$('#otp-wrap').classList.remove('hidden');$('#access-otp').focus();
-      authState('An ' + OTP_LENGTH + '-digit login code was sent to your email.');
-    }catch(error){window.ATS_AUTH_CLIENT.logError('send',error);authState('We couldn’t send the login code right now. Please try again in a moment.',true)}
-    finally{$('#access-email').disabled=false;$('#verify-code').disabled=false;busy(b,false,'SEND LOGIN CODE →')}
-  }
-
-  async function verifyOtp(){
+  async function openWithAccessCode(){
     const email=$('#access-email').value.trim().toLowerCase(),token=$('#access-otp').value.trim();
-    if(!sentEmail || email!==sentEmail){$('#access-email').focus();return authState('Send a login code to this email first.',true);}
-    if(!new RegExp('^\\d{' + OTP_LENGTH + '}$').test(token))return authState('Enter the ' + OTP_LENGTH + '-digit code from your email.',true);
-    const b=$('#verify-code');if(b.disabled)return;busy(b,true,'VERIFYING…');$('#access-email').disabled=true;$('#send-code').disabled=true;
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $('#access-email').focus(); return authState('Enter a valid email address.',true); }
+    if(!new RegExp('^\\d{' + OTP_LENGTH + '}$').test(token)){ $('#access-otp').focus(); return authState('Enter the ' + OTP_LENGTH + '-digit ATS Access Code shared with you by the Studio.',true); }
+    const b=$('#verify-code');if(b.disabled)return;busy(b,true,'VERIFYING…');$('#access-email').disabled=true;$('#access-otp').disabled=true;
     try{
-      const {error}=await sb.auth.verifyOtp({email,token,type:'email'});if(error)throw error;
+      const {data,error}=await sb.functions.invoke('ats-client-code-login',{body:{email,code:token}});
+      if(error)throw error;
+      if(!data?.token_hash)throw new Error(data?.error||'Client session token was not returned.');
+      const {error:verifyError}=await sb.auth.verifyOtp({token_hash:data.token_hash,type:'email'});
+      if(verifyError)throw verifyError;
+      $('#access-otp').value='';
+      authState('Access approved. Opening your workspace…');
       try{await loadContext()}catch(error){window.ATS_AUTH_CLIENT.logError('lookup',error);authState(window.ATS_AUTH_CLIENT.lookupMessage(error),true)}
-    }catch(error){window.ATS_AUTH_CLIENT.logError('verify',error);authState('The code could not be verified. Check it or request a new code.',true)}
-    finally{$('#access-email').disabled=false;$('#send-code').disabled=false;busy(b,false,'OPEN CLIENT ACCESS →')}
+    }catch(error){
+      window.ATS_AUTH_CLIENT.logError('access-code',error);
+      authState('This access code is invalid, expired, or has already been used. Ask ATS for a new 6-digit code.',true);
+    }finally{
+      $('#access-email').disabled=false;$('#access-otp').disabled=false;busy(b,false,'OPEN CLIENT ACCESS →');
+    }
   }
 
   async function loadContext(){
@@ -188,17 +185,17 @@
     otpInput.maxLength=OTP_LENGTH;
     otpInput.minLength=OTP_LENGTH;
     otpInput.setAttribute('pattern','[0-9]{' + OTP_LENGTH + '}');
-    otpInput.setAttribute('aria-label',OTP_LENGTH + '-digit login code');
+    otpInput.setAttribute('aria-label',OTP_LENGTH + '-digit ATS Access Code');
     otpInput.placeholder='0'.repeat(OTP_LENGTH);
     otpInput.addEventListener('input',()=>{
       otpInput.value=otpInput.value.replace(/\D/g,'').slice(0,OTP_LENGTH);
     });
     const otpLabel=otpInput.closest('label')?.querySelector('span');
-    if(otpLabel)otpLabel.textContent=OTP_LENGTH + '-DIGIT LOGIN CODE';
+    if(otpLabel)otpLabel.textContent='ATS ACCESS CODE · ' + OTP_LENGTH + ' DIGITS';
   }
 
-  $('#send-code')?.addEventListener('click',sendOtp);$('#verify-code')?.addEventListener('click',verifyOtp);$('#sign-out')?.addEventListener('click',signOut);$('#refresh-access')?.addEventListener('click',()=>loadContext().catch(e=>toast(e.message)));$('#submit-discovery')?.addEventListener('click',submitDiscoveryAnswer);
+  $('#verify-code')?.addEventListener('click',openWithAccessCode);$('#sign-out')?.addEventListener('click',signOut);$('#refresh-access')?.addEventListener('click',()=>loadContext().catch(e=>toast(e.message)));$('#submit-discovery')?.addEventListener('click',submitDiscoveryAnswer);
   document.addEventListener('click',e=>{if(e.target.closest('#accept-proposal'))proposalAction('accept');if(e.target.closest('#decline-proposal'))proposalAction('decline')});
-  $('#access-email')?.addEventListener('input',()=>{if(sentEmail && $('#access-email').value.trim().toLowerCase()!==sentEmail){sentEmail=null;$('#access-otp').value='';$('#otp-wrap').classList.add('hidden');authState('Send a new login code for the updated email.')}});
+  $('#access-otp')?.addEventListener('keydown',e=>{if(e.key==='Enter')openWithAccessCode()});
   boot().catch(error=>{window.ATS_AUTH_CLIENT.logError('boot',error);showAuth();authState('Client Access could not be loaded. Please reload and try again.',true)});
 })();

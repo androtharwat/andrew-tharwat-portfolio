@@ -4,7 +4,7 @@
   const esc=(v='')=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const money=v=>window.ATS_I18N?.formatNumber?.(v)??new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt=v=>v?(window.ATS_I18N?.formatDate?.(v,{day:'2-digit',month:'short',year:'numeric'})??new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v))):'—';
-  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[]};
+  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[],clientAccessCode:null};
   let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
   const briefNames={goal:'CHALLENGE & OUTCOME',type:'STARTING POINT',team:'POSSIBLE EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
@@ -257,7 +257,7 @@
   }
   function localToIso(value){return value?new Date(value).toISOString():null}
   function humanActivity(action,meta={}){
-    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
+    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',client_access_code_issued:'Client Access Code issued',client_access_code_redeemed:'Client Access opened',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
     const title=labels[action]||String(action||'Activity').replaceAll('_',' ');
     let detail=meta.summary||meta.note||'';
     if(action==='lead_status_changed')detail=(leadStatusLabels[meta.from]||meta.from||'—')+' → '+(leadStatusLabels[meta.to]||meta.to||'—');
@@ -270,6 +270,8 @@
     if(action==='root_cause_status_changed')detail=(meta.statement||'Root cause')+' · '+String(meta.status||'');
     if(action==='solution_task_added')detail=(meta.title||'Solution task')+' · '+String(meta.owner||'ATS');
     if(action==='solution_task_status_changed')detail=(meta.title||'Solution task')+' · '+String(meta.status||'');
+    if(action==='client_access_code_issued')detail='Temporary access issued · '+(meta.ttl_minutes||60)+' minutes';
+    if(action==='client_access_code_redeemed')detail='Client authenticated with temporary access';
     return {title,detail};
   }
   function renderLeadTimeline(){
@@ -444,11 +446,47 @@
     $('#lead-missing-info').value=suggestedMissing(x,cards).join('\n');
     $('#lead-status').value=x.status||'new';$('#lead-fit').value=x.fit||'';$('#lead-fit-reason').value=x.fit_reason||'';$('#lead-next-action').value=x.next_action||'';$('#lead-next-due').value=dateTimeLocal(x.next_action_due_at);$('#lead-contact-preference').value=x.preferred_contact_channel||'';$('#lead-notes').value=x.internal_notes||'';$('#lead-lost-reason').value=x.lost_reason||'';
     $('#lead-contact-channel').value=x.preferred_contact_channel||'whatsapp';$('#lead-contact-outcome').value='contacted';$('#lead-contact-summary').value='';$('#lead-contact-signal').value='';
+    state.clientAccessCode=null;$('#client-access-code').textContent='------';$('#client-access-code-state').textContent=x.email?'No active code shown. Generate a new code when the client is ready.':'Add an email before generating Client Access.';$('#copy-client-access-code').classList.add('hidden');$('#share-client-access-wa').classList.add('hidden');$('#issue-client-access-code').disabled=!x.email;$('#client-access-link').textContent=location.origin+'/client-access/';
     $('#lead-last-contact').textContent=x.last_contacted_at?'Last contact '+fmt(x.last_contacted_at):'No contact logged';
     const mail=$('#lead-email-link');mail.href=x.email?'mailto:'+encodeURIComponent(x.email):'#';mail.classList.toggle('hidden',!x.email);
     const wa=$('#lead-wa-link');const digits=String(x.phone||'').replace(/\D/g,'');wa.href=digits?'https://wa.me/'+digits:'#';wa.classList.toggle('hidden',!digits);
     updateLeadWorkspaceState();$('#lead-dialog').showModal();await Promise.all([loadLeadTimeline(x.id),loadLeadDiagnosis(x.id)]);
   }
+  function renderClientAccessCode(data){
+    const x=state.currentLead,code=$('#client-access-code'),stateEl=$('#client-access-code-state'),copy=$('#copy-client-access-code'),share=$('#share-client-access-wa');
+    state.clientAccessCode=data||null;
+    if(!data?.code){code.textContent='------';copy.classList.add('hidden');share.classList.add('hidden');return}
+    code.textContent=data.code;
+    const exp=data.expires_at?new Date(data.expires_at):null;
+    stateEl.textContent=exp?'Valid until '+exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · one-time use · max 5 attempts':'One-time access code';
+    copy.classList.remove('hidden');
+    const digits=String(x?.phone||'').replace(/\D/g,'');
+    const link=location.origin+'/client-access/';
+    if(digits){
+      const msg='ATS Client Access\n\nEmail: '+(x?.email||'')+'\nAccess Code: '+data.code+'\nOpen: '+link+'\n\nThis code is one-time and expires automatically.';
+      share.href='https://wa.me/'+digits+'?text='+encodeURIComponent(msg);share.classList.remove('hidden');
+    }else share.classList.add('hidden');
+  }
+  async function issueClientAccessCode(){
+    const x=state.currentLead;if(!x)return;
+    if(!x.email)return notify('Add an email before generating Client Access','error');
+    const btn=$('#issue-client-access-code');btn.disabled=true;const old=btn.textContent;btn.textContent='GENERATING…';
+    try{
+      const ttl=Math.max(10,Math.min(1440,Number($('#client-access-ttl').value||60)));
+      const {data,error}=await sb().rpc('studio_admin_issue_client_access_code',{p_lead_id:x.id,p_ttl_minutes:ttl});
+      if(error)throw error;
+      renderClientAccessCode(data);
+      notify('Client Access Code generated');
+      await loadLeadTimeline(x.id);
+    }catch(error){notify(error.message||'Could not generate Client Access Code','error')}
+    finally{btn.disabled=false;btn.textContent=old}
+  }
+  async function copyClientAccessCode(){
+    const code=state.clientAccessCode?.code;if(!code)return;
+    try{await navigator.clipboard.writeText(code);notify('Access code copied')}
+    catch{notify('Copy failed — select the code manually','error')}
+  }
+
   async function saveLead(close=true){
     const x=state.currentLead;if(!x)return false;
     const status=$('#lead-status').value,fit=$('#lead-fit').value||null,nextAction=$('#lead-next-action').value||null,dueAt=localToIso($('#lead-next-due').value);
@@ -691,6 +729,8 @@
   $('#lead-save-open')?.addEventListener('click',()=>saveLead(false));
   $('#lead-start-discovery')?.addEventListener('click',startDiscovery);
   $('#lead-log-contact')?.addEventListener('click',logLeadContact);
+  $('#issue-client-access-code')?.addEventListener('click',issueClientAccessCode);
+  $('#copy-client-access-code')?.addEventListener('click',copyClientAccessCode);
   $('#save-diagnosis')?.addEventListener('click',saveDiagnosis);
   $('#add-root-cause')?.addEventListener('click',addRootCause);
   $('#add-solution-task')?.addEventListener('click',addSolutionTask);

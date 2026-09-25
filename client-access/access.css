@@ -7,3 +7,8 @@
 .discovery-question-card{border:1px solid rgba(255,42,70,.3);border-radius:16px;padding:18px;background:rgba(255,42,70,.035)}.discovery-question-card h3{font-size:20px;line-height:1.45;margin:8px 0 4px}.discovery-question-alt{margin:0 0 10px;color:#7f99a9;font-size:11px;line-height:1.6}.discovery-question-card small{display:block;color:#9eb0bb;line-height:1.65;font-size:10px}.discovery-question-card textarea{width:100%;min-height:100px;margin-top:14px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:#05131d;color:#fff;resize:vertical;outline:none;font:500 12px/1.65 Montserrat,Arial,sans-serif}.discovery-question-card textarea:focus{border-color:var(--red)}
 .discovery-waiting{padding:17px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.018)}.discovery-waiting b{font-size:9px;letter-spacing:.12em;color:#9dc0d4}.discovery-waiting p{margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
 @media(max-width:780px){.discovery-known{grid-template-columns:1fr}.journey-steps{grid-template-columns:1fr 1fr}}
+
+.preview-access-note{margin:0 0 16px;padding:12px 13px;border:1px solid rgba(61,157,207,.22);border-radius:12px;background:rgba(61,157,207,.055);display:grid;gap:5px}
+.preview-access-note b{font-size:8px;letter-spacing:.12em;color:#8fc8e8}
+.preview-access-note span{font-size:10px;line-height:1.55;color:#8fa6b3}
+#access-otp{letter-spacing:.28em;font-weight:800;font-size:18px;text-align:center;font-variant-numeric:tabular-nums}

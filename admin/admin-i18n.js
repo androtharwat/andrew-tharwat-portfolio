@@ -329,6 +329,19 @@
     'CAUSE:':'السبب:','GAPS / AGAINST:':'الفجوات / الأدلة المضادة:','Discovery answer received':'تم استلام إجابة استكشاف',
     'Discovery evidence added':'تمت إضافة دليل للاستكشاف','Diagnosis updated':'تم تحديث التشخيص',
     'Root-cause hypothesis added':'تمت إضافة فرضية السبب الجذري','Solution task updated':'تم تحديث مهمة الحل',
+    'CLIENT ACCESS':'دخول العميل','Temporary 6-digit access':'دخول مؤقت بكود من 6 أرقام',
+    'Preview mode · no email delivery':'وضع تجريبي · بدون إرسال بريد',
+    'Generate a one-time code for this lead. Share it with the client together with the Client Access link. Generating a new code revokes the previous active code.':'أنشئ كودًا لمرة واحدة لهذا العميل المحتمل وشاركه معه مع رابط الدخول. إنشاء كود جديد يلغي أي كود نشط سابق.',
+    'ACCESS CODE':'كود الدخول','VALID FOR':'صالح لمدة','30 minutes':'30 دقيقة','60 minutes':'60 دقيقة','2 hours':'ساعتان',
+    'GENERATE 6-DIGIT CODE':'إنشاء كود 6 أرقام','GENERATING…':'جارٍ الإنشاء…','COPY CODE':'نسخ الكود','SHARE ON WHATSAPP ↗':'إرسال عبر واتساب ↗',
+    'CLIENT LINK':'رابط العميل','No active code shown. Generate a new code when the client is ready.':'لا يوجد كود ظاهر حاليًا. أنشئ كودًا جديدًا عندما يكون العميل جاهزًا.',
+    'Add an email before generating Client Access.':'أضف البريد الإلكتروني قبل إنشاء دخول العميل.',
+    'Client Access Code generated':'تم إنشاء كود دخول العميل','Access code copied':'تم نسخ كود الدخول',
+    'Could not generate Client Access Code':'تعذر إنشاء كود دخول العميل','Copy failed — select the code manually':'تعذر النسخ — حدد الكود يدويًا',
+    'Client Access Code issued':'تم إصدار كود دخول العميل','Client Access opened':'تم فتح دخول العميل',
+    'One-time access code':'كود دخول لمرة واحدة','Client authenticated with temporary access':'تم دخول العميل باستخدام الكود المؤقت',
+    'Add an email before generating Client Access':'أضف البريد الإلكتروني قبل إنشاء دخول العميل',
+
     'admin only':'للإدارة فقط','client visible':'ظاهر للعميل'
   };
 
@@ -397,6 +410,8 @@
     if((m=core.match(/^(\d+)% confidence$/))) return 'ثقة '+m[1]+'%';
     if((m=core.match(/^(\d+) validated$/))) return m[1]+' تم التحقق منه';
     if((m=core.match(/^(\d+) task\(s\) defined$/))) return m[1]+' مهام محددة';
+    if((m=core.match(/^Valid until (.+) · one-time use · max 5 attempts$/))) return 'صالح حتى '+m[1]+' · استخدام مرة واحدة · بحد أقصى 5 محاولات';
+    if((m=core.match(/^Temporary access issued · (\d+) minutes$/))) return 'تم إصدار دخول مؤقت · '+m[1]+' دقيقة';
     return core;
   }
 
