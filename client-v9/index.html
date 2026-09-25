@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/client-v9/review.css?v=2" />
   <link rel="stylesheet" href="/client-v9/portal-auth.css?v=1" />
   <link rel="stylesheet" href="/client-v9/portal-hse.css?v=2" />
+  <link rel="stylesheet" href="/client-v9/portal-messages.css?v=1" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
 </head>
 <body>
@@ -42,6 +43,7 @@
         <a href="#projects" data-portal-nav="projects">◫ <span>My Projects</span></a>
         <a href="#hse" data-portal-nav="hse">⌁ <span>HSE Consultation</span></a>
         <a href="#files" data-portal-nav="files">▧ <span>Files</span></a>
+        <a href="#messages" data-portal-nav="messages">✉ <span>Messages</span></a>
         <a href="#payments" data-portal-nav="payments">£ <span>Payments</span></a>
         <a href="#new-project" data-portal-nav="new-project">+ <span>Start New Project</span></a>
         <a href="#account" data-portal-nav="account">◎ <span>Account</span></a>
@@ -59,12 +61,13 @@
           <div class="hero-card"><div><p class="eyebrow">ACTIVE PROJECT</p><h2 id="home-project-title">Project</h2><p id="home-project-id">ATS-PRJ-0001</p></div><div class="progress-ring"><strong id="home-progress">0%</strong><span>COMPLETE</span></div></div>
           <section class="portal-grid main-grid"><article class="portal-card action-card"><p class="eyebrow">YOUR ACTION</p><h3 id="home-action">No action required</h3><p id="home-action-copy">We’ll show the single most important thing we need from you here.</p><button id="home-action-button" class="portal-button hidden" type="button">OPEN ACTION →</button></article><article class="portal-card"><p class="eyebrow">CURRENT STAGE</p><h3 id="home-stage">Onboarding</h3><p id="home-next-stage">Next: Design</p><div class="mini-progress"><i id="home-progress-bar"></i></div></article></section>
           <section class="portal-card"><div class="card-head"><div><p class="eyebrow">PROJECT TIMELINE</p><h3>Where we are now</h3></div><button class="text-link" data-open-project type="button">OPEN PROJECT →</button></div><div id="home-timeline" class="client-timeline"></div></section>
-          <section class="portal-grid secondary-grid"><article class="portal-card"><div class="card-head"><div><p class="eyebrow">LATEST UPDATE</p><h3>From the Studio</h3></div></div><div id="home-latest-update" class="latest-update"></div></article><article class="portal-card"><p class="eyebrow">PAYMENTS</p><div class="payment-home"><div><span>Paid</span><b id="home-paid">EGP 0</b></div><div><span>Remaining</span><b id="home-remaining">EGP 0</b></div></div><button class="text-link" data-portal-nav="payments" type="button">VIEW PAYMENTS →</button></article></section>
+          <section class="portal-grid secondary-grid"><article class="portal-card"><div class="card-head"><div><p class="eyebrow">LATEST UPDATE</p><h3>From the Studio</h3></div></div><div id="home-latest-update" class="latest-update"></div><button class="text-link" data-portal-nav="messages" type="button">MESSAGE THE STUDIO →</button></article><article class="portal-card"><p class="eyebrow">PAYMENTS</p><div class="payment-home"><div><span>Paid</span><b id="home-paid">EGP 0</b></div><div><span>Remaining</span><b id="home-remaining">EGP 0</b></div></div><button class="text-link" data-portal-nav="payments" type="button">VIEW PAYMENTS →</button></article></section>
         </section>
         <section class="portal-view" data-portal-view="projects"><div class="section-head"><p class="eyebrow">MY PROJECTS</p><h2>Projects</h2><p>Active and completed work with ATS.</p></div><div id="portal-project-list" class="portal-project-list"></div></section>
         <section class="portal-view" data-portal-view="project-detail"><button class="back-link" data-portal-nav="projects" type="button">← MY PROJECTS</button><div id="client-project-detail"></div></section>
         <section class="portal-view" data-portal-view="hse"><div id="hse-case-content"><div class="portal-card">Loading HSE consultation workspace…</div></div></section>
         <section class="portal-view" data-portal-view="files"><div class="section-head"><p class="eyebrow">PROJECT FILES</p><h2>Files</h2><p>Upload files to the Studio and access only files explicitly shared with your project.</p></div><div id="portal-files-live" class="portal-project-list"></div></section>
+        <section class="portal-view" data-portal-view="messages"><div class="section-head"><p class="eyebrow">DIRECT PROJECT COMMUNICATION</p><h2>Messages</h2><p>Keep project questions and decisions in one protected thread with ATS.</p></div><div class="portal-message-toolbar"><label><span>PROJECT</span><select id="portal-message-project"></select></label><button id="portal-message-refresh" class="text-link" type="button">REFRESH</button></div><div id="portal-message-thread" class="portal-message-thread"><div class="portal-card">Open Messages to load your project thread.</div></div><div class="portal-message-compose"><textarea id="portal-message-input" maxlength="4000" placeholder="Write a message to ATS…"></textarea><button id="portal-message-send" class="portal-button" type="button">SEND MESSAGE →</button></div></section>
         <section class="portal-view" data-portal-view="payments"><div class="section-head"><p class="eyebrow">PROJECT FINANCIALS</p><h2>Payments</h2><p>A simple record of paid and outstanding amounts.</p></div><div id="portal-payment-summary" class="portal-grid payment-summary-grid"></div><div id="portal-payment-list" class="portal-payment-list"></div></section>
         <section class="portal-view" data-portal-view="new-project"><div class="section-head"><p class="eyebrow">RETURNING CLIENT</p><h2>Start New Project</h2><p>Your identity is already known, so the next request is shorter.</p></div><form id="new-project-form" class="portal-card new-project-form"><label><span>SERVICE</span><select id="new-service"><option>Website / Web App</option><option>Brand & Visual Design</option><option>Digital Documents</option><option>HSE Content & Awareness</option><option>Video / Motion</option><option>Custom Digital Solution</option></select></label><label><span>PROJECT GOAL</span><textarea id="new-goal" placeholder="What should this project help you achieve?"></textarea></label><div class="form-two"><label><span>TIMELINE</span><select id="new-timeline"><option>ASAP</option><option>2–4 weeks</option><option>1–2 months</option><option>Flexible</option></select></label><label><span>BUDGET</span><select id="new-budget"><option>Not sure yet</option><option>Under 10k EGP</option><option>10k–25k EGP</option><option>25k–50k EGP</option><option>50k+ EGP</option></select></label></div><button class="portal-button" type="submit">SUBMIT NEW PROJECT REQUEST →</button></form></section>
         <section class="portal-view" data-portal-view="account"><div class="section-head"><p class="eyebrow">ACCOUNT</p><h2>Your Details</h2><p>The verified identity used across your projects.</p></div><div id="portal-account" class="portal-card account-grid"></div></section>
@@ -77,9 +80,10 @@
   <script src="/config.js"></script>
   <script src="/auth-otp-config.js?v=2"></script>
   <script src="/auth-client.js?v=1"></script>
-  <script src="/client-v9/portal-live.js?v=6"></script>
+  <script src="/client-v9/portal-live.js?v=7"></script>
   <script src="/client-v9/portal-hse.js?v=5"></script>
   <script src="/client-v9/portal-hse-bridge.js?v=3"></script>
   <script src="/client-v9/portal-files-live.js?v=2"></script>
+  <script src="/client-v9/portal-messages-live.js?v=1"></script>
 </body>
 </html>

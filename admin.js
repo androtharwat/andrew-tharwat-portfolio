@@ -1,1 +1,1 @@
-(()=>{const load=(src,next)=>{const s=document.createElement('script');s.src=src;s.defer=true;s.onload=()=>next&&next();s.onerror=()=>console.error('ATS admin failed to load',src);document.head.appendChild(s)};load('/admin/admin.js?v=9');})();
+(()=>{const load=(src,next)=>{const s=document.createElement('script');s.src=src;s.defer=true;s.onload=()=>next&&next();s.onerror=()=>console.error('ATS admin failed to load',src);document.head.appendChild(s)};load('/admin/admin.js?v=10');})();

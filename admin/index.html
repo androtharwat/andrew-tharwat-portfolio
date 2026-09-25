@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin.css?v=5" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
-  <link rel="stylesheet" href="/admin/admin-unified.css?v=1" />
+  <link rel="stylesheet" href="/admin/admin-unified.css?v=2" />
 </head>
 <body>
   <div id="toast" class="toast"></div>
@@ -41,6 +41,7 @@
         <button data-tab="dashboard" class="active">◫ <span>Dashboard</span></button>
         <small class="nav-section">CLIENT OPERATIONS</small>
         <button data-tab="leads">◎ <span>Leads</span></button>
+        <button data-tab="inbox">✉ <span>Client Inbox</span><b id="ops-inbox-badge" class="nav-badge hidden">0</b></button>
         <button data-tab="clients">◇ <span>Clients</span></button>
         <button data-tab="studio-projects">▣ <span>Client Projects</span></button>
         <button data-tab="proposals">▤ <span>Proposals</span></button>
@@ -64,6 +65,7 @@
       <section class="tab-panel active" data-panel="dashboard">
         <div class="unified-metric-grid">
           <article><span>NEW LEADS</span><strong id="ops-m-leads">—</strong><small>Awaiting review</small></article>
+          <article><span>CLIENT INBOX</span><strong id="ops-m-inbox">—</strong><small>Unread messages</small></article>
           <article><span>ACTIVE CLIENTS</span><strong id="ops-m-clients">—</strong><small>Client records</small></article>
           <article><span>ACTIVE PROJECTS</span><strong id="ops-m-projects">—</strong><small>In delivery</small></article>
           <article><span>PENDING PAYMENTS</span><strong id="ops-m-payments">—</strong><small>Need confirmation</small></article>
@@ -87,6 +89,11 @@
       <section class="tab-panel" data-panel="leads">
         <div class="data-toolbar"><input id="ops-lead-search" type="search" placeholder="Search lead, company, email, phone…" /><select id="ops-lead-filter"><option value="all">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="qualified">Qualified</option><option value="proposal_sent">Proposal Sent</option><option value="won">Won</option><option value="lost">Lost</option></select><button class="secondary" data-ops-refresh="leads">REFRESH</button></div>
         <div id="ops-leads-list"><div class="loading-line">Open Leads to load live data.</div></div>
+      </section>
+
+      <section class="tab-panel" data-panel="inbox">
+        <div class="data-toolbar"><input id="ops-inbox-search" type="search" placeholder="Search message, project, client…" /><select id="ops-inbox-filter"><option value="all">All client activity</option><option value="message">Messages</option><option value="revision">Revision requests</option><option value="upload">Client uploads</option><option value="lead">New project requests</option></select><button class="secondary" data-ops-refresh="inbox">REFRESH</button></div>
+        <div id="ops-inbox-list"><div class="loading-line">Open Client Inbox to load live client activity.</div></div>
       </section>
 
       <section class="tab-panel" data-panel="clients">
@@ -242,14 +249,27 @@
         <label class="wide">INTERNAL ACTION<input id="studio-project-internal-action" /></label>
         <label class="wide">CLIENT-VISIBLE UPDATE<textarea id="studio-project-update" placeholder="Write a concise update for the Client Portal…"></textarea></label>
       </div>
-      <div class="ops-inline-actions"><button id="post-studio-project-update" type="button" class="secondary">POST CLIENT UPDATE</button></div>
+      <div class="ops-inline-actions"><button id="post-studio-project-update" type="button" class="secondary">POST CLIENT UPDATE</button><button id="refresh-project-workspace" type="button" class="secondary">REFRESH COLLABORATION</button></div>
+
+      <p class="dialog-section-title">CLIENT MESSAGES</p>
+      <div id="project-message-thread" class="message-thread"><div class="loading-line">Loading messages…</div></div>
+      <div class="message-compose"><textarea id="project-message-input" placeholder="Write a direct message to the client…"></textarea><button id="send-project-message" type="button" class="primary">SEND MESSAGE</button></div>
+
+      <p class="dialog-section-title">FILES · REVIEWS · REVISIONS</p>
+      <div class="project-collab-grid">
+        <div class="collab-card">
+          <div class="collab-upload"><input id="studio-project-file" type="file" /><select id="studio-project-file-category"><option value="review">Review</option><option value="final_delivery">Final Delivery</option><option value="reference">Reference</option><option value="internal">Internal</option></select><input id="studio-project-file-version" value="V1" placeholder="Version" /><button id="upload-project-file" type="button" class="secondary">UPLOAD</button></div>
+          <div id="project-file-list" class="collab-list"><div class="loading-line">Loading files…</div></div>
+        </div>
+        <div class="collab-card"><div id="project-review-list" class="collab-list"><div class="loading-line">Loading reviews…</div></div></div>
+      </div>
       <div class="dialog-actions"><span></span><span></span><button type="button" class="secondary" data-close-unified="studio-project-dialog">CLOSE</button><button id="save-studio-project" type="button" class="primary">SAVE PROJECT</button></div>
     </form>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
   <script src="/config.js"></script>
-  <script src="/admin.js?v=9"></script>
-  <script src="/admin/admin-unified.js?v=2"></script>
+  <script src="/admin.js?v=10"></script>
+  <script src="/admin/admin-unified.js?v=3"></script>
 </body>
 </html>

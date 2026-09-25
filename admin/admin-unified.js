@@ -4,9 +4,11 @@
   const esc=(v='')=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const money=v=>new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt=v=>v?new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)):'—';
-  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null};
+  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[]};
+  let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
   const briefNames={goal:'CHALLENGE & OUTCOME',type:'STARTING POINT',team:'POSSIBLE EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
+  const stageOrder=['Onboarding','Content Preparation','Design','Development','Internal QA','Client Review','Revisions','Final Approval','Final Payment','Deployment','Completed'];
   const defaultLayout={work:{columns:3,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['goal','type','team','scope','contact'],hidden:[]}};
 
   function sb(){return window.ATS_ADMIN?.getClient?.()||null}
@@ -21,7 +23,7 @@
     state.booted=true;
     await loadDashboard(true);
     const hash=location.hash.replace(/^#/,'');
-    if(hash&&['leads','clients','studio-projects','proposals','payments','v9'].includes(hash)){
+    if(hash&&['leads','inbox','clients','studio-projects','proposals','payments','v9'].includes(hash)){
       window.ATS_ADMIN?.switchTab?.(hash);
       loadPanel(hash,true);
     }
@@ -39,28 +41,52 @@
     if(state.loaded.dashboard&&!force)return;
     loading('#ops-priority-list');
     try{
-      const [newLeads,clients,projects,payments,sentProposals,latestLeads,pendingPayments]=await Promise.all([
+      const [newLeads,unreadInbox,clients,projects,payments,sentProposals,latestLeads,latestMessages,pendingPayments]=await Promise.all([
         count('studio_leads',q=>q.eq('status','new')),
+        count('studio_messages',q=>q.eq('sender_type','client').eq('is_read_by_admin',false)),
         count('studio_clients',q=>q.eq('status','active')),
         count('studio_projects',q=>q.neq('status','completed')),
         count('studio_payments',q=>q.eq('status','pending')),
         count('studio_proposals',q=>q.eq('status','sent')),
         sb().from('studio_leads').select('id,lead_code,full_name,company_name,service,status,created_at').order('created_at',{ascending:false}).limit(5),
-        sb().from('studio_payments').select('id,payment_code,payment_type,amount,currency,status,due_date').eq('status','pending').order('due_date',{ascending:true}).limit(4)
+        sb().from('studio_messages').select('id,project_id,body,created_at,studio_projects(project_code,title)').eq('sender_type','client').eq('is_read_by_admin',false).order('created_at',{ascending:false}).limit(4),
+        sb().from('studio_payments').select('id,payment_code,payment_type,amount,currency,status,due_date').eq('status','pending').order('due_date',{ascending:true}).limit(3)
       ]);
-      [latestLeads,pendingPayments].forEach(r=>{if(r.error)throw r.error});
-      $('#ops-m-leads').textContent=newLeads;
-      $('#ops-m-clients').textContent=clients;
-      $('#ops-m-projects').textContent=projects;
-      $('#ops-m-payments').textContent=payments;
-      $('#ops-m-proposals').textContent=sentProposals;
+      [latestLeads,latestMessages,pendingPayments].forEach(r=>{if(r.error)throw r.error});
+      $('#ops-m-leads').textContent=newLeads;$('#ops-m-inbox').textContent=unreadInbox;$('#ops-m-clients').textContent=clients;$('#ops-m-projects').textContent=projects;$('#ops-m-payments').textContent=payments;$('#ops-m-proposals').textContent=sentProposals;
+      const badge=$('#ops-inbox-badge');if(badge){badge.textContent=unreadInbox;badge.classList.toggle('hidden',!unreadInbox)}
       const items=[];
-      (latestLeads.data||[]).filter(x=>x.status==='new').forEach(x=>items.push({type:'lead',id:x.id,title:'Review new lead',detail:(x.lead_code||'Lead')+' · '+(x.full_name||'Unknown'),meta:x.service||'New enquiry'}));
-      (pendingPayments.data||[]).forEach(x=>items.push({type:'payment',id:x.id,title:'Pending payment',detail:(x.payment_code||'Payment')+' · '+(x.currency||'EGP')+' '+money(x.amount),meta:x.due_date?'Due '+fmt(x.due_date):'Pending'}));
-      $('#ops-priority-list').innerHTML=items.length?items.slice(0,6).map(x=>'<div class="ops-priority-item"><i class="ops-dot"></i><div><b>'+esc(x.title)+'</b><small>'+esc(x.detail)+'</small></div><button class="row-action" data-jump="'+esc(x.type==='lead'?'leads':'payments')+'">OPEN →</button></div>').join(''):'<div class="ops-empty">Nothing needs immediate attention.</div>';
+      (latestMessages.data||[]).forEach(x=>items.push({type:'inbox',title:'Client message',detail:(x.studio_projects?.project_code||'Project')+' · '+String(x.body||'').slice(0,90)}));
+      (latestLeads.data||[]).filter(x=>x.status==='new').forEach(x=>items.push({type:'lead',title:'Review new lead',detail:(x.lead_code||'Lead')+' · '+(x.full_name||'Unknown')}));
+      (pendingPayments.data||[]).forEach(x=>items.push({type:'payment',title:'Pending payment',detail:(x.payment_code||'Payment')+' · '+(x.currency||'EGP')+' '+money(x.amount)}));
+      $('#ops-priority-list').innerHTML=items.length?items.slice(0,7).map(x=>'<div class="ops-priority-item"><i class="ops-dot"></i><div><b>'+esc(x.title)+'</b><small>'+esc(x.detail)+'</small></div><button class="row-action" data-jump="'+esc(x.type==='lead'?'leads':x.type==='payment'?'payments':'inbox')+'">OPEN →</button></div>').join(''):'<div class="ops-empty">Nothing needs immediate attention.</div>';
       $('#ops-latest-list').innerHTML=(latestLeads.data||[]).map(x=>'<div class="entity-row"><b>'+esc(x.full_name||'Unnamed lead')+'</b><small>'+esc((x.lead_code||'—')+' · '+(x.company_name||'Individual')+' · '+(x.service||'Not specified'))+'</small><div>'+chip(x.status)+'</div></div>').join('')||'<div class="ops-empty">No leads yet.</div>';
       state.loaded.dashboard=true;
     }catch(e){$('#ops-priority-list').innerHTML='<div class="ops-empty">Could not load operations dashboard.</div>';notify(e.message||'Dashboard load failed','error')}
+  }
+
+  async function loadInbox(force=false){
+    if(state.loaded.inbox&&!force){renderInbox();return}
+    loading('#ops-inbox-list');
+    const [messages,revisions,files,leads]=await Promise.all([
+      sb().from('studio_messages').select('id,project_id,client_id,sender_type,body,is_read_by_admin,created_at,studio_projects(project_code,title,client_id)').eq('sender_type','client').order('created_at',{ascending:false}).limit(120),
+      sb().from('studio_revisions').select('id,project_id,revision_number,status,notes,submitted_at,studio_projects(project_code,title)').in('status',['submitted','in_progress']).order('submitted_at',{ascending:false}).limit(80),
+      sb().from('studio_files').select('id,project_id,file_name,category,created_at,studio_projects(project_code,title)').eq('category','client_upload').order('created_at',{ascending:false}).limit(80),
+      sb().from('studio_leads').select('id,lead_code,full_name,service,project_goal,source,created_at,status').eq('source','Client Portal').order('created_at',{ascending:false}).limit(80)
+    ]);
+    const failed=[messages,revisions,files,leads].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
+    state.inbox=[
+      ...(messages.data||[]).map(x=>({kind:'message',id:x.id,project_id:x.project_id,title:'Client message',summary:x.body,project:x.studio_projects?.project_code||x.studio_projects?.title||'Project',date:x.created_at,unread:!x.is_read_by_admin})),
+      ...(revisions.data||[]).map(x=>({kind:'revision',id:x.id,project_id:x.project_id,title:'Revision request #'+x.revision_number,summary:x.notes||x.status,project:x.studio_projects?.project_code||x.studio_projects?.title||'Project',date:x.submitted_at,unread:true})),
+      ...(files.data||[]).map(x=>({kind:'upload',id:x.id,project_id:x.project_id,title:'Client uploaded a file',summary:x.file_name,project:x.studio_projects?.project_code||x.studio_projects?.title||'Project',date:x.created_at,unread:false})),
+      ...(leads.data||[]).map(x=>({kind:'lead',id:x.id,lead_id:x.id,title:'New project request',summary:(x.lead_code||'Lead')+' · '+(x.full_name||'Client')+' · '+(x.service||'Service'),project:'Client Portal',date:x.created_at,unread:x.status==='new'}))
+    ].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+    state.loaded.inbox=true;renderInbox();
+  }
+  function renderInbox(){
+    const q=($('#ops-inbox-search')?.value||'').trim().toLowerCase(),f=$('#ops-inbox-filter')?.value||'all';
+    const rows=state.inbox.filter(x=>(f==='all'||x.kind===f)&&(!q||[x.title,x.summary,x.project].some(v=>String(v||'').toLowerCase().includes(q))));
+    $('#ops-inbox-list').innerHTML=rows.length?'<div class="data-table-wrap"><table class="data-table"><thead><tr><th>ACTIVITY</th><th>PROJECT</th><th>DETAIL</th><th>DATE</th><th></th></tr></thead><tbody>'+rows.map(x=>'<tr class="'+(x.unread?'inbox-unread':'')+'"><td><div class="entity-title"><b>'+esc(x.title)+'</b><small>'+esc(x.kind.toUpperCase())+'</small></div></td><td>'+esc(x.project||'—')+'</td><td>'+esc(String(x.summary||'').slice(0,120))+'</td><td>'+esc(fmt(x.date))+'</td><td><div class="row-actions"><button class="row-action primary-action" '+(x.kind==='lead'?'data-inbox-lead="'+esc(x.lead_id)+'"':'data-inbox-project="'+esc(x.project_id)+'"')+'>OPEN</button></div></td></tr>').join('')+'</tbody></table></div>':'<div class="ops-empty">No matching client activity.</div>';
   }
 
   async function loadLeads(force=false){
@@ -171,6 +197,7 @@
   async function loadPanel(tab,force=false){
     if(tab==='dashboard')return loadDashboard(force);
     if(tab==='leads')return loadLeads(force);
+    if(tab==='inbox')return loadInbox(force);
     if(tab==='clients')return loadClients(force);
     if(tab==='studio-projects')return loadProjects(force);
     if(tab==='proposals')return loadProposals(force);
@@ -264,7 +291,7 @@
     notify('Proposal accepted · deposit created');state.loaded.proposals=false;state.loaded.payments=false;state.loaded.dashboard=false;await loadProposals(true);loadDashboard(true);
   }
 
-  function openStudioProject(id){
+  async function openStudioProject(id){
     const p=state.projects.find(x=>x.id===id);if(!p)return;state.currentProject=p;
     $('#studio-project-title').textContent=p.title||'Project';$('#studio-project-code').textContent=p.project_code||'—';
     $('#studio-project-client').textContent=clientName(p.client_id);
@@ -273,12 +300,52 @@
     $('#studio-project-client-action').value=p.client_action||'';$('#studio-project-internal-action').value=p.internal_action||'';
     $('#studio-project-update').value='';
     $('#studio-project-dialog').showModal();
+    await loadProjectWorkspace(p);
+  }
+
+  const safeName=name=>String(name||'file').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/-+/g,'-').slice(-120);
+  async function loadProjectWorkspace(project=state.currentProject){
+    if(!project)return;
+    $('#project-message-thread').innerHTML='<div class="loading-line">Loading messages…</div>';$('#project-file-list').innerHTML='<div class="loading-line">Loading files…</div>';$('#project-review-list').innerHTML='<div class="loading-line">Loading reviews…</div>';
+    const [messages,files,reviews,revisions]=await Promise.all([
+      sb().from('studio_messages').select('*').eq('project_id',project.id).order('created_at',{ascending:true}).limit(150),
+      sb().from('studio_files').select('*').eq('project_id',project.id).order('created_at',{ascending:false}),
+      sb().from('studio_reviews').select('*').eq('project_id',project.id).order('published_at',{ascending:false}),
+      sb().from('studio_revisions').select('*').eq('project_id',project.id).order('submitted_at',{ascending:false})
+    ]);
+    const failed=[messages,files,reviews,revisions].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
+    state.projectMessages=messages.data||[];state.projectFiles=files.data||[];state.projectReviews=reviews.data||[];state.projectRevisions=revisions.data||[];
+    const unread=state.projectMessages.filter(x=>x.sender_type==='client'&&!x.is_read_by_admin).map(x=>x.id);if(unread.length)await sb().from('studio_messages').update({is_read_by_admin:true}).in('id',unread);
+    renderProjectWorkspace();state.loaded.inbox=false;state.loaded.dashboard=false;
+  }
+  function renderProjectWorkspace(){
+    $('#project-message-thread').innerHTML=state.projectMessages.length?state.projectMessages.map(x=>'<div class="message-bubble '+esc(x.sender_type)+'"><b>'+(x.sender_type==='client'?'CLIENT':'ATS')+'</b><p>'+esc(x.body)+'</p><small>'+esc(fmt(x.created_at))+'</small></div>').join(''):'<div class="ops-empty">No messages in this project yet.</div>';const thread=$('#project-message-thread');if(thread)thread.scrollTop=thread.scrollHeight;
+    $('#project-file-list').innerHTML=state.projectFiles.length?state.projectFiles.map(x=>'<div class="collab-row"><div><b>'+esc(x.file_name)+'</b><small>'+esc((x.category||'file').replaceAll('_',' ')+' · '+(x.version||'—')+' · '+(x.visibility||'admin_only'))+'</small></div><div class="row-actions"><button class="row-action" data-admin-file-open="'+esc(x.id)+'" data-file-path="'+esc(x.storage_path||'')+'">OPEN</button>'+(x.category==='review'?'<button class="row-action primary-action" data-publish-file-review="'+esc(x.id)+'">REVIEW →</button>':'')+(x.category==='final_delivery'&&x.visibility!=='client_visible'?'<button class="row-action primary-action" data-release-final="'+esc(x.id)+'">RELEASE →</button>':'')+'</div></div>').join(''):'<div class="ops-empty">No project files yet.</div>';
+    const revisionByReview=new Map(state.projectRevisions.map(x=>[x.review_id,x]));$('#project-review-list').innerHTML=state.projectReviews.length?state.projectReviews.map(x=>{const r=revisionByReview.get(x.id);return '<div class="collab-row"><div><b>'+esc(x.title||'Review')+' · '+esc(x.version||'')+'</b><small>'+esc((x.review_code||'—')+' · '+(x.status||'').replaceAll('_',' '))+(r?' · Revision #'+esc(r.revision_number)+' '+esc(r.status):'')+'</small>'+(r?.notes?'<p>'+esc(r.notes)+'</p>':'')+'</div><div class="row-actions">'+(r&&['submitted','in_progress'].includes(r.status)?'<button class="row-action primary-action" data-complete-revision="'+esc(r.id)+'">COMPLETE REVISION</button>':'')+'</div></div>'}).join(''):'<div class="ops-empty">No reviews published yet.</div>';
+  }
+  async function sendProjectMessage(){const p=state.currentProject,body=$('#project-message-input').value.trim();if(!p||!body)return notify('Write a message first','error');const r=await sb().from('studio_messages').insert({project_id:p.id,client_id:p.client_id,sender_type:'admin',body,is_read_by_admin:true}).select('*').single();if(r.error)return notify(r.error.message,'error');$('#project-message-input').value='';state.projectMessages.push(r.data);renderProjectWorkspace();notify('Message sent to Client Portal')}
+  async function uploadProjectFile(){const p=state.currentProject,input=$('#studio-project-file'),file=input?.files?.[0];if(!p)return;if(!file)return notify('Choose a file first','error');if(file.size>26214400)return notify('Maximum file size is 25 MB','error');const category=$('#studio-project-file-category').value||'review',version=$('#studio-project-file-version').value.trim()||'V1',visibility=category==='review'?'client_visible':'admin_only',path=`${p.client_id}/${p.id}/${category}/${crypto.randomUUID()}_${safeName(file.name)}`;const btn=$('#upload-project-file');btn.disabled=true;btn.textContent='UPLOADING…';try{const up=await sb().storage.from('studio-client-files').upload(path,file,{upsert:false,contentType:file.type||undefined});if(up.error)throw up.error;const meta=await sb().from('studio_files').insert({project_id:p.id,file_name:file.name,storage_path:path,category,version,visibility}).select('*').single();if(meta.error){await sb().storage.from('studio-client-files').remove([path]);throw meta.error}input.value='';notify(file.name+' uploaded');await loadProjectWorkspace(p)}catch(e){notify(e.message,'error')}finally{btn.disabled=false;btn.textContent='UPLOAD'}}
+  async function openProjectFile(btn){const path=btn.dataset.filePath;if(!path)return;btn.disabled=true;try{const q=await sb().storage.from('studio-client-files').createSignedUrl(path,120);if(q.error)throw q.error;window.open(q.data.signedUrl,'_blank','noopener')}catch(e){notify(e.message,'error')}finally{btn.disabled=false}}
+  async function publishProjectReview(fileId){const p=state.currentProject,f=state.projectFiles.find(x=>x.id===fileId);if(!p||!f)return;const existing=state.projectReviews.find(x=>x.file_id===fileId);if(existing)return notify((existing.review_code||'Review')+' already exists','error');const now=new Date().toISOString();const r=await sb().from('studio_reviews').insert({project_id:p.id,title:f.file_name,version:f.version||'V1',file_id:f.id,status:'awaiting_review',published_at:now}).select('*').single();if(r.error)return notify(r.error.message,'error');await sb().from('studio_projects').update({stage:'Client Review',progress:85,client_action:`Review ${f.file_name} ${f.version||'V1'}`,internal_action:'Track client review response'}).eq('id',p.id);await syncProjectStage(p.id,'Client Review');await sb().from('studio_activity').insert({actor_type:'admin',entity_type:'review',entity_id:r.data.id,action:'review_published',metadata:{project_id:p.id,file_id:fileId,version:r.data.version}});notify((r.data.review_code||'Review')+' published to Client Portal');await loadProjectWorkspace(p);state.loaded['studio-projects']=false}
+  async function releaseFinalFile(fileId){const p=state.currentProject;if(!p)return;const pay=await sb().from('studio_payments').select('amount,status').eq('project_id',p.id);if(pay.error)return notify(pay.error.message,'error');const paid=(pay.data||[]).filter(x=>x.status==='paid').reduce((s,x)=>s+Number(x.amount||0),0);if(paid+0.001<Number(p.project_value||0))return notify('Final Delivery is locked until the project is fully paid','error');if(!['Deployment','Completed'].includes(p.stage)&&p.status!=='completed')return notify('Move project to Deployment or Completed first','error');const q=await sb().from('studio_files').update({visibility:'client_visible'}).eq('id',fileId);if(q.error)return notify(q.error.message,'error');notify('Final file released to Client Portal');await loadProjectWorkspace(p)}
+  async function completeRevision(id){const p=state.currentProject,r=state.projectRevisions.find(x=>x.id===id);if(!p||!r)return;const now=new Date().toISOString();const q=await sb().from('studio_revisions').update({status:'completed',completed_at:now}).eq('id',id);if(q.error)return notify(q.error.message,'error');await sb().from('studio_projects').update({stage:'Revisions',progress:88,client_action:'No action required',internal_action:'Upload revised review file and publish the next version'}).eq('id',p.id);await syncProjectStage(p.id,'Revisions');await sb().from('studio_activity').insert({actor_type:'admin',entity_type:'revision',entity_id:id,action:'revision_completed',metadata:{project_id:p.id,review_id:r.review_id,revision_number:r.revision_number}});notify('Revision #'+r.revision_number+' completed');await loadProjectWorkspace(p)}
+
+  async function syncProjectStage(projectId,stage){
+    const pos=stageOrder.indexOf(stage)+1;if(pos<1)return;
+    const now=new Date().toISOString();
+    const [before,current,after]=await Promise.all([
+      sb().from('studio_project_stages').update({status:'completed',completed_at:now}).eq('project_id',projectId).lt('position',pos),
+      sb().from('studio_project_stages').update({status:stage==='Completed'?'completed':'active',started_at:now,completed_at:stage==='Completed'?now:null}).eq('project_id',projectId).eq('position',pos),
+      sb().from('studio_project_stages').update({status:'pending',started_at:null,completed_at:null}).eq('project_id',projectId).gt('position',pos)
+    ]);
+    const failed=[before,current,after].find(x=>x.error);if(failed)throw failed.error;
   }
   async function saveStudioProject(){
     const p=state.currentProject;if(!p)return;
-    const patch={stage:$('#studio-project-stage').value,health:$('#studio-project-health').value,progress:Number($('#studio-project-progress').value||0),due_date:$('#studio-project-due').value||null,client_action:$('#studio-project-client-action').value.trim()||'No action required',internal_action:$('#studio-project-internal-action').value.trim()||null};
-    const r=await sb().from('studio_projects').update(patch).eq('id',p.id);
-    if(r.error)return notify(r.error.message,'error');
+    const stage=$('#studio-project-stage').value,progress=stage==='Completed'?100:Number($('#studio-project-progress').value||0);
+    const patch={stage,health:$('#studio-project-health').value,progress,due_date:$('#studio-project-due').value||null,client_action:stage==='Completed'?'No action required':($('#studio-project-client-action').value.trim()||'No action required'),internal_action:$('#studio-project-internal-action').value.trim()||null,status:stage==='Completed'?'completed':p.status,completed_at:stage==='Completed'?(p.completed_at||new Date().toISOString()):null};
+    const r=await sb().from('studio_projects').update(patch).eq('id',p.id);if(r.error)return notify(r.error.message,'error');
+    try{if(stage!==p.stage)await syncProjectStage(p.id,stage)}catch(e){return notify('Project saved, but stage timeline could not sync: '+e.message,'error')}
     notify('Project updated');$('#studio-project-dialog').close();state.loaded['studio-projects']=false;state.loaded.dashboard=false;await loadProjects(true);loadDashboard(true);
   }
   async function postProjectUpdate(){
@@ -324,14 +391,21 @@
     const refresh=e.target.closest('[data-ops-refresh]');if(refresh){loadPanel(refresh.dataset.opsRefresh,true);return}
     const lead=e.target.closest('[data-open-lead]');if(lead){openLead(lead.dataset.openLead);return}
     const proposal=e.target.closest('[data-open-proposal]');if(proposal){openProposal(proposal.dataset.openProposal);return}
-    const project=e.target.closest('[data-open-studio-project]');if(project){openStudioProject(project.dataset.openStudioProject);return}
+    const project=e.target.closest('[data-open-studio-project]');if(project){void openStudioProject(project.dataset.openStudioProject);return}
+    const inboxProject=e.target.closest('[data-inbox-project]');if(inboxProject){void (async()=>{await loadProjects();await openStudioProject(inboxProject.dataset.inboxProject)})();return}
+    const inboxLead=e.target.closest('[data-inbox-lead]');if(inboxLead){void (async()=>{window.ATS_ADMIN?.switchTab?.('leads');await loadLeads();openLead(inboxLead.dataset.inboxLead)})();return}
     const accept=e.target.closest('[data-accept-proposal]');if(accept){acceptProposal(accept.dataset.acceptProposal);return}
     const paid=e.target.closest('[data-mark-paid]');if(paid){markPaid(paid.dataset.markPaid);return}
+    const fileOpen=e.target.closest('[data-admin-file-open]');if(fileOpen){void openProjectFile(fileOpen);return}
+    const publish=e.target.closest('[data-publish-file-review]');if(publish){void publishProjectReview(publish.dataset.publishFileReview);return}
+    const release=e.target.closest('[data-release-final]');if(release){void releaseFinalFile(release.dataset.releaseFinal);return}
+    const complete=e.target.closest('[data-complete-revision]');if(complete){void completeRevision(complete.dataset.completeRevision);return}
     const up=e.target.closest('[data-v9-up]');if(up&&state.v9){const [kind,key]=up.dataset.v9Up.split(':');const a=arrFor(kind),i=a.indexOf(key);if(i>0){[a[i-1],a[i]]=[a[i],a[i-1]];renderV9()}return}
     const toggle=e.target.closest('[data-v9-toggle]');if(toggle&&state.v9){const [kind,key]=toggle.dataset.v9Toggle.split(':'),h=hiddenFor(kind),i=h.indexOf(key);if(kind==='brief'&&i<0&&arrFor(kind).filter(x=>!h.includes(x)).length<=1)return notify('At least one brief step must remain visible','error');i>=0?h.splice(i,1):h.push(key);renderV9();return}
   });
 
   $('#ops-lead-search')?.addEventListener('input',renderLeads);$('#ops-lead-filter')?.addEventListener('change',renderLeads);
+  $('#ops-inbox-search')?.addEventListener('input',renderInbox);$('#ops-inbox-filter')?.addEventListener('change',renderInbox);
   $('#ops-client-search')?.addEventListener('input',renderClients);
   $('#ops-project-search')?.addEventListener('input',renderProjects);$('#ops-project-filter')?.addEventListener('change',renderProjects);
   $('#ops-proposal-search')?.addEventListener('input',renderProposals);$('#ops-proposal-filter')?.addEventListener('change',renderProposals);
@@ -342,13 +416,17 @@
   $('#save-proposal')?.addEventListener('click',saveProposal);
   $('#save-studio-project')?.addEventListener('click',saveStudioProject);
   $('#post-studio-project-update')?.addEventListener('click',postProjectUpdate);
+  $('#send-project-message')?.addEventListener('click',sendProjectMessage);
+  $('#upload-project-file')?.addEventListener('click',uploadProjectFile);
+  $('#refresh-project-workspace')?.addEventListener('click',()=>loadProjectWorkspace());
+  $('#project-message-input')?.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();sendProjectMessage()}});
   $('#save-v9-layout')?.addEventListener('click',saveV9);
   $('#v9-work-columns')?.addEventListener('change',e=>{if(state.v9)state.v9.work.columns=Number(e.target.value)});
   $('#v9-founder-width')?.addEventListener('change',e=>{if(state.v9)state.v9.team.founderWidth=Number(e.target.value)});
   document.addEventListener('change',e=>{if(e.target.matches('[data-v9-size]')&&state.v9)state.v9.work.sizes[e.target.dataset.v9Size]=e.target.value});
   $$('[data-close-unified]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.closeUnified)?.close()));
 
-  $('#admin-nav')?.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;const tab=b.dataset.tab;location.hash=tab==='dashboard'?'':tab;loadPanel(tab)});
+  $('#admin-nav')?.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;const tab=b.dataset.tab;location.hash=tab==='dashboard'?'':tab;loadPanel(tab);if(tab==='inbox'){clearInterval(inboxTimer);inboxTimer=setInterval(()=>{if(location.hash==='#inbox')loadInbox(true)},12000)}else{clearInterval(inboxTimer);inboxTimer=null}});
   window.addEventListener('ats-admin-ready',boot);
   if(!$('#admin-view')?.classList.contains('hidden'))setTimeout(boot,0);
 })();
