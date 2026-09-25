@@ -4,6 +4,7 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const DEVICE_KEY = 'andrew_portfolio_device_v2';
   const DEMO_KEY = 'ats_v9_client_ops_demo_v2';
+  const DEVICE_CHECK_TIMEOUT_MS = 4500;
 
   const defaultDemo = {
     leads: [{
@@ -81,6 +82,8 @@
     $('#gate-message').textContent = message;
     $('#trust-start').classList.remove('hidden');
     $('#pairing-box').classList.add('hidden');
+    const button = $('#trust-device');
+    if (button) button.textContent = state.device?.id && state.device?.secret ? 'RETRY ACCESS' : 'TRUST THIS BROWSER';
   }
   function showPending(code) {
     $('#trust-start').classList.add('hidden');
@@ -89,15 +92,39 @@
     $('#gate-message').textContent = 'This Studio OS browser is waiting for Trusted Device approval.';
     startPolling();
   }
-  function startPolling() { if (!state.poll) state.poll = setInterval(checkDevice, 3000); }
+  function startPolling() { if (!state.poll) state.poll = setInterval(checkDevice, 1500); }
   function stopPolling() { if (state.poll) clearInterval(state.poll); state.poll = null; }
   async function checkDevice() {
     if (!state.device?.id || !state.device?.secret || !state.sb) return false;
-    const { data, error } = await state.sb.from('portfolio_trusted_devices').select('status,claim_code').eq('device_id', state.device.id).maybeSingle();
-    if (error || !data) return false;
+
+    const timeout = new Promise(resolve => setTimeout(
+      () => resolve({ data: null, error: { code: 'ATS_DEVICE_TIMEOUT', message: 'Device verification timed out.' } }),
+      DEVICE_CHECK_TIMEOUT_MS
+    ));
+    const request = state.sb.from('portfolio_trusted_devices').select('status,claim_code').eq('device_id', state.device.id).maybeSingle();
+    const { data, error } = await Promise.race([request, timeout]);
+
+    if (error?.code === 'ATS_DEVICE_TIMEOUT') {
+      stopPolling();
+      showTrust('The security check is taking too long. Your existing browser approval is محفوظ. Press RETRY ACCESS.');
+      return false;
+    }
+    if (error) {
+      stopPolling();
+      showTrust('Studio OS could not confirm this browser right now. Press RETRY ACCESS.');
+      return false;
+    }
+    if (!data) {
+      localStorage.removeItem(DEVICE_KEY); state.device = null; state.sb = null; stopPolling();
+      showTrust('This browser is not registered yet. Create a one-time approval request.');
+      return false;
+    }
     if (data.status === 'approved') { stopPolling(); enterApp(); return true; }
     if (data.status === 'pending') { showPending(data.claim_code); return false; }
-    localStorage.removeItem(DEVICE_KEY); state.device = null; state.sb = null; stopPolling(); showTrust('This device is no longer approved. Create a new approval request.'); return false;
+
+    localStorage.removeItem(DEVICE_KEY); state.device = null; state.sb = null; stopPolling();
+    showTrust('This device is no longer approved. Create a new approval request.');
+    return false;
   }
   async function initSecurity() {
     if (!cfg || !window.supabase) { $('#gate-message').textContent = 'Studio OS could not load the existing Supabase configuration.'; return; }
@@ -110,8 +137,16 @@
 
   $('#trust-device').addEventListener('click', async () => {
     const button = $('#trust-device');
-    button.disabled = true; button.textContent = 'CREATING APPROVAL…';
+    button.disabled = true;
     try {
+      if (state.device?.id && state.device?.secret) {
+        button.textContent = 'CHECKING…';
+        state.sb = state.sb || makeClient(state.device);
+        await checkDevice();
+        return;
+      }
+
+      button.textContent = 'CREATING APPROVAL…';
       state.device = { id: crypto.randomUUID(), secret: randomSecret(), code: randomCode() };
       state.sb = makeClient(state.device);
       const secretHash = await sha256hex(state.device.secret);
@@ -119,7 +154,10 @@
       if (error) { state.device = null; state.sb = null; toast(error.message); return; }
       localStorage.setItem(DEVICE_KEY, JSON.stringify(state.device));
       showPending(state.device.code);
-    } finally { button.disabled = false; button.textContent = 'TRUST THIS BROWSER'; }
+    } finally {
+      button.disabled = false;
+      button.textContent = state.device?.id && state.device?.secret ? 'RETRY ACCESS' : 'TRUST THIS BROWSER';
+    }
   });
 
   function enterApp() {
