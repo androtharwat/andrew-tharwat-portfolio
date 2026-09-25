@@ -342,6 +342,32 @@
     'One-time access code':'كود دخول لمرة واحدة','Client authenticated with temporary access':'تم دخول العميل باستخدام الكود المؤقت',
     'Add an email before generating Client Access':'أضف البريد الإلكتروني قبل إنشاء دخول العميل',
 
+    'ATS DIAGNOSTIC ENGINE':'محرك ATS للتشخيص',
+    'The system analyzes the evidence before proposing work.':'النظام يحلل الأدلة قبل اقتراح أي عمل.',
+    'AI suggestions are hypotheses until ATS validates them.':'اقتراحات الذكاء الاصطناعي تظل فرضيات حتى تتحقق منها ATS.',
+    'NEVER ANALYZED':'لم يتم التحليل بعد','RUN ATS DIAGNOSIS':'تشغيل تشخيص ATS','REFRESH ATS DIAGNOSIS':'تحديث تشخيص ATS','ANALYZING…':'جارٍ التحليل…',
+    'DECISION STAGE':'مرحلة القرار','NEEDS EVIDENCE':'يحتاج أدلة','NEEDS VALIDATION':'يحتاج تحقق','SOLUTION READY':'الحل جاهز للتخطيط','EXECUTION':'التنفيذ',
+    'SYSTEM CONFIDENCE':'ثقة النظام','LAST ANALYZED':'آخر تحليل','SYSTEM PROBLEM FRAMING':'صياغة النظام للمشكلة',
+    'The system has not analyzed this case yet.':'لم يقم النظام بتحليل هذه الحالة بعد.',
+    'USE AS WORKING DIAGNOSIS':'اعتماد كتشخيص عمل',
+    'FACTS':'حقائق','No analysis yet.':'لا يوجد تحليل بعد.','ASSUMPTIONS':'افتراضات','CONTRADICTIONS / RISKS':'تناقضات / مخاطر',
+    'NEXT BEST QUESTION':'أفضل سؤال تالٍ','NEXT BEST ACTION':'أفضل إجراء تالٍ','SOLUTION DIRECTION':'اتجاه الحل',
+    'Not enough evidence yet.':'لا توجد أدلة كافية بعد.','VERIFICATION PLAN':'خطة التحقق','Will be generated after analysis.':'سيتم توليدها بعد التحليل.',
+    'No confirmed facts extracted yet.':'لم يتم استخراج حقائق مؤكدة بعد.','No explicit assumptions extracted yet.':'لم يتم استخراج افتراضات صريحة بعد.','No contradictions identified yet.':'لم يتم تحديد تناقضات بعد.',
+    'Run ATS diagnosis':'شغّل تشخيص ATS','The evidence changed or has not been analyzed yet. Refresh the diagnostic engine before choosing the solution.':'تغيرت الأدلة أو لم يتم تحليلها بعد. حدّث محرك التشخيص قبل اختيار الحل.',
+    'Accept or refine the working diagnosis':'اعتمد أو حسّن تشخيص العمل','Use the system framing as a starting point, then approve a clear root problem statement.':'استخدم صياغة النظام كنقطة بداية ثم اعتمد صياغة واضحة للمشكلة الجذرية.',
+    'Approve the first required task':'اعتمد أول مهمة مطلوبة','Review the system task sequence and approve only the work justified by the evidence.':'راجع تسلسل المهام المقترح من النظام واعتمد فقط ما تدعمه الأدلة.',
+    'Approve effectiveness verification':'اعتمد التحقق من الفاعلية','The plan must include a verification task that proves the solution changed the target outcome.':'يجب أن تتضمن الخطة مهمة تحقق تثبت أن الحل غيّر النتيجة المستهدفة.',
+    'Approved task':'مهمة معتمدة','Verification task':'مهمة تحقق','approved task(s)':'مهام معتمدة',
+    'AI SUGGESTED':'مقترح بواسطة AI','AI PROPOSED':'مقترح بواسطة AI','VALIDATE BY:':'طريقة التحقق:',
+    'EXPECTED EFFECT:':'الأثر المتوقع:','DEPENDENCY:':'الاعتمادية:','APPROVE TASK':'اعتماد المهمة',
+    'No root-cause hypotheses yet. Run ATS diagnosis first.':'لا توجد فرضيات للأسباب الجذرية بعد. شغّل تشخيص ATS أولًا.',
+    'No task sequence yet. Run ATS diagnosis first.':'لا يوجد تسلسل مهام بعد. شغّل تشخيص ATS أولًا.',
+    'System diagnosis accepted as working diagnosis':'تم اعتماد تشخيص النظام كتشخيص عمل',
+    'ATS diagnostic engine completed':'اكتمل تشغيل محرك تشخيص ATS','Working diagnosis accepted':'تم اعتماد تشخيص العمل',
+    'STALE':'يحتاج تحديث','READY':'جاهز','ERROR':'خطأ','ANALYZING':'جارٍ التحليل',
+    'never analyzed':'لم يتم التحليل بعد','stale':'يحتاج تحديث','ready':'جاهز','error':'خطأ','analyzing':'جارٍ التحليل',
+    'needs evidence':'يحتاج أدلة','needs validation':'يحتاج تحقق','solution ready':'جاهز للحل','execution':'تنفيذ',
     'admin only':'للإدارة فقط','client visible':'ظاهر للعميل'
   };
 
@@ -412,6 +438,10 @@
     if((m=core.match(/^(\d+) task\(s\) defined$/))) return m[1]+' مهام محددة';
     if((m=core.match(/^Valid until (.+) · one-time use · max 5 attempts$/))) return 'صالح حتى '+m[1]+' · استخدام مرة واحدة · بحد أقصى 5 محاولات';
     if((m=core.match(/^Temporary access issued · (\d+) minutes$/))) return 'تم إصدار دخول مؤقت · '+m[1]+' دقيقة';
+    if((m=core.match(/^(\d+) approved task\(s\)$/))) return m[1]+' مهمة معتمدة';
+    if((m=core.match(/^(\d+) approved$/))) return m[1]+' معتمدة';
+    if((m=core.match(/^System next question:\s*(.+)$/))) return 'سؤال النظام التالي: '+m[1];
+    if((m=core.match(/^(.+) · (\d+)% confidence · (\d+) cause hypothesis\(es\) · (\d+) proposed task\(s\)$/))) return m[1]+' · ثقة '+m[2]+'% · '+m[3]+' فرضيات أسباب · '+m[4]+' مهام مقترحة';
     return core;
   }
 

@@ -5,7 +5,7 @@
   const fmt = v => v ? new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)) : '—';
   const esc = (v='') => String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const OTP_LENGTH = Number(window.ATS_AUTH?.accessCodeLength || window.ATS_AUTH?.otpLength || 6);
-  let sb = null, context = null;
+  let sb = null, context = null, diagnosticRefreshPromise = null;
 
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1900)}
   function authState(message,error=false){const el=$('#auth-state');if(!el)return;el.textContent=message;el.classList.toggle('error',error)}
@@ -84,11 +84,15 @@
     $('#step-diagnosis').classList.remove('done','active');
 
     if(q&&!locked){
-      const l=preferredDiscoveryLang(lead),primary=q[l]||q.en||q.ar,secondary=q[l==='ar'?'en':'ar']||'';
+      const l=preferredDiscoveryLang(lead);
+      const systemQuestion=String(q.question||'').trim();
+      const primary=systemQuestion||q[l]||q.en||q.ar||'';
+      const secondary=systemQuestion?'':(q[l==='ar'?'en':'ar']||'');
+      const why=systemQuestion?(q.reason||q.decision_value||''):(q[l==='ar'?'why_ar':'why_en']||q.why_en||q.why_ar||'');
       card.dataset.questionKey=q.key||'';
       $('#discovery-question').textContent=primary;
       $('#discovery-question-alt').textContent=secondary;
-      $('#discovery-why').textContent=(q[l==='ar'?'why_ar':'why_en']||q.why_en||q.why_ar||'');
+      $('#discovery-why').textContent=why;
       $('#discovery-answer').value='';
       $('#step-diagnosis').classList.add('active');
       $('#current-action').textContent=l==='ar'?'ساعدنا نفهم السبب الحقيقي':'Help us isolate the real problem';
@@ -104,6 +108,22 @@
     }
   }
 
+  async function refreshDiagnosticFromClient(reload=true){
+    if(diagnosticRefreshPromise)return diagnosticRefreshPromise;
+    diagnosticRefreshPromise=(async()=>{
+      try{
+        const {error}=await sb.functions.invoke('ats-problem-solver',{body:{}});
+        if(error)throw error;
+        if(reload)await loadContext();
+        return true;
+      }catch(error){
+        window.ATS_AUTH_CLIENT.logError('diagnostic-engine',error);
+        return false;
+      }finally{diagnosticRefreshPromise=null}
+    })();
+    return diagnosticRefreshPromise;
+  }
+
   async function submitDiscoveryAnswer(){
     const card=$('#discovery-question-card'),key=card?.dataset.questionKey,answer=$('#discovery-answer')?.value.trim();
     if(!key||!answer){$('#discovery-answer')?.focus();return toast('Add a short answer first.')}
@@ -111,7 +131,10 @@
     try{
       const {error}=await sb.rpc('studio_portal_discovery_answer',{p_question_key:key,p_answer:answer});
       if(error)throw error;
-      toast('Answer saved · ATS discovery updated');await loadContext();
+      busy(b,true,'ANALYZING…');
+      toast('Answer saved · ATS is updating the diagnosis');
+      await refreshDiagnosticFromClient(false);
+      await loadContext();
     }catch(error){toast(error.message||'Could not save your answer')}
     finally{busy(b,false,'SEND ANSWER →')}
   }
@@ -127,6 +150,9 @@
     $('#journey-status').textContent=status;$('#journey-copy').textContent=copy;
     $('#current-action').textContent='No action required';$('#current-action-copy').textContent='ATS will update this area whenever you need to take action.';
     renderDiscovery(discovery,p,lead);
+    if(!p&&['never_analyzed','stale'].includes(String(discovery.analysis_state||''))&&!diagnosticRefreshPromise){
+      void refreshDiagnosticFromClient(true);
+    }
 
     $('#proposal-panel').classList.toggle('hidden',!p);
     $('#deposit-panel').classList.toggle('hidden',!d);

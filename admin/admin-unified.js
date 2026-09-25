@@ -4,7 +4,7 @@
   const esc=(v='')=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const money=v=>window.ATS_I18N?.formatNumber?.(v)??new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt=v=>v?(window.ATS_I18N?.formatDate?.(v,{day:'2-digit',month:'short',year:'numeric'})??new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v))):'—';
-  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[],clientAccessCode:null};
+  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[],diagnosticRun:null,clientAccessCode:null};
   let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
   const briefNames={goal:'CHALLENGE & OUTCOME',type:'STARTING POINT',team:'POSSIBLE EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
@@ -257,7 +257,7 @@
   }
   function localToIso(value){return value?new Date(value).toISOString():null}
   function humanActivity(action,meta={}){
-    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',client_access_code_issued:'Client Access Code issued',client_access_code_redeemed:'Client Access opened',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
+    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',diagnostic_engine_completed:'ATS diagnostic engine completed',working_diagnosis_accepted:'Working diagnosis accepted',client_access_code_issued:'Client Access Code issued',client_access_code_redeemed:'Client Access opened',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
     const title=labels[action]||String(action||'Activity').replaceAll('_',' ');
     let detail=meta.summary||meta.note||'';
     if(action==='lead_status_changed')detail=(leadStatusLabels[meta.from]||meta.from||'—')+' → '+(leadStatusLabels[meta.to]||meta.to||'—');
@@ -270,6 +270,8 @@
     if(action==='root_cause_status_changed')detail=(meta.statement||'Root cause')+' · '+String(meta.status||'');
     if(action==='solution_task_added')detail=(meta.title||'Solution task')+' · '+String(meta.owner||'ATS');
     if(action==='solution_task_status_changed')detail=(meta.title||'Solution task')+' · '+String(meta.status||'');
+    if(action==='diagnostic_engine_completed')detail=String(meta.decision_stage||'analysis').replaceAll('_',' ')+' · '+String(meta.system_confidence||0)+'% confidence · '+String(meta.root_causes||0)+' cause hypothesis(es) · '+String(meta.tasks||0)+' proposed task(s)';
+    if(action==='working_diagnosis_accepted')detail=(meta.root_problem||'Working diagnosis')+' · '+String(meta.confidence||0)+'% confidence';
     if(action==='client_access_code_issued')detail='Temporary access issued · '+(meta.ttl_minutes||60)+' minutes';
     if(action==='client_access_code_redeemed')detail='Client authenticated with temporary access';
     return {title,detail};
@@ -295,10 +297,14 @@
   }
 
   function diagnosisGateState(){
-    const c=state.discoveryCase||{},validated=state.rootCauses.some(x=>x.status==='validated'),hasTask=state.solutionTasks.length>0;
+    const c=state.discoveryCase||{},validated=state.rootCauses.some(x=>x.status==='validated');
+    const approved=x=>!['proposed','rejected'].includes(String(x.status||''));
+    const hasTask=state.solutionTasks.some(approved);
+    const verification=state.solutionTasks.some(x=>approved(x)&&x.task_type==='verification');
     const coverage=Number(c.readiness_score||0)>=75;
     const synthesis=!!String(c.root_problem||'').trim()&&Number(c.diagnosis_confidence||0)>=60;
-    return {coverage,synthesis,validated,hasTask,ready:coverage&&synthesis&&validated&&hasTask};
+    const analysisCurrent=String(c.analysis_state||'')==='ready';
+    return {analysisCurrent,coverage,synthesis,validated,hasTask,verification,ready:analysisCurrent&&coverage&&synthesis&&validated&&hasTask&&verification};
   }
   function nextMissingDiscovery(){
     const c=state.discoveryCase||{};
@@ -307,22 +313,105 @@
   function latestDiscoveryAnswer(key){
     return state.discoveryAnswers.find(x=>x.question_key===key)||null;
   }
+  function renderSystemDiagnosis(){
+    const c=state.discoveryCase||{},run=state.diagnosticRun||{},analysis=run.analysis||{};
+    const stateName=String(c.analysis_state||'never_analyzed');
+    const badge=$('#system-analysis-state');
+    if(badge){badge.className='analysis-state '+stateName;badge.textContent=stateName.replaceAll('_',' ').toUpperCase()}
+    $('#system-decision-stage').textContent=String(c.decision_stage||'needs_evidence').replaceAll('_',' ').toUpperCase();
+    $('#system-confidence').textContent=Number(c.system_confidence||0)+'%';
+    $('#system-last-analyzed').textContent=c.last_analyzed_at?new Date(c.last_analyzed_at).toLocaleString():'—';
+    $('#system-problem-statement').textContent=c.system_problem_statement||'The system has not analyzed this case yet.';
+    $('#system-diagnosis-summary').textContent=c.system_diagnosis_summary||'';
+    $('#accept-system-diagnosis').classList.toggle('hidden',!String(c.system_problem_statement||'').trim());
+
+    const evidence=analysis.evidence_assessment||{};
+    const renderList=(id,items,empty)=>{
+      const el=$(id);if(!el)return;
+      const arr=Array.isArray(items)?items.filter(Boolean):[];
+      el.innerHTML=arr.length?arr.map(x=>'<p>'+esc(x)+'</p>').join(''):'<p>'+esc(empty)+'</p>';
+    };
+    renderList('#system-facts',evidence.facts,'No confirmed facts extracted yet.');
+    renderList('#system-assumptions',evidence.assumptions,'No explicit assumptions extracted yet.');
+    renderList('#system-contradictions',evidence.contradictions,'No contradictions identified yet.');
+
+    const q=analysis.next_best_question||c.system_next_question||{};
+    $('#system-next-question').textContent=q.question||'—';
+    $('#system-next-question-reason').textContent=[q.reason,q.decision_value].filter(Boolean).join(' · ');
+    $('#system-next-action').textContent=c.system_next_action||analysis.next_best_action||'—';
+
+    const direction=analysis.solution_direction||{};
+    $('#system-solution-direction').textContent=[direction.strategy,direction.why_this_direction].filter(Boolean).join('\n')||'Not enough evidence yet.';
+    const verification=analysis.verification_plan||{};
+    const verifyItems=[
+      ...(Array.isArray(verification.success_signals)?verification.success_signals.map(x=>'Success: '+x):[]),
+      ...(Array.isArray(verification.failure_signals)?verification.failure_signals.map(x=>'Failure signal: '+x):[]),
+      verification.review_point?'Review: '+verification.review_point:null
+    ].filter(Boolean);
+    renderList('#system-verification-plan',verifyItems,'Will be generated after analysis.');
+
+    const btn=$('#run-diagnostic-engine');
+    if(btn){
+      const analyzing=stateName==='analyzing';
+      btn.disabled=analyzing;
+      btn.textContent=analyzing?'ANALYZING…':stateName==='ready'?'REFRESH ATS DIAGNOSIS':'RUN ATS DIAGNOSIS';
+    }
+  }
+  async function runDiagnosticEngine(silent=false){
+    const lead=state.currentLead;if(!lead||!sb())return;
+    const btn=$('#run-diagnostic-engine'),old=btn?.textContent;
+    if(btn){btn.disabled=true;btn.textContent='ANALYZING…'}
+    if(state.discoveryCase){state.discoveryCase.analysis_state='analyzing';renderSystemDiagnosis()}
+    try{
+      const {data,error}=await sb().functions.invoke('ats-problem-solver',{body:{lead_id:lead.id}});
+      if(error)throw error;
+      await loadLeadDiagnosis(lead.id,{autoAnalyze:false});
+      await loadLeadTimeline(lead.id);
+      if(!silent)notify(data?.cached?'Diagnosis already current':'ATS diagnosis refreshed');
+    }catch(error){
+      if(state.discoveryCase)state.discoveryCase.analysis_state='error';
+      renderSystemDiagnosis();
+      if(!silent)notify(error.message||'Diagnostic analysis could not run','error');
+    }finally{
+      if(btn){btn.disabled=false;if(old&&!state.discoveryCase?.analysis_state)btn.textContent=old}
+      renderSystemDiagnosis();
+    }
+  }
+  async function acceptSystemDiagnosis(){
+    const c=state.discoveryCase;if(!c?.system_problem_statement)return;
+    const patch={
+      root_problem:c.system_problem_statement,
+      diagnosis_summary:c.system_diagnosis_summary||c.diagnosis_summary||null,
+      diagnosis_confidence:Number(c.system_confidence||0),
+      phase:'diagnosis'
+    };
+    const r=await sb().from('studio_discovery_cases').update(patch).eq('id',c.id).select('*').single();
+    if(r.error)return notify(r.error.message,'error');
+    state.discoveryCase=r.data;
+    await logLeadActivity('working_diagnosis_accepted',{confidence:r.data.diagnosis_confidence,root_problem:r.data.root_problem,run_id:r.data.last_diagnostic_run_id});
+    await syncDiagnosisPhase();renderLeadDiagnosis();notify('System diagnosis accepted as working diagnosis');
+  }
+
   function renderLeadDiagnosis(){
     const c=state.discoveryCase;
     if(!c){
       $('#diagnosis-score').textContent='0%';$('#diagnosis-progress-bar').style.width='0%';
       $('#diagnosis-dimensions').innerHTML='<div class="ops-empty">Discovery case is not available yet.</div>';
-      return;
+      renderSystemDiagnosis();return;
     }
     const score=Number(c.readiness_score||0),gate=diagnosisGateState(),next=nextMissingDiscovery();
     $('#diagnosis-score').textContent=score+'%';$('#diagnosis-progress-bar').style.width=score+'%';
     $('#diagnosis-root-problem').value=c.root_problem||'';$('#diagnosis-summary').value=c.diagnosis_summary||'';$('#diagnosis-confidence').value=Number(c.diagnosis_confidence||0);
-    $('#diagnosis-next-question').textContent=next?'Next client question: '+next[2]:'Discovery questions complete · validate the root cause.';
+    $('#diagnosis-next-question').textContent=c.system_next_question?.question?'System next question: '+c.system_next_question.question:(next?'Next client question: '+next[2]:'Discovery questions complete · validate the root cause.');
+    renderSystemDiagnosis();
+
     const gateItems=[
+      ['Current analysis',gate.analysisCurrent,String(c.analysis_state||'never_analyzed').replaceAll('_',' ')],
       ['Evidence coverage',gate.coverage,score+'% / 75% minimum'],
       ['Problem synthesis',gate.synthesis,(c.root_problem?'Root problem written':'Root problem missing')+' · '+Number(c.diagnosis_confidence||0)+'% confidence'],
       ['Validated cause',gate.validated,state.rootCauses.filter(x=>x.status==='validated').length+' validated'],
-      ['Solution task',gate.hasTask,state.solutionTasks.length+' task(s) defined']
+      ['Approved task',gate.hasTask,state.solutionTasks.filter(x=>!['proposed','rejected'].includes(x.status)).length+' approved task(s)'],
+      ['Verification task',gate.verification,state.solutionTasks.filter(x=>x.task_type==='verification'&&!['proposed','rejected'].includes(x.status)).length+' approved']
     ];
     $('#diagnosis-gate').innerHTML=gateItems.map(([title,pass,detail])=>'<div class="'+(pass?'pass':'')+'"><b>'+(pass?'✓ ':'○ ')+esc(title)+'</b><small>'+esc(detail)+'</small></div>').join('');
 
@@ -332,26 +421,35 @@
     }).join('');
 
     const required=[];
+    if(['never_analyzed','stale','error'].includes(String(c.analysis_state||'')))required.push(['Run ATS diagnosis','The evidence changed or has not been analyzed yet. Refresh the diagnostic engine before choosing the solution.']);
     discoveryDimensions.filter(([key])=>!String(c[key]||'').trim()).forEach(([,label])=>required.push(['Collect '+label,'Ask the next high-value question or record evidence from a call / WhatsApp interaction.']));
-    if(!String(c.root_problem||'').trim())required.push(['Write the root problem statement','Describe the problem itself without embedding the requested solution.']);
+    if(!String(c.root_problem||'').trim())required.push(['Accept or refine the working diagnosis','Use the system framing as a starting point, then approve a clear root problem statement.']);
     if(Number(c.diagnosis_confidence||0)<60)required.push(['Increase diagnosis confidence','Validate assumptions with evidence until confidence is at least 60%.']);
-    if(!gate.validated)required.push(['Validate a root-cause hypothesis','A suspected cause is not enough. Record evidence for and against it, then validate or reject it.']);
-    if(!gate.hasTask)required.push(['Define the first solution task','Create a task that directly removes, controls or tests the validated cause.']);
-    if(gate.hasTask&&!state.solutionTasks.some(x=>x.task_type==='verification'))required.push(['Define effectiveness verification','Add a verification task tied to the desired outcome so we can prove the solution worked.']);
-    $('#diagnosis-system-tasks').innerHTML=required.length?required.slice(0,8).map(([title,why])=>'<div class="system-task"><i></i><div><b>'+esc(title)+'</b><small>'+esc(why)+'</small></div></div>').join(''):'<div class="system-task"><i style="background:#58d99d"></i><div><b>Diagnosis Gate ready</b><small>The problem, cause and first solution task are sufficiently defined.</small></div></div>';
+    if(!gate.validated)required.push(['Validate a root-cause hypothesis','A suspected cause is not enough. Use the suggested validation method, then validate or reject it.']);
+    if(!gate.hasTask)required.push(['Approve the first required task','Review the system task sequence and approve only the work justified by the evidence.']);
+    if(!gate.verification)required.push(['Approve effectiveness verification','The plan must include a verification task that proves the solution changed the target outcome.']);
+    $('#diagnosis-system-tasks').innerHTML=required.length?required.slice(0,8).map(([title,why])=>'<div class="system-task"><i></i><div><b>'+esc(title)+'</b><small>'+esc(why)+'</small></div></div>').join(''):'<div class="system-task"><i style="background:#58d99d"></i><div><b>Diagnosis Gate ready</b><small>The problem, validated cause, action plan and effectiveness verification are defined.</small></div></div>';
 
-    $('#root-cause-list').innerHTML=state.rootCauses.length?state.rootCauses.map(x=>'<article class="cause-row"><div class="cause-row-head"><div><b>'+esc(x.statement)+'</b><div class="cause-meta"><span>'+esc(x.category)+'</span><span>'+esc(String(x.confidence||0))+'% confidence</span><span class="'+esc(x.status)+'">'+esc(x.status.toUpperCase())+'</span></div></div></div>'+(x.evidence_for?'<p><strong>EVIDENCE FOR:</strong> '+esc(x.evidence_for)+'</p>':'')+(x.evidence_against?'<p><strong>GAPS / AGAINST:</strong> '+esc(x.evidence_against)+'</p>':'')+'<div class="cause-actions">'+(x.status!=='validated'?'<button data-cause-status="'+esc(x.id)+':validated">VALIDATE</button>':'')+(x.status!=='suspected'?'<button data-cause-status="'+esc(x.id)+':suspected">SUSPECTED</button>':'')+(x.status!=='rejected'?'<button data-cause-status="'+esc(x.id)+':rejected">REJECT</button>':'')+'</div></article>').join(''):'<div class="ops-empty">No root-cause hypotheses yet.</div>';
+    $('#root-cause-list').innerHTML=state.rootCauses.length?state.rootCauses.map(x=>{
+      const ai=x.source_type==='ai',level=x.causal_level||'contributing';
+      return '<article class="cause-row '+(ai?'ai-suggested':'')+'"><div class="cause-row-head"><div><b>'+esc(x.statement)+'</b><div class="cause-meta">'+(ai?'<span class="ai-source">AI SUGGESTED</span>':'<span>ATS</span>')+'<span>'+esc(level)+'</span><span>'+esc(x.category)+'</span><span>'+esc(String(x.confidence||0))+'% confidence</span><span class="'+esc(x.status)+'">'+esc(x.status.toUpperCase())+'</span></div></div></div>'+(x.evidence_for?'<p><strong>EVIDENCE FOR:</strong> '+esc(x.evidence_for)+'</p>':'')+(x.evidence_against?'<p><strong>GAPS / AGAINST:</strong> '+esc(x.evidence_against)+'</p>':'')+(x.validation_method?'<div class="cause-validation"><strong>VALIDATE BY:</strong> '+esc(x.validation_method)+'</div>':'')+'<div class="cause-actions">'+(x.status!=='validated'?'<button data-cause-status="'+esc(x.id)+':validated">VALIDATE</button>':'')+(x.status!=='suspected'?'<button data-cause-status="'+esc(x.id)+':suspected">SUSPECTED</button>':'')+(x.status!=='rejected'?'<button data-cause-status="'+esc(x.id)+':rejected">REJECT</button>':'')+'</div></article>'
+    }).join(''):'<div class="ops-empty">No root-cause hypotheses yet. Run ATS diagnosis first.</div>';
 
     const causeSelect=$('#solution-task-cause'),selected=causeSelect?.value||'';
     if(causeSelect){causeSelect.innerHTML='<option value="">General / not linked yet</option>'+state.rootCauses.filter(x=>x.status!=='rejected').map(x=>'<option value="'+esc(x.id)+'">'+esc(String(x.statement||'').slice(0,80))+'</option>').join('');if(state.rootCauses.some(x=>x.id===selected))causeSelect.value=selected}
     $('#solution-task-list').innerHTML=state.solutionTasks.length?state.solutionTasks.map(x=>{
-      const cause=state.rootCauses.find(ca=>ca.id===x.root_cause_id);
-      return '<article class="solution-task-row"><div class="task-row-head"><div><b>'+esc(x.title)+'</b><div class="task-meta"><span>'+esc(x.task_type)+'</span><span>'+esc(x.owner_type)+'</span><span>'+esc(x.priority)+'</span><span>'+esc(x.status)+'</span></div></div></div>'+(x.rationale?'<p>'+esc(x.rationale)+'</p>':'')+(cause?'<p><strong>CAUSE:</strong> '+esc(cause.statement)+'</p>':'')+(x.acceptance_criteria?'<p><strong>DONE WHEN:</strong> '+esc(x.acceptance_criteria)+'</p>':'')+'<div class="task-actions">'+(x.status==='todo'?'<button data-task-status="'+esc(x.id)+':in_progress">START</button>':'')+(x.status!=='done'?'<button data-task-status="'+esc(x.id)+':done">DONE</button>':'')+(x.status==='blocked'?'<button data-task-status="'+esc(x.id)+':in_progress">UNBLOCK</button>':'')+'</div></article>'
-    }).join(''):'<div class="ops-empty">No solution tasks yet.</div>';
+      const cause=state.rootCauses.find(ca=>ca.id===x.root_cause_id),ai=x.source_type==='ai';
+      let actions='';
+      if(x.status==='proposed')actions='<button data-task-status="'+esc(x.id)+':todo">APPROVE TASK</button><button data-task-status="'+esc(x.id)+':rejected">REJECT</button>';
+      else if(x.status==='todo')actions='<button data-task-status="'+esc(x.id)+':in_progress">START</button><button data-task-status="'+esc(x.id)+':done">DONE</button>';
+      else if(x.status==='in_progress'||x.status==='blocked')actions='<button data-task-status="'+esc(x.id)+':done">DONE</button>'+(x.status==='blocked'?'<button data-task-status="'+esc(x.id)+':in_progress">UNBLOCK</button>':'');
+      return '<article class="solution-task-row '+(ai?'ai-suggested':'')+'"><div class="task-row-head"><div><b>'+esc(x.title)+'</b><div class="task-meta">'+(ai?'<span class="ai-source">AI PROPOSED</span>':'<span>ATS</span>')+'<span>'+esc(x.task_type)+'</span><span>'+esc(x.owner_type)+'</span><span>'+esc(x.priority)+'</span><span>'+esc(x.status)+'</span></div></div></div>'+(x.rationale?'<p>'+esc(x.rationale)+'</p>':'')+(cause?'<p><strong>CAUSE:</strong> '+esc(cause.statement)+'</p>':'')+(x.expected_effect?'<p class="task-effect"><strong>EXPECTED EFFECT:</strong> '+esc(x.expected_effect)+'</p>':'')+(x.dependency_note?'<p><strong>DEPENDENCY:</strong> '+esc(x.dependency_note)+'</p>':'')+(x.acceptance_criteria?'<p><strong>DONE WHEN:</strong> '+esc(x.acceptance_criteria)+'</p>':'')+'<div class="task-actions">'+actions+'</div></article>'
+    }).join(''):'<div class="ops-empty">No task sequence yet. Run ATS diagnosis first.</div>';
     updateLeadWorkspaceState();
   }
-  async function loadLeadDiagnosis(leadId){
-    state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];
+
+  async function loadLeadDiagnosis(leadId,{autoAnalyze=true}={}){
+    state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];state.diagnosticRun=null;
     $('#diagnosis-dimensions').innerHTML='<div class="loading-line">Loading discovery evidence…</div>';
     let cq=await sb().from('studio_discovery_cases').select('*').eq('lead_id',leadId).maybeSingle();
     if(cq.error)return notify(cq.error.message,'error');
@@ -360,16 +458,20 @@
       if(cq.error)return notify(cq.error.message,'error');
     }
     state.discoveryCase=cq.data;
-    const [answers,causes,tasks]=await Promise.all([
+    const [answers,causes,tasks,runs]=await Promise.all([
       sb().from('studio_discovery_answers').select('*').eq('case_id',cq.data.id).order('created_at',{ascending:false}).limit(250),
-      sb().from('studio_root_causes').select('*').eq('case_id',cq.data.id).order('created_at',{ascending:false}),
-      sb().from('studio_solution_tasks').select('*').eq('case_id',cq.data.id).order('sort_order',{ascending:true}).order('created_at',{ascending:true})
+      sb().from('studio_root_causes').select('*').eq('case_id',cq.data.id).order('system_rank',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false}),
+      sb().from('studio_solution_tasks').select('*').eq('case_id',cq.data.id).order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
+      sb().from('studio_diagnostic_runs').select('id,status,model,analysis,completed_at,created_at').eq('case_id',cq.data.id).eq('status','completed').order('created_at',{ascending:false}).limit(1).maybeSingle()
     ]);
-    const failed=[answers,causes,tasks].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
-    state.discoveryAnswers=answers.data||[];state.rootCauses=causes.data||[];state.solutionTasks=tasks.data||[];
+    const failed=[answers,causes,tasks,runs].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
+    state.discoveryAnswers=answers.data||[];state.rootCauses=causes.data||[];state.solutionTasks=tasks.data||[];state.diagnosticRun=runs.data||null;
     const unread=state.discoveryAnswers.filter(x=>x.actor_type==='prospect'&&!x.is_read_by_admin).map(x=>x.id);
     if(unread.length){await sb().from('studio_discovery_answers').update({is_read_by_admin:true}).in('id',unread);state.discoveryAnswers.forEach(x=>{if(unread.includes(x.id))x.is_read_by_admin=true});state.loaded.inbox=false}
     renderLeadDiagnosis();
+    if(autoAnalyze&&state.currentLead?.id===leadId&&['never_analyzed','stale'].includes(String(state.discoveryCase?.analysis_state||''))){
+      void runDiagnosticEngine(true);
+    }
   }
   async function syncDiagnosisPhase(){
     const c=state.discoveryCase;if(!c)return;
@@ -388,17 +490,25 @@
   }
   async function addRootCause(){
     const c=state.discoveryCase,statement=$('#root-cause-statement').value.trim();if(!c||!statement)return notify('Write a root-cause hypothesis first','error');
-    const payload={case_id:c.id,category:$('#root-cause-category').value,statement,evidence_for:$('#root-cause-evidence-for').value.trim()||null,evidence_against:$('#root-cause-evidence-against').value.trim()||null,confidence:Math.max(0,Math.min(100,Number($('#root-cause-confidence').value||50))),status:'suspected'};
+    const payload={case_id:c.id,category:$('#root-cause-category').value,statement,evidence_for:$('#root-cause-evidence-for').value.trim()||null,evidence_against:$('#root-cause-evidence-against').value.trim()||null,confidence:Math.max(0,Math.min(100,Number($('#root-cause-confidence').value||50))),status:'suspected',source_type:'admin',causal_level:'contributing'};
     const r=await sb().from('studio_root_causes').insert(payload).select('*').single();if(r.error)return notify(r.error.message,'error');
     state.rootCauses.unshift(r.data);$('#root-cause-statement').value='';$('#root-cause-evidence-for').value='';$('#root-cause-evidence-against').value='';await logLeadActivity('root_cause_added',{root_cause_id:r.data.id,statement:r.data.statement,confidence:r.data.confidence});await syncDiagnosisPhase();renderLeadDiagnosis();notify('Root-cause hypothesis added');
   }
   async function setRootCauseStatus(id,status){
     const r=await sb().from('studio_root_causes').update({status}).eq('id',id).select('*').single();if(r.error)return notify(r.error.message,'error');
-    const i=state.rootCauses.findIndex(x=>x.id===id);if(i>=0)state.rootCauses[i]=r.data;await logLeadActivity('root_cause_status_changed',{root_cause_id:id,status,statement:r.data.statement});await syncDiagnosisPhase();renderLeadDiagnosis();notify('Root cause updated');
+    const i=state.rootCauses.findIndex(x=>x.id===id);if(i>=0)state.rootCauses[i]=r.data;
+    if(status==='rejected'){
+      const proposed=state.solutionTasks.filter(x=>x.root_cause_id===id&&x.status==='proposed').map(x=>x.id);
+      if(proposed.length){
+        const tr=await sb().from('studio_solution_tasks').update({status:'rejected'}).in('id',proposed).select('*');
+        if(!tr.error)(tr.data||[]).forEach(row=>{const ti=state.solutionTasks.findIndex(x=>x.id===row.id);if(ti>=0)state.solutionTasks[ti]=row});
+      }
+    }
+    await logLeadActivity('root_cause_status_changed',{root_cause_id:id,status,statement:r.data.statement});await syncDiagnosisPhase();renderLeadDiagnosis();notify('Root cause updated');
   }
   async function addSolutionTask(){
     const c=state.discoveryCase,title=$('#solution-task-title').value.trim();if(!c||!title)return notify('Write the solution task first','error');
-    const payload={case_id:c.id,root_cause_id:$('#solution-task-cause').value||null,task_type:$('#solution-task-type').value,title,rationale:$('#solution-task-rationale').value.trim()||null,owner_type:$('#solution-task-owner').value,priority:$('#solution-task-priority').value,status:'todo',acceptance_criteria:$('#solution-task-acceptance').value.trim()||null,due_date:$('#solution-task-due').value||null,sort_order:(state.solutionTasks.length+1)*10};
+    const payload={case_id:c.id,root_cause_id:$('#solution-task-cause').value||null,task_type:$('#solution-task-type').value,title,rationale:$('#solution-task-rationale').value.trim()||null,owner_type:$('#solution-task-owner').value,priority:$('#solution-task-priority').value,status:'todo',acceptance_criteria:$('#solution-task-acceptance').value.trim()||null,due_date:$('#solution-task-due').value||null,sort_order:(state.solutionTasks.length+1)*10,source_type:'admin'};
     const r=await sb().from('studio_solution_tasks').insert(payload).select('*').single();if(r.error)return notify(r.error.message,'error');
     state.solutionTasks.push(r.data);$('#solution-task-title').value='';$('#solution-task-rationale').value='';$('#solution-task-acceptance').value='';$('#solution-task-due').value='';await logLeadActivity('solution_task_added',{task_id:r.data.id,title:r.data.title,owner:r.data.owner_type});await syncDiagnosisPhase();renderLeadDiagnosis();notify('Solution task added');
   }
@@ -412,7 +522,7 @@
     const source=['whatsapp','email','call','portal'].includes(channel)?channel:'admin';
     const ins=await sb().from('studio_discovery_answers').insert({case_id:c.id,question_key:key,answer,actor_type:'admin',source_channel:source,is_read_by_admin:true}).select('*').single();if(ins.error)return notify(ins.error.message,'error');
     const up=await sb().from('studio_discovery_cases').update({[key]:answer}).eq('id',c.id).select('*').single();if(up.error)return notify(up.error.message,'error');
-    state.discoveryCase=up.data;state.discoveryAnswers.unshift(ins.data);await logLeadActivity('discovery_signal_added',{question_key:key,source_channel:source,answer_preview:answer.slice(0,220)});renderLeadDiagnosis();
+    state.discoveryCase=up.data;state.discoveryAnswers.unshift(ins.data);await logLeadActivity('discovery_signal_added',{question_key:key,source_channel:source,answer_preview:answer.slice(0,220)});renderLeadDiagnosis();void runDiagnosticEngine(true);
   }
 
   function updateLeadWorkspaceState(){
@@ -433,7 +543,7 @@
   }
   async function openLead(id){
     const x=state.leads.find(v=>v.id===id);if(!x)return;
-    state.currentLead=x;state.leadActivities=[];state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];
+    state.currentLead=x;state.leadActivities=[];state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];state.diagnosticRun=null;
     const cards=parseLeadBrief(x.project_goal);
     $('#lead-dialog-title').textContent=x.full_name||'Lead';$('#lead-dialog-code').textContent=x.lead_code||'—';$('#lead-workspace-source').textContent=(x.source||'website').replaceAll('_',' ');$('#lead-workspace-received').textContent='Received '+fmt(x.created_at);
     $('#lead-dialog-summary').innerHTML=[
@@ -731,6 +841,8 @@
   $('#lead-log-contact')?.addEventListener('click',logLeadContact);
   $('#issue-client-access-code')?.addEventListener('click',issueClientAccessCode);
   $('#copy-client-access-code')?.addEventListener('click',copyClientAccessCode);
+  $('#run-diagnostic-engine')?.addEventListener('click',()=>runDiagnosticEngine(false));
+  $('#accept-system-diagnosis')?.addEventListener('click',acceptSystemDiagnosis);
   $('#save-diagnosis')?.addEventListener('click',saveDiagnosis);
   $('#add-root-cause')?.addEventListener('click',addRootCause);
   $('#add-solution-task')?.addEventListener('click',addSolutionTask);

@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin.css?v=5" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
-  <link rel="stylesheet" href="/admin/admin-unified.css?v=5" />
+  <link rel="stylesheet" href="/admin/admin-unified.css?v=6" />
   <link rel="stylesheet" href="/admin/admin-i18n.css?v=1" />
 </head>
 <body>
@@ -242,6 +242,37 @@
             <div class="diagnosis-progress"><i id="diagnosis-progress-bar"></i></div>
             <div id="diagnosis-gate" class="diagnosis-gate"></div>
 
+            <section class="diagnostic-engine">
+              <div class="diagnostic-engine-head">
+                <div><span>ATS DIAGNOSTIC ENGINE</span><h4>The system analyzes the evidence before proposing work.</h4><small>AI suggestions are hypotheses until ATS validates them.</small></div>
+                <div class="diagnostic-engine-actions"><b id="system-analysis-state" class="analysis-state never_analyzed">NEVER ANALYZED</b><button id="run-diagnostic-engine" type="button" class="primary">RUN ATS DIAGNOSIS</button></div>
+              </div>
+              <div class="diagnostic-engine-metrics">
+                <article><span>DECISION STAGE</span><b id="system-decision-stage">NEEDS EVIDENCE</b></article>
+                <article><span>SYSTEM CONFIDENCE</span><b id="system-confidence">0%</b></article>
+                <article><span>LAST ANALYZED</span><b id="system-last-analyzed">—</b></article>
+              </div>
+              <div class="system-problem-card">
+                <span>SYSTEM PROBLEM FRAMING</span>
+                <h4 id="system-problem-statement">The system has not analyzed this case yet.</h4>
+                <p id="system-diagnosis-summary"></p>
+                <div class="system-diagnosis-actions"><button id="accept-system-diagnosis" type="button" class="secondary hidden">USE AS WORKING DIAGNOSIS</button></div>
+              </div>
+              <div class="system-evidence-grid">
+                <article><span>FACTS</span><div id="system-facts" class="system-list"><p>No analysis yet.</p></div></article>
+                <article><span>ASSUMPTIONS</span><div id="system-assumptions" class="system-list"><p>No analysis yet.</p></div></article>
+                <article><span>CONTRADICTIONS / RISKS</span><div id="system-contradictions" class="system-list"><p>No analysis yet.</p></div></article>
+              </div>
+              <div class="system-next-grid">
+                <article><span>NEXT BEST QUESTION</span><b id="system-next-question">—</b><p id="system-next-question-reason"></p></article>
+                <article><span>NEXT BEST ACTION</span><b id="system-next-action">—</b></article>
+              </div>
+              <div class="system-solution-grid">
+                <article><span>SOLUTION DIRECTION</span><p id="system-solution-direction">Not enough evidence yet.</p></article>
+                <article><span>VERIFICATION PLAN</span><div id="system-verification-plan" class="system-list"><p>Will be generated after analysis.</p></div></article>
+              </div>
+            </section>
+
             <div class="diagnosis-subhead"><div><span>DISCOVERY COVERAGE</span><h4>What we know vs. what is still assumption</h4></div><small id="diagnosis-next-question"></small></div>
             <div id="diagnosis-dimensions" class="diagnosis-dimensions"><div class="loading-line">Loading discovery evidence…</div></div>
             <div id="diagnosis-system-tasks" class="diagnosis-system-tasks"></div>
@@ -394,8 +425,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
   <script src="/config.js"></script>
-  <script src="/admin/admin-i18n.js?v=3"></script>
+  <script src="/admin/admin-i18n.js?v=4"></script>
   <script src="/admin.js?v=10"></script>
-  <script src="/admin/admin-unified.js?v=7"></script>
+  <script src="/admin/admin-unified.js?v=8"></script>
 </body>
 </html>
