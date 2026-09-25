@@ -80,7 +80,7 @@
     return true;
   }
 
-  function briefText(){return `ANDREW THARWAT STUDIO — PROJECT BRIEF\n\nChallenge: ${state.goal||'—'}\nAudience: ${state.audience||'—'}\nSuccess: ${state.success||'—'}\nStarting Point: ${state.type||'—'}\nExpertise: ${state.disciplines.join(', ')||'—'}\nTimeline: ${state.timeline||'—'}\nBudget: ${state.budget||'—'}\nStage: ${state.stage||'—'}\nContact: ${state.name||'—'} | ${state.company||'—'} | ${state.email||'—'} | ${state.phone||'—'}`}
+  function briefText(){return `ATS — PROJECT BRIEF\n\nChallenge: ${state.goal||'—'}\nAudience: ${state.audience||'—'}\nSuccess: ${state.success||'—'}\nStarting Point: ${state.type||'—'}\nExpertise: ${state.disciplines.join(', ')||'—'}\nTimeline: ${state.timeline||'—'}\nBudget: ${state.budget||'—'}\nStage: ${state.stage||'—'}\nContact: ${state.name||'—'} | ${state.company||'—'} | ${state.email||'—'} | ${state.phone||'—'}`}
 
   function activate(){
     if(active)return;
