@@ -56,8 +56,8 @@
     document.body.dataset.lang=lang;
     document.documentElement.lang=lang;
     document.documentElement.dir=lang==='ar'?'rtl':'ltr';
-    $('[data-en]').forEach(el=>el.textContent=el.dataset[lang]||el.dataset.en);
-    $('[data-en-html]').forEach(el=>el.innerHTML=el.dataset[lang+'Html']||el.dataset.enHtml);
+    $$('[data-en]').forEach(el=>el.textContent=el.dataset[lang]||el.dataset.en);
+    $$('[data-en-html]').forEach(el=>el.innerHTML=el.dataset[lang+'Html']||el.dataset.enHtml);
 
     const isAr=lang==='ar';
     document.title=isAr?'ATS — حل المشكلات من خلال الإبداع':'ATS — Problem Solving Through Creativity';
