@@ -16,6 +16,11 @@
     link:'',
     extra:'',
     analysis:null,
+    intakeAnalysis:null,
+    followups:[],
+    skippedKeys:[],
+    files:[],
+    fileInsights:[],
     clarification:null,
     clarificationAnswer:'',
     stage:'tell',
@@ -176,6 +181,7 @@
   function persist(){
     try{localStorage.setItem(STORAGE,JSON.stringify({
       mode:state.mode,problem:state.problem,link:state.link,extra:state.extra,
+      followups:state.followups,skippedKeys:state.skippedKeys,
       name:state.name,email:state.email,phone:state.phone,company:state.company
     }))}catch(_){}
   }
@@ -183,6 +189,8 @@
     try{
       const raw=JSON.parse(localStorage.getItem(STORAGE)||'{}');
       ['mode','problem','link','extra','name','email','phone','company'].forEach(k=>{if(typeof raw[k]==='string')state[k]=raw[k]});
+      if(Array.isArray(raw.followups))state.followups=raw.followups.slice(0,6);
+      if(Array.isArray(raw.skippedKeys))state.skippedKeys=raw.skippedKeys.slice(0,8);
     }catch(_){}
   }
 
@@ -249,6 +257,98 @@
     };
   }
 
+  const discoveryKeys=['current_state','impact','affected_people','desired_outcome','evidence','prior_attempts','process_point','constraints'];
+  function maxSmartQuestions(){return state.mode==='quick'?3:4}
+  function localIntakeFallback(){
+    const a=infer(state.problem,state.extra),d={current_state:state.problem,impact:'',affected_people:'',desired_outcome:'',evidence:'',prior_attempts:'',process_point:'',constraints:''};
+    state.fileInsights.forEach(item=>{
+      const signals=item?.discovery_signals||{};
+      discoveryKeys.forEach(key=>{if(!d[key]&&signals[key])d[key]=String(signals[key]).trim().slice(0,5000)});
+    });
+    state.followups.forEach(f=>{if(discoveryKeys.includes(f.key)&&f.answer&&!d[f.key])d[f.key]=f.answer});
+    const readiness=Math.round(discoveryKeys.filter(k=>String(d[k]||'').trim()).length*100/discoveryKeys.length);
+    const ordered=[
+      ['impact',lang()==='ar'?'لما المشكلة دي بتحصل، تأثيرها الحقيقي إيه؟':'When this happens, what is the real impact?'],
+      ['evidence',lang()==='ar'?'إيه الدليل أو المثال الحقيقي اللي بيأكد المشكلة؟':'What evidence or real example confirms the problem?'],
+      ['process_point',lang()==='ar'?'المشكلة بتظهر فين بالظبط داخل العملية أو رحلة العميل؟':'Where exactly does the problem appear in the process or customer journey?'],
+      ['prior_attempts',lang()==='ar'?'إيه اللي اتجرب قبل كده وإيه اللي حصل؟':'What has already been tried, and what happened?'],
+      ['affected_people',lang()==='ar'?'مين أكتر ناس متأثرين بالمشكلة؟':'Who is most affected by the problem?'],
+      ['desired_outcome',lang()==='ar'?'لو اتحلت صح، إيه اللي لازم يتغير؟':'If solved correctly, what should be different?'],
+      ['constraints',lang()==='ar'?'إيه القيود اللي لازم الحل يلتزم بيها؟':'What constraints must the solution respect?']
+    ];
+    const next=ordered.find(([k])=>!d[k]&&!state.skippedKeys.includes(k));
+    return{
+      discovery:d,readiness_score:readiness,confidence:Math.min(60,Math.max(20,readiness-5)),
+      understanding:{situation:a.situation,problem_summary:a.coreProblem,direction:a.direction,capabilities:a.capabilities},
+      next_question:next?{key:next[0],question:next[1],why:lang()==='ar'?'السؤال ده هيقلل الافتراضات قبل ما نحدد الحل.':'This reduces assumptions before we shape the solution.'}:null,
+      fallback:true
+    };
+  }
+  async function analyzeSelectedFiles(){
+    if(!state.files.length){state.fileInsights=[];return []}
+    const sig=f=>f.name+'|'+f.size+'|'+f.lastModified;
+    const known=new Map(state.fileInsights.map(x=>[x.signature,x]));
+    const next=[];
+    for(let i=0;i<state.files.length;i++){
+      const file=state.files[i],signature=sig(file);
+      if(known.has(signature)){next.push(known.get(signature));continue}
+      try{
+        const form=new FormData();form.append('file',file,file.name);
+        const resp=await fetch(cfg.supabaseUrl+'/functions/v1/ats-public-intake-file-analyzer',{
+          method:'POST',
+          headers:{apikey:cfg.supabaseKey,Authorization:'Bearer '+cfg.supabaseKey},
+          body:form
+        });
+        const data=await resp.json().catch(()=>null);
+        if(!resp.ok||!data?.ok)throw new Error(data?.error||'File pre-analysis failed');
+        next.push({...data,signature});
+      }catch(error){
+        console.warn('ATS pre-order file analysis failed',file.name,error);
+        next.push({signature,file_name:file.name,summary:'',discovery_signals:{},observations:[],fallback:true});
+      }
+    }
+    state.fileInsights=next;
+    return next;
+  }
+  async function analyzeIntake(){
+    try{
+      const fileEvidence=await analyzeSelectedFiles();
+      const {data,error}=await sb.functions.invoke('ats-public-intake-analyzer',{body:{
+        problem:state.problem,extra:state.extra,link:state.link,mode:state.mode,
+        followups:state.followups,skipped_keys:state.skippedKeys,
+        file_evidence:fileEvidence.map(x=>({
+          file_name:x.file_name,summary:x.summary,relevance:x.relevance,
+          discovery_signals:x.discovery_signals||{},observations:x.observations||[]
+        }))
+      }});
+      if(error||!data?.discovery)throw error||new Error('No intake analysis returned');
+      state.intakeAnalysis=data;
+    }catch(error){
+      console.warn('ATS Smart Intake fallback',error);
+      state.intakeAnalysis=localIntakeFallback();
+    }
+    return state.intakeAnalysis;
+  }
+  function renderSelectedFiles(){
+    const host=$('#concierge-file-list');if(!host)return;
+    if(!state.files.length){host.innerHTML='';return}
+    host.innerHTML=state.files.map(file=>`<span class="concierge-file-chip"><b>${esc(file.name)}</b><span>${file.size<1048576?(file.size/1024).toFixed(0)+' KB':(file.size/1048576).toFixed(1)+' MB'}</span></span>`).join('');
+  }
+  function pickFiles(input){
+    const files=[...(input?.files||[])].slice(0,10);
+    const tooLarge=files.find(f=>f.size>26214400);
+    if(tooLarge){
+      showMessage('#concierge-tell-error',(lang()==='ar'?'الملف أكبر من 25 ميجا: ':'File exceeds 25 MB: ')+tooLarge.name);
+      input.value='';
+      return;
+    }
+    state.files=files;
+    state.fileInsights=[];
+    state.intakeAnalysis=null;
+    renderSelectedFiles();
+    clearMessage('#concierge-tell-error');
+  }
+
   function setStage(name){
     state.stage=name;
     $$('.concierge-stage',root).forEach(x=>x.classList.toggle('active',x.dataset.conciergeStage===name));
@@ -263,47 +363,70 @@
 
   function renderUnderstanding(){
     state.analysis=infer(state.problem,state.extra);
-    const a=state.analysis,labels=t().capabilityLabels;
+    const a=state.analysis,smart=state.intakeAnalysis||localIntakeFallback(),u=smart.understanding||{},labels=t().capabilityLabels;
+    const caps=Array.isArray(u.capabilities)&&u.capabilities.length?u.capabilities:a.capabilities;
+    const readiness=Number(smart.readiness_score||0);
     $('#concierge-understanding').innerHTML=
-      `<div class="concierge-read-head"><span>${esc(t().confirm)}</span><small>${esc(t().preliminary)}</small></div>
+      `<div class="concierge-read-head"><span>${esc(t().confirm)}</span><small>${esc(lang()==='ar'?'فهم أولي · اكتمال '+readiness+'%':'INITIAL UNDERSTANDING · '+readiness+'% COVERAGE')}</small></div>
        <div class="concierge-read-grid">
-         <article><small>${esc(t().situation)}</small><strong>${esc(a.situation)}</strong></article>
-         <article class="wide"><small>${esc(t().problem)}</small><strong>${esc(a.coreProblem)}</strong></article>
-         <article class="wide"><small>${esc(t().direction)}</small><strong>${esc(a.direction)}</strong></article>
+         <article><small>${esc(t().situation)}</small><strong>${esc(u.situation||a.situation)}</strong></article>
+         <article><small>${esc(t().problem)}</small><strong>${esc(u.problem_summary||a.coreProblem)}</strong></article>
+         <article><small>${esc(t().context)}</small><strong>${esc(a.context)}</strong></article>
+         <article><small>${esc(t().direction)}</small><strong>${esc(u.direction||a.direction)}</strong></article>
        </div>
-       <div class="concierge-read-caps"><small>${esc(t().capabilities)}</small><div>${a.capabilities.map(k=>`<span>${esc(labels[k]||k)}</span>`).join('')}</div></div>`;
+       <div class="concierge-read-caps"><small>${esc(t().capabilities)}</small><div>${caps.map(k=>`<span>${esc(labels[k]||k)}</span>`).join('')}</div></div>`;
   }
 
-  function renderClarification(){
-    const a=state.analysis;
-    const needs=state.mode!=='quick'&&(a.stageConfidence<.76||state.mode==='unsure');
-    if(!needs){showSnapshot();return}
+  async function renderClarification(){
+    const smart=state.intakeAnalysis||localIntakeFallback();
+    const q=smart.next_question;
+    const asked=state.followups.length+state.skippedKeys.length;
+    if(!q||Number(smart.readiness_score||0)>=75||asked>=maxSmartQuestions()){showSnapshot();return}
     const host=$('#concierge-clarify');
     host.classList.remove('hidden');
-    host.innerHTML=`<small>${esc(t().askStage)}</small><div class="concierge-clarify-options">${t().stageOptions.map(([v,label])=>`<button type="button" data-stage-answer="${v}">${esc(label)}</button>`).join('')}</div><button type="button" class="concierge-skip" data-stage-answer="unsure">${lang()==='ar'?'مش مهم دلوقتي — كمل':'Not important right now — continue'}</button>`;
+    host.innerHTML=`<div class="concierge-smart-question">
+      <span>${esc(lang()==='ar'?'سؤال واحد يغيّر القرار التالي':'ONE QUESTION THAT CHANGES THE NEXT DECISION')}</span>
+      <h4>${esc(q.question)}</h4>
+      <p>${esc(q.why||'')}</p>
+      <textarea id="concierge-followup-answer" maxlength="5000" placeholder="${esc(lang()==='ar'?'جاوب بطريقتك — مثال أو موقف حقيقي أفضل من إجابة طويلة.':'Answer naturally — a real example is more useful than a long answer.')}" ></textarea>
+      <div class="concierge-smart-question-actions">
+        <button type="button" class="primary" id="concierge-followup-send">${esc(lang()==='ar'?'إجابة ومتابعة ←':'ANSWER & CONTINUE →')}</button>
+        <button type="button" id="concierge-followup-skip">${esc(lang()==='ar'?'مش عارف دلوقتي':'I DON’T KNOW RIGHT NOW')}</button>
+      </div>
+      <div class="concierge-intake-status"><span>${esc((asked+1)+' / '+maxSmartQuestions())}</span><b>${esc(lang()==='ar'?'بنسأل فقط اللي يمنع التخمين':'We only ask what prevents guessing')}</b></div>
+    </div>`;
     host.scrollIntoView({behavior:'smooth',block:'center'});
-    $$('[data-stage-answer]',host).forEach(btn=>btn.addEventListener('click',()=>{
-      state.clarificationAnswer=btn.dataset.stageAnswer;
-      if(btn.dataset.stageAnswer!=='unsure'){
-        state.analysis.stage=btn.dataset.stageAnswer;
-        state.analysis.stageConfidence=1;
-        state.analysis.situation=t().stages[btn.dataset.stageAnswer]||t().stages.unknown;
-      }
-      showSnapshot();
-    }));
+    $('#concierge-followup-send',host)?.addEventListener('click',async()=>{
+      const box=$('#concierge-followup-answer',host),answer=box?.value.trim()||'';
+      if(!answer){focusInvalid(box);return}
+      const btn=$('#concierge-followup-send',host);btn.disabled=true;btn.textContent=lang()==='ar'?'بنحلل الإجابة…':'ANALYZING…';
+      state.followups.push({key:q.key,question:q.question,answer});
+      persist();
+      await analyzeIntake();
+      renderUnderstanding();
+      await renderClarification();
+    });
+    $('#concierge-followup-skip',host)?.addEventListener('click',async()=>{
+      if(!state.skippedKeys.includes(q.key))state.skippedKeys.push(q.key);
+      persist();
+      const btn=$('#concierge-followup-skip',host);btn.disabled=true;btn.textContent=lang()==='ar'?'بنكمل…':'CONTINUING…';
+      await analyzeIntake();
+      renderUnderstanding();
+      await renderClarification();
+    });
   }
 
   function showSnapshot(){
-    const a=state.analysis||infer(state.problem,state.extra);
-    const labels=t().capabilityLabels;
+    const a=state.analysis||infer(state.problem,state.extra),smart=state.intakeAnalysis||localIntakeFallback(),u=smart.understanding||{};
+    const labels=t().capabilityLabels,caps=Array.isArray(u.capabilities)&&u.capabilities.length?u.capabilities:a.capabilities;
     const nodes=[
-      [t().situation,a.situation],
-      [t().problem,a.coreProblem],
+      [t().situation,u.situation||a.situation],
+      [t().problem,u.problem_summary||a.coreProblem],
       [t().context,a.context],
-      [t().direction,a.direction]
+      [t().direction,u.direction||a.direction]
     ];
     $('#concierge-problem-map').innerHTML=nodes.map(([label,value],i)=>`<article><span>${String(i+1).padStart(2,'0')}</span><small>${esc(label)}</small><strong>${esc(value)}</strong></article>${i<nodes.length-1?'<i>→</i>':''}`).join('');
-    $('#concierge-capabilities').innerHTML=`<small>${esc(t().capabilities)}</small><div>${a.capabilities.map(k=>`<span>${esc(labels[k]||k)}</span>`).join('')}</div><p>${esc(t().preliminary)}</p>`;
+    $('#concierge-capabilities').innerHTML=`<small>${esc(t().capabilities)}</small><div>${caps.map(k=>`<span>${esc(labels[k]||k)}</span>`).join('')}</div><p>${esc(lang()==='ar'?'تم تنظيم '+Number(smart.readiness_score||0)+'% من بيانات التشخيص الأولية قبل إرسال الطلب.':'We structured '+Number(smart.readiness_score||0)+'% of the initial diagnostic data before submission.')}</p>`;
     setStage('snapshot');
   }
 
@@ -362,7 +485,7 @@
     $('#concierge-context')?.classList.toggle('hidden');
   });
 
-  $('#concierge-understand')?.addEventListener('click',()=>{
+  $('#concierge-understand')?.addEventListener('click',async()=>{
     clearMessage('#concierge-tell-error');
     state.problem=$('#concierge-problem').value.trim();
     state.link=$('#concierge-link').value.trim();
@@ -373,8 +496,12 @@
       focusInvalid($('#concierge-problem'));
       return;
     }
+    const btn=$('#concierge-understand'),old=btn.textContent;
+    btn.disabled=true;btn.textContent=lang()==='ar'?'ATS بيحلل كلامك…':'ATS IS READING THIS…';
+    await analyzeIntake();
     renderUnderstanding();
     setStage('understand');
+    btn.disabled=false;btn.textContent=old;
   });
 
   $('#concierge-adjust')?.addEventListener('click',()=>setStage('tell'));
@@ -382,6 +509,30 @@
   $('#concierge-snapshot-back')?.addEventListener('click',()=>setStage('understand'));
   $('#concierge-contact-next')?.addEventListener('click',()=>setStage('contact'));
   $('#concierge-contact-back')?.addEventListener('click',()=>setStage('snapshot'));
+
+  async function uploadOrderEvidence(grant,btn){
+    const results=[];
+    for(let i=0;i<state.files.length;i++){
+      const file=state.files[i];
+      btn.textContent=lang()==='ar'?`رفع وتحليل الملفات ${i+1}/${state.files.length}…`:`UPLOADING & ANALYZING ${i+1}/${state.files.length}…`;
+      try{
+        const form=new FormData();form.append('grant',grant);form.append('file',file,file.name);
+        const resp=await fetch(cfg.supabaseUrl+'/functions/v1/ats-public-lead-file-upload',{
+          method:'POST',
+          headers:{apikey:cfg.supabaseKey,Authorization:'Bearer '+cfg.supabaseKey},
+          body:form
+        });
+        const uploaded=await resp.json().catch(()=>null);
+        if(!resp.ok||!uploaded?.file?.id)throw new Error(uploaded?.error||'File upload failed');
+        const analyzed=await sb.functions.invoke('ats-lead-file-analyzer',{body:{file_id:uploaded.file.id,upload_grant:grant}});
+        results.push({file:file.name,uploaded:true,analyzed:!analyzed.error});
+      }catch(error){
+        console.warn('ATS intake file failed',file.name,error);
+        results.push({file:file.name,uploaded:false,analyzed:false});
+      }
+    }
+    return results;
+  }
 
   $('#concierge-submit')?.addEventListener('click',async()=>{
     clearMessage('#concierge-submit-error');
@@ -402,15 +553,29 @@
       return;
     }
 
-    const a=state.analysis||infer(state.problem,state.extra);
+    const local=state.analysis||infer(state.problem,state.extra);
+    const smart=state.intakeAnalysis||localIntakeFallback();
     const labels=t().capabilityLabels;
-    const capabilityNames=a.capabilities.map(k=>labels[k]||k);
-    const confidence={
-      problem:Number(a.problemConfidence.toFixed(2)),
-      stage:Number(a.stageConfidence.toFixed(2))
-    };
+    const caps=Array.isArray(smart?.understanding?.capabilities)&&smart.understanding.capabilities.length?smart.understanding.capabilities:local.capabilities;
+    const capabilityNames=caps.map(k=>labels[k]||k);
+    const discovery={...(smart.discovery||{})};
+    discovery.original_words=state.problem;
+    discovery.extra_context=state.extra||'';
+    discovery.context_link=state.link||'';
+    discovery.conversation_mode=state.mode;
+    discovery.followups=state.followups;
+    discovery.skipped_keys=state.skippedKeys;
+    discovery.intake_readiness=Number(smart.readiness_score||0);
+    discovery.intake_confidence=Number(smart.confidence||0);
+    discovery.understanding=smart.understanding||{};
+    discovery.selected_files=state.files.map(f=>({name:f.name,size:f.size,type:f.type||''}));
+    discovery.preorder_file_evidence=state.fileInsights.map(x=>({
+      file_name:x.file_name,summary:x.summary||'',relevance:x.relevance||'unclear',
+      discovery_signals:x.discovery_signals||{},observations:x.observations||[]
+    }));
+
     let goal=[
-      'ATS STUDIO CONCIERGE — DISCOVERY INTAKE',
+      'ATS STUDIO CONCIERGE — SMART INTAKE',
       '',
       'ORIGINAL CLIENT WORDS:',
       state.problem,
@@ -418,14 +583,21 @@
       state.link?'CONTEXT LINK:\n'+state.link:'',
       state.extra?'EXTRA CONTEXT:\n'+state.extra:'',
       '',
-      'DISCOVERY SNAPSHOT:',
-      'Current situation: '+a.situation,
-      'Core problem: '+a.coreProblem,
-      'Possible direction: '+a.direction,
+      'STRUCTURED DISCOVERY:',
+      'Current state: '+(discovery.current_state||''),
+      'Impact: '+(discovery.impact||''),
+      'Evidence: '+(discovery.evidence||''),
+      'Affected people: '+(discovery.affected_people||''),
+      'Process point: '+(discovery.process_point||''),
+      'Previous attempts: '+(discovery.prior_attempts||''),
+      'Desired outcome: '+(discovery.desired_outcome||''),
+      'Constraints: '+(discovery.constraints||''),
+      '',
+      'ATS INITIAL READING:',
+      'Problem: '+(smart?.understanding?.problem_summary||local.coreProblem),
+      'Direction: '+(smart?.understanding?.direction||local.direction),
       'Likely capabilities: '+capabilityNames.join(', '),
-      'Conversation mode: '+state.mode,
-      state.clarificationAnswer?'Critical clarification: '+state.clarificationAnswer:'',
-      'Internal confidence: '+JSON.stringify(confidence)
+      'Intake readiness: '+Number(smart.readiness_score||0)+'%'
     ].filter(Boolean).join('\n');
     if(goal.length>7900)goal=goal.slice(0,7900);
 
@@ -433,7 +605,7 @@
     const original=btn.textContent;
     btn.disabled=true;btn.textContent=t().sending;
     try{
-      const {data,error}=await sb.rpc('studio_submit_public_lead',{
+      const {data,error}=await sb.rpc('studio_submit_public_lead_v2',{
         p_full_name:state.name,
         p_email:state.email,
         p_phone:state.phone||null,
@@ -442,13 +614,24 @@
         p_project_goal:goal,
         p_timeline:null,
         p_budget_range:null,
-        p_source_path:`${location.pathname}${location.hash||''} · studio-concierge`
+        p_source_path:`${location.pathname}${location.hash||''} · studio-concierge-smart-intake`,
+        p_discovery:discovery
       });
       if(error)throw error;
       const row=Array.isArray(data)?data[0]:data;
+      const grant=row?.upload_token||'';
+
+      if(grant&&state.files.length)await uploadOrderEvidence(grant,btn);
+
+      if(grant){
+        btn.textContent=lang()==='ar'?'تجهيز التشخيص الأولي…':'PREPARING INITIAL DIAGNOSIS…';
+        try{await sb.functions.invoke('ats-problem-solver',{body:{upload_grant:grant}})}catch(error){console.warn('ATS intake diagnosis deferred',error)}
+      }
+
       $('#concierge-request-code').textContent=row?.lead_code||t().received;
       $('#concierge-track').href=`/client-access/?email=${encodeURIComponent(state.email)}`;
       try{localStorage.removeItem(STORAGE)}catch(_){}
+      state.files=[];
       setStage('success');
     }catch(err){
       console.error('ATS Studio Concierge submit failed',err);
@@ -494,8 +677,10 @@
 
   restore();
   bindDraftInputs();
-  $$('.concierge-mode',root).forEach(x=>x.classList.toggle('active',x.dataset.mode===state.mode));
+  $('#concierge-files')?.addEventListener('change',e=>pickFiles(e.currentTarget));
+  $('.concierge-mode',root).forEach(x=>x.classList.toggle('active',x.dataset.mode===state.mode));
   if(state.link||state.extra)$('#concierge-context')?.classList.remove('hidden');
+  renderSelectedFiles();
   refreshLocale();
   document.getElementById('lang-toggle')?.addEventListener('click',()=>setTimeout(refreshLocale,80));
 })();

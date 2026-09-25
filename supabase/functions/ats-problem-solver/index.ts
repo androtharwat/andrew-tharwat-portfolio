@@ -203,10 +203,19 @@ Deno.serve(async(req:Request)=>{
       isTrustedAdmin=!!trusted&&trusted.status==='approved'&&trusted.secret_hash===secretHash
     }
 
-    let leadId=clean(body?.lead_id,80)
-    let triggerSource=isTrustedAdmin?'admin':'client_answer'
+    const uploadGrant=clean(body?.upload_grant,200)
+    let grantLeadId=''
+    if(uploadGrant){
+      const grantHash=await sha256hex(uploadGrant)
+      const {data:g}=await admin.from('studio_public_upload_grants')
+        .select('lead_id,status,expires_at').eq('token_hash',grantHash).maybeSingle()
+      if(g&&g.status==='active'&&new Date(g.expires_at).getTime()>Date.now())grantLeadId=g.lead_id
+    }
 
-    if(!isTrustedAdmin){
+    let leadId=isTrustedAdmin?clean(body?.lead_id,80):grantLeadId
+    let triggerSource=isTrustedAdmin?'admin':grantLeadId?'system':'client_answer'
+
+    if(!isTrustedAdmin&&!grantLeadId){
       const authHeader=req.headers.get('authorization')||''
       const token=authHeader.replace(/^Bearer\s+/i,'').trim()
       if(!token)return json({error:'Authentication required'},401)

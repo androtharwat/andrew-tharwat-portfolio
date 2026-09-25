@@ -103,14 +103,8 @@ Deno.serve(async(req:Request)=>{
   try{
     const body=await req.json().catch(()=>({}))
     fileId=clean(body?.file_id,80)
+    const uploadGrant=clean(body?.upload_grant,200)
     if(!fileId)return json({error:'File is required'},400)
-
-    const authHeader=req.headers.get('authorization')||''
-    const token=authHeader.replace(/^Bearer\s+/i,'').trim()
-    if(!token)return json({error:'Authentication required'},401)
-    const {data:userData,error:userError}=await admin.auth.getUser(token)
-    const email=clean(userData?.user?.email,320).toLowerCase()
-    if(userError||!email)return json({error:'Authentication required'},401)
 
     const {data:file,error:fileError}=await admin.from('studio_files')
       .select('id,lead_id,file_name,storage_path,mime_type,file_size,analysis_status')
@@ -118,7 +112,25 @@ Deno.serve(async(req:Request)=>{
     if(fileError||!file||!file.lead_id)return json({error:'Lead file not found'},404)
 
     const {data:lead}=await admin.from('studio_leads').select('id,email,lead_code,service,project_goal').eq('id',file.lead_id).maybeSingle()
-    if(!lead||String(lead.email||'').toLowerCase()!==email)return json({error:'File access denied'},403)
+    if(!lead)return json({error:'Lead not found'},404)
+
+    let authorized=false
+    if(uploadGrant){
+      const tokenHash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(uploadGrant))
+      const hex=[...new Uint8Array(tokenHash)].map(x=>x.toString(16).padStart(2,'0')).join('')
+      const {data:g}=await admin.from('studio_public_upload_grants')
+        .select('lead_id,status,expires_at').eq('token_hash',hex).maybeSingle()
+      authorized=!!g&&g.status==='active'&&g.lead_id===file.lead_id&&new Date(g.expires_at).getTime()>Date.now()
+    }else{
+      const authHeader=req.headers.get('authorization')||''
+      const token=authHeader.replace(/^Bearer\s+/i,'').trim()
+      if(token){
+        const {data:userData,error:userError}=await admin.auth.getUser(token)
+        const email=clean(userData?.user?.email,320).toLowerCase()
+        authorized=!userError&&!!email&&String(lead.email||'').toLowerCase()===email
+      }
+    }
+    if(!authorized)return json({error:'File access denied'},403)
 
     await admin.from('studio_files').update({analysis_status:'analyzing'}).eq('id',file.id)
 

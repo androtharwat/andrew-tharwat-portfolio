@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="/v9/v9-phase4.css?v=1" />
   <link rel="stylesheet" href="/v9/v9-phase5.css?v=1" />
   <link rel="stylesheet" href="/v9/v9-polish.css?v=1" />
-  <link rel="stylesheet" href="/v9/v9-concierge.css?v=1" />
+  <link rel="stylesheet" href="/v9/v9-concierge.css?v=2" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
 </head>
 <body data-lang="en">
@@ -131,7 +131,7 @@
               <textarea id="concierge-problem" rows="7" maxlength="4500" data-en-placeholder="Example: I have an idea for a product, but I’m not sure how to turn it into something people can understand, buy and use..." data-ar-placeholder="مثال: عندي فكرة منتج، بس مش عارف أحولها لحاجة الناس تفهمها وتشتريها وتستخدمها..."></textarea>
               <div class="concierge-input-tools">
                 <button id="concierge-voice" type="button" class="concierge-tool"><span>◉</span><b data-en="VOICE" data-ar="صوت">VOICE</b></button>
-                <button id="concierge-context-toggle" type="button" class="concierge-tool"><span>＋</span><b data-en="ADD CONTEXT" data-ar="أضف حاجة تساعدنا">ADD CONTEXT</b></button>
+                <button id="concierge-context-toggle" type="button" class="concierge-tool"><span>＋</span><b data-en="ADD CONTEXT / FILES" data-ar="أضف معلومات أو ملفات">ADD CONTEXT / FILES</b></button>
                 <span class="concierge-reassurance" data-en="No polished brief needed." data-ar="مش محتاج تكتب بريف مرتب.">No polished brief needed.</span>
               </div>
               <div id="concierge-context" class="concierge-context hidden">
@@ -139,6 +139,15 @@
                 <input id="concierge-link" type="url" inputmode="url" placeholder="https://" />
                 <label for="concierge-extra" data-en="ANY EXTRA CONTEXT — OPTIONAL" data-ar="أي سياق إضافي — اختياري">ANY EXTRA CONTEXT — OPTIONAL</label>
                 <textarea id="concierge-extra" rows="3" maxlength="1500" data-en-placeholder="Anything you think might help us understand." data-ar-placeholder="أي حاجة شايف إنها ممكن تساعدنا نفهم."></textarea>
+                <div class="concierge-file-context">
+                  <label for="concierge-files" data-en="PROJECT FILES — OPTIONAL" data-ar="ملفات تخص المشروع — اختياري">PROJECT FILES — OPTIONAL</label>
+                  <label class="concierge-file-picker" for="concierge-files">
+                    <input id="concierge-files" type="file" multiple accept=".pdf,.txt,.csv,.json,.xml,.md,.html,.rtf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg" />
+                    <b data-en="+ ADD PROJECT FILES" data-ar="+ أضف ملفات المشروع">+ ADD PROJECT FILES</b>
+                    <span data-en="Reports, screenshots, data, voice notes or references · up to 25 MB each" data-ar="تقارير، صور، بيانات، فويس نوت أو مراجع · حتى 25 ميجا للملف">Reports, screenshots, data, voice notes or references · up to 25 MB each</span>
+                  </label>
+                  <div id="concierge-file-list" class="concierge-file-list"></div>
+                </div>
               </div>
             </div>
             <div id="concierge-tell-error" class="concierge-message hidden" role="alert"></div>
@@ -161,7 +170,7 @@
           <section class="concierge-stage" data-concierge-stage="snapshot">
             <div class="concierge-stage-copy">
               <small data-en="DISCOVERY SNAPSHOT" data-ar="DISCOVERY SNAPSHOT">DISCOVERY SNAPSHOT</small>
-              <h3 data-en="We have enough to start." data-ar="عندنا معلومات كفاية نبدأ بيها.">We have enough to start.</h3>
+              <h3 data-en="We have a structured starting point." data-ar="عندنا نقطة بداية منظمة وواضحة.">We have a structured starting point.</h3>
               <p data-en="This is not a final scope or proposal. It is the first clear map of the problem — so the next conversation starts from understanding, not from zero." data-ar="دي مش Scope نهائية ولا عرض سعر. دي أول خريطة واضحة للمشكلة، علشان الحوار الجاي يبدأ من فهم مش من الصفر.">This is not a final scope or proposal. It is the first clear map of the problem — so the next conversation starts from understanding, not from zero.</p>
             </div>
             <div id="concierge-problem-map" class="concierge-problem-map"></div>
@@ -195,7 +204,7 @@
             <div class="concierge-success-mark">✓</div>
             <small data-en="REQUEST RECEIVED" data-ar="تم استلام الطلب">REQUEST RECEIVED</small>
             <h3 data-en="We have enough to start." data-ar="عندنا معلومات كفاية نبدأ بيها.">We have enough to start.</h3>
-            <p data-en="Your original words and the Discovery Snapshot are now inside Studio OS. We’ll review the problem before suggesting a service or scope." data-ar="كلامك الأصلي وDiscovery Snapshot بقوا داخل Studio OS. هنراجع المشكلة الأول قبل ما نقترح خدمة أو Scope.">Your original words and the Discovery Snapshot are now inside Studio OS. We’ll review the problem before suggesting a service or scope.</p>
+            <p data-en="Your request, answers and project evidence were structured before reaching ATS, so the review starts with context instead of starting from zero." data-ar="تم تنظيم طلبك وإجاباتك وأدلة المشروع قبل ما توصل لـ ATS، علشان المراجعة تبدأ من فهم واضح بدل ما نبدأ من الصفر.">Your request, answers and project evidence were structured before reaching ATS, so the review starts with context instead of starting from zero.</p>
             <div class="concierge-request-id"><span data-en="REQUEST ID" data-ar="رقم الطلب">REQUEST ID</span><b id="concierge-request-code">—</b></div>
             <div class="concierge-actions">
               <a id="concierge-track" class="btn primary" href="/client-access/" data-en="TRACK REQUEST →" data-ar="متابعة الطلب ←">TRACK REQUEST →</a>
@@ -218,7 +227,7 @@
   <script src="/v9/v9-brief-recovery.js?v=1"></script>
   <script src="/v9/v9-phase2.js?v=4"></script>
   <script src="/v9/v9-lead-submit.js?v=4"></script>
-  <script src="/v9/v9-concierge.js?v=1"></script>
+  <script src="/v9/v9-concierge.js?v=2"></script>
   <script src="/v9/v9-polish.js?v=13"></script>
 </body>
 </html>

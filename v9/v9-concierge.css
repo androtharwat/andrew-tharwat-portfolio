@@ -524,3 +524,39 @@ body[data-lang=ar] .concierge-problem-map>i{transform:scaleX(-1)}
   .concierge-tool.listening{animation:none}
   .concierge-mode,.concierge-tool{transition:none}
 }
+/* Smart intake — richer data without a longer workflow */
+.concierge-file-context{margin-top:4px}
+.concierge-file-picker{display:flex!important;align-items:center;justify-content:space-between;gap:12px;min-height:58px;margin:0!important;padding:11px 13px;border:1px dashed rgba(153,205,226,.14);border-radius:12px;background:#061721;cursor:pointer;transition:.18s ease}
+.concierge-file-picker:hover{border-color:rgba(239,35,60,.30);background:#071b27}
+.concierge-file-picker input{display:none}
+.concierge-file-picker b{color:#dce8ed;font-size:7.4px;letter-spacing:.07em}
+.concierge-file-picker span{max-width:64%;color:#627b87;font-size:7px;line-height:1.45;text-align:right}
+.concierge-file-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.concierge-file-chip{display:flex;align-items:center;gap:7px;max-width:100%;padding:6px 8px;border:1px solid rgba(153,205,226,.09);border-radius:999px;background:rgba(255,255,255,.015);color:#9eb0b8;font-size:7px}
+.concierge-file-chip b{max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c6d4da;font-size:7px}
+.concierge-file-chip span{color:#607985}
+
+.concierge-smart-question{margin-top:14px;padding:17px;border:1px solid rgba(239,35,60,.18);border-radius:13px;background:linear-gradient(145deg,rgba(239,35,60,.055),rgba(255,255,255,.012))}
+.concierge-smart-question>span{display:block;color:#ff6576;font-size:6.8px;font-weight:900;letter-spacing:.1em}
+.concierge-smart-question h4{margin:8px 0 0;color:#eef5f7;font-size:15px;line-height:1.5}
+.concierge-smart-question p{margin:6px 0 0;color:#708a96;font-size:8px;line-height:1.55}
+.concierge-smart-question textarea{width:100%;min-height:92px;margin-top:12px;padding:12px;box-sizing:border-box;resize:vertical;border:1px solid rgba(153,205,226,.12);border-radius:11px;outline:none;background:#071923;color:#edf5f8;font:500 11px/1.65 Montserrat,Alexandria,sans-serif}
+.concierge-smart-question textarea:focus{border-color:rgba(239,35,60,.42);box-shadow:0 0 0 3px rgba(239,35,60,.06)}
+.concierge-smart-question-actions{display:flex;gap:8px;margin-top:10px}
+.concierge-smart-question-actions button{min-height:40px;padding:0 13px;border:1px solid rgba(153,205,226,.10);border-radius:10px;background:#081b27;color:#98acb5;font-size:7px;font-weight:800;cursor:pointer}
+.concierge-smart-question-actions button.primary{border-color:rgba(239,35,60,.30);background:rgba(239,35,60,.09);color:#fff}
+.concierge-intake-status{margin-top:9px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#607a86;font-size:6.8px}
+.concierge-intake-status b{color:#8aa8b5;font-size:7px}
+.concierge-intake-status i{font-style:normal;color:#22d3a7}
+.concierge-actions .btn[disabled],.concierge-confirm-row .btn[disabled]{opacity:.55;cursor:wait;transform:none}
+
+[dir="rtl"] .concierge-file-picker span,
+body[data-lang=ar] .concierge-file-picker span{text-align:left}
+[dir="rtl"] .concierge-smart-question textarea,
+body[data-lang=ar] .concierge-smart-question textarea{text-align:right}
+@media(max-width:680px){
+  .concierge-file-picker{align-items:flex-start;flex-direction:column}
+  .concierge-file-picker span{max-width:100%;text-align:start!important}
+  .concierge-smart-question-actions{flex-direction:column}
+  .concierge-smart-question-actions button{width:100%}
+}

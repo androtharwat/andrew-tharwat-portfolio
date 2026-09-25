@@ -351,6 +351,23 @@
     $('#system-next-question-reason').textContent=[q.reason,q.decision_value].filter(Boolean).join(' · ');
     $('#system-next-action').textContent=c.system_next_action||analysis.next_best_action||'—';
 
+    const planRoot=$('#system-action-plan-items'),planNote=$('#system-action-plan-note');
+    const proposed=state.solutionTasks.filter(x=>x.status==='proposed'&&x.source_type==='ai').slice(0,3);
+    const fallbackPlan=Array.isArray(analysis.recommended_tasks)?analysis.recommended_tasks.slice(0,3):[];
+    const plan=proposed.length?proposed:fallbackPlan;
+    if(planRoot){
+      planRoot.innerHTML=plan.length?plan.map((task,i)=>{
+        const type=String(task.task_type||'task').replaceAll('_',' ').toUpperCase();
+        const owner=String(task.owner_type||'ats').replaceAll('_',' ').toUpperCase();
+        const priority=String(task.priority||'medium').toUpperCase();
+        return '<article><i>'+(i+1)+'</i><div><div class="system-action-meta"><span>'+esc(type)+'</span><span>'+esc(owner)+'</span><span>'+esc(priority)+'</span></div><b>'+esc(task.title||'Required task')+'</b><p>'+esc(task.rationale||task.expected_effect||'')+'</p></div></article>'
+      }).join(''):'<div class="ops-empty">'+esc(stateName==='ready'?'No execution task is justified yet. Follow the next evidence question first.':'Run ATS diagnosis to derive the next tasks.')+'</div>';
+    }
+    if(planNote){
+      const clientTasks=plan.filter(x=>String(x.owner_type||'')==='client').length;
+      planNote.textContent=plan.length?(plan.length+' next task(s) · '+clientTasks+' need client input'):(stateName==='ready'?'Evidence first':'Diagnosis pending');
+    }
+
     const direction=analysis.solution_direction||{};
     $('#system-solution-direction').textContent=[direction.strategy,direction.why_this_direction].filter(Boolean).join('\n')||'Not enough evidence yet.';
     const verification=analysis.verification_plan||{};

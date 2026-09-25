@@ -387,6 +387,12 @@
     'AI suggestions remain hypotheses until ATS validates them':'اقتراحات الذكاء الاصطناعي تظل فرضيات حتى تتحقق منها ATS',
     'WORK PLAN':'خطة العمل','Tasks justified by evidence and validated causes':'المهام التي تبررها الأدلة والأسباب المتحقق منها',
     'Approve only the work supported by the diagnosis':'اعتمد فقط العمل الذي يدعمه التشخيص',
+    'ATS SHOULD DO NOW':'ما الذي يجب على ATS عمله الآن',
+    'Only the next tasks justified by the current evidence':'المهام التالية فقط التي تبررها الأدلة الحالية',
+    'Waiting for diagnosis.':'بانتظار التشخيص.','No tasks derived yet.':'لم يتم استنتاج مهام بعد.',
+    'No execution task is justified yet. Follow the next evidence question first.':'لا توجد مهمة تنفيذ مبررة حتى الآن. استكمل سؤال الدليل التالي أولًا.',
+    'Run ATS diagnosis to derive the next tasks.':'شغّل تشخيص ATS لاستنتاج المهام التالية.',
+    'Evidence first':'الأدلة أولًا','Diagnosis pending':'التشخيص قيد الانتظار',
     'admin only':'للإدارة فقط','client visible':'ظاهر للعميل'
   };
 
@@ -462,6 +468,7 @@
     if((m=core.match(/^(\d+) approved$/))) return m[1]+' معتمدة';
     if((m=core.match(/^System next question:\s*(.+)$/))) return 'سؤال النظام التالي: '+m[1];
     if((m=core.match(/^(.+) · (\d+)% confidence · (\d+) cause hypothesis\(es\) · (\d+) proposed task\(s\)$/))) return m[1]+' · ثقة '+m[2]+'% · '+m[3]+' فرضيات أسباب · '+m[4]+' مهام مقترحة';
+    if((m=core.match(/^(\d+) next task\(s\) · (\d+) need client input$/))) return m[1]+' مهام تالية · '+m[2]+' تحتاج مدخلات من العميل';
     return core;
   }
 
