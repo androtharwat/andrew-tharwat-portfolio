@@ -33,7 +33,7 @@
     $('#topic-published').textContent=dateLabel(content.published_at);
     $('#topic-title').textContent=txt(content.title);
     $('#topic-summary').textContent=txt(content.summary);
-    document.title=txt(content.seo?.meta_title?{en:content.seo.meta_title,ar:content.seo.meta_title_ar}:content.title)+' — Andrew Tharwat Studio';
+    document.title=txt(content.seo?.meta_title?{en:content.seo.meta_title,ar:content.seo.meta_title_ar}:content.title)+' — ATS';
     const meta=document.querySelector('meta[name="description"]');if(meta){const d=lang==='ar'?content.seo?.meta_description_ar:content.seo?.meta_description;meta.content=d||txt(content.summary)}
     $('#topic-sections').innerHTML=(content.sections||[]).map(s=>`<section class="topic-section" id="section-${esc(s.key||s.id)}"><h2>${esc(txt(s.title))}</h2><div class="body">${esc(txt(s.body))}</div>${renderDataBlock(s.data)}</section>`).join('');
     $('#topic-tags').innerHTML=(content.tags||[]).map(t=>`<span>${esc(txt(t.name))}</span>`).join('')||`<span>${lang==='ar'?'لا توجد وسوم':'No tags'}</span>`;
