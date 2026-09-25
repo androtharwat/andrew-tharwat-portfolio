@@ -2,8 +2,8 @@
 (() => {
   const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
   const esc=(v='')=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
-  const money=v=>new Intl.NumberFormat('en-US').format(Number(v||0));
-  const fmt=v=>v?new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)):'—';
+  const money=v=>window.ATS_I18N?.formatNumber?.(v)??new Intl.NumberFormat('en-US').format(Number(v||0));
+  const fmt=v=>v?(window.ATS_I18N?.formatDate?.(v,{day:'2-digit',month:'short',year:'numeric'})??new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v))):'—';
   const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[]};
   let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
@@ -569,6 +569,21 @@
   $$('[data-close-unified]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.closeUnified)?.close()));
 
   $('#admin-nav')?.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;const tab=b.dataset.tab;location.hash=tab==='dashboard'?'':tab;loadPanel(tab);if(tab==='inbox'){clearInterval(inboxTimer);inboxTimer=setInterval(()=>{if(location.hash==='#inbox')loadInbox(true)},12000)}else{clearInterval(inboxTimer);inboxTimer=null}});
+  window.addEventListener('ats-admin-language-change',()=>{
+    if(state.loaded.dashboard)void loadDashboard(true);
+    if(state.loaded.leads)renderLeads();
+    if(state.loaded.inbox)renderInbox();
+    if(state.loaded.clients)renderClients();
+    if(state.loaded['studio-projects'])renderProjects();
+    if(state.loaded.proposals)renderProposals();
+    if(state.loaded.payments)renderPayments();
+    if(state.loaded.v9)renderV9();
+    if(state.currentLead){
+      renderLeadTimeline();
+      $('#lead-workspace-received').textContent=(window.ATS_I18N?.t?.('Received')||'Received')+' '+fmt(state.currentLead.created_at);
+      $('#lead-last-contact').textContent=state.currentLead.last_contacted_at?((window.ATS_I18N?.t?.('Last contact')||'Last contact')+' '+fmt(state.currentLead.last_contacted_at)):(window.ATS_I18N?.t?.('No contact logged')||'No contact logged');
+    }
+  });
   window.addEventListener('ats-admin-ready',boot);
   if(!$('#admin-view')?.classList.contains('hidden'))setTimeout(boot,0);
 })();

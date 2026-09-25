@@ -1,0 +1,58 @@
+
+.admin-language-switch{
+  display:flex;align-items:center;gap:5px;padding:4px;
+  border:1px solid rgba(255,255,255,.12);border-radius:999px;
+  background:#071923
+}
+.admin-topbar .admin-language-switch{border-color:#dbe4e9;background:#f4f7f9}
+.auth-card>.admin-language-switch{width:max-content;margin-inline-start:auto;margin-bottom:18px}
+.admin-language-switch span{color:#607a8b;font-size:9px}
+.admin-language-switch button{
+  border:0;background:transparent;color:#708896;border-radius:999px;
+  padding:7px 10px;font:800 9px/1 Montserrat,Arial,sans-serif;cursor:pointer
+}
+.admin-language-switch button.active{background:#e10613;color:#fff}
+html[dir="rtl"] body,
+html[dir="rtl"] button,
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] select{font-family:Cairo,Tahoma,Arial,sans-serif}
+html[dir="rtl"] .admin-shell{direction:rtl}
+html[dir="rtl"] .sidebar{border-right:0;border-left:1px solid rgba(255,255,255,.08)}
+html[dir="rtl"] .sidebar nav button,
+html[dir="rtl"] .sidebar-foot a,
+html[dir="rtl"] .sidebar-foot button{text-align:right}
+html[dir="rtl"] .sidebar nav button.active{box-shadow:inset -3px 0 #e10613}
+html[dir="rtl"] .data-table th{text-align:right}
+html[dir="rtl"] .row-actions{justify-content:flex-start}
+html[dir="rtl"] .toast{right:auto;left:24px}
+html[dir="rtl"] .lead-timeline-item:before{left:auto;right:4px}
+html[dir="rtl"] .lead-contact-summary b,
+html[dir="rtl"] .lead-brief-grid p,
+html[dir="rtl"] .lead-raw-brief pre,
+html[dir="rtl"] .message-bubble p,
+html[dir="rtl"] .collab-row p,
+html[dir="rtl"] .entity-title b,
+html[dir="rtl"] .entity-title small{unicode-bidi:plaintext;text-align:start}
+html[dir="rtl"] input[type="email"],
+html[dir="rtl"] input[type="url"],
+html[dir="rtl"] input[name="slug"],
+html[dir="rtl"] input[name="project_url"],
+html[dir="rtl"] input[name="github_url"],
+html[dir="rtl"] input[name="video_url"],
+html[dir="rtl"] #pairing-code{direction:ltr;text-align:left;font-family:Montserrat,Arial,sans-serif}
+html[dir="rtl"] [name$="_ar"]{direction:rtl;text-align:right}
+html[dir="rtl"] [name="title"],
+html[dir="rtl"] [name="excerpt"],
+html[dir="rtl"] [name="description"],
+html[dir="rtl"] [name="challenge"],
+html[dir="rtl"] [name="solution"],
+html[dir="rtl"] [name="result"],
+html[dir="rtl"] [name="tags"],
+html[dir="rtl"] [name="tools"]{direction:ltr;text-align:left}
+html[dir="rtl"] .dialog-actions{direction:rtl}
+html[dir="rtl"] .media-tile .media-actions{direction:rtl}
+@media(max-width:760px){
+  .admin-topbar .admin-language-switch{padding:3px}
+  .admin-language-switch button{padding:6px 8px}
+}
