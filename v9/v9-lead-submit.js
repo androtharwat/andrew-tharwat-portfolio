@@ -9,8 +9,8 @@
   if(!send)return;
 
   if(note){
-    note.dataset.en='Your project brief will be sent securely to Andrew Tharwat Studio and added to Studio OS.';
-    note.dataset.ar='سيتم إرسال بريف المشروع بأمان إلى Andrew Tharwat Studio وإضافته مباشرة إلى Studio OS.';
+    note.dataset.en='Your project brief will be sent securely to ATS and added to Studio OS.';
+    note.dataset.ar='سيتم إرسال بريف المشروع بأمان إلى ATS وإضافته مباشرة إلى Studio OS.';
     note.textContent=document.body.dataset.lang==='ar'?note.dataset.ar:note.dataset.en;
   }
 
