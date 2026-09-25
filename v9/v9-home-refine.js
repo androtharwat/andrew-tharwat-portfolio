@@ -10,7 +10,7 @@
   function refineHero(){
     copy($('.hero .eyebrow'),'SAFETY · DIGITAL SYSTEMS · CREATIVE · AI','سلامة · أنظمة رقمية · إبداع · ذكاء اصطناعي');
     copy($('.hero h1'),'COMPLEX NEEDS.<br><span>CLEAR, WORKING SOLUTIONS.</span>','احتياجات معقدة.<br><span>حلول واضحة وقابلة للتنفيذ.</span>',true);
-    copy($('#hero-subtitle'),'Andrew Tharwat Studio combines HSE expertise, digital systems, design and AI to solve practical problems — from safer operations to websites, tools, brands and content.','Andrew Tharwat Studio يجمع خبرات HSE والأنظمة الرقمية والتصميم والذكاء الاصطناعي لحل مشكلات عملية — من تشغيل أكثر أمانًا إلى المواقع والأدوات والهوية والمحتوى.');
+    copy($('#hero-subtitle'),'ATS combines HSE expertise, digital systems, design and AI to solve practical problems — from safer operations to websites, tools, brands and content.','ATS يجمع خبرات HSE والأنظمة الرقمية والتصميم والذكاء الاصطناعي لحل مشكلات عملية — من تشغيل أكثر أمانًا إلى المواقع والأدوات والهوية والمحتوى.');
     const actions=$$('.hero-actions .btn');
     if(actions[0]){copy(actions[0],'START A PROJECT →','ابدأ مشروعك ←');actions[0].href='#contact';}
     if(actions[1]){copy(actions[1],'SEE THE WORK','شوف الأعمال');actions[1].href='#work';}
