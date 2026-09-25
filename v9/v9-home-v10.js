@@ -21,7 +21,7 @@
 
   function hero(){
     const h=$('.hero');if(!h)return;
-    set($('.hero .eyebrow'),'ANDREW THARWAT STUDIO · PROBLEM-SOLVING STUDIO','ANDREW THARWAT STUDIO · استوديو لحل المشكلات');
+    set($('.hero .eyebrow'),'ATS · PROBLEM-SOLVING STUDIO','ATS · استوديو لحل المشكلات');
     set($('.hero h1'),'YOU BRING THE PROBLEM.<br><span>WE BUILD THE SOLUTION.</span>','أنت ابدأ بالمشكلة.<br><span>وإحنا نبني الحل.</span>',true);
     set($('#hero-subtitle'),'HSE · DIGITAL · BRAND · CONTENT · AI — one studio built around the problem.','HSE · حلول رقمية · هوية · محتوى · AI — استوديو واحد بيتبني حول المشكلة.');
     const actions=$$('.hero-actions .btn');
@@ -31,7 +31,7 @@
     if(visual){
       visual.className='hero-visual v10-identity-visual v10-open-identity';
       visual.innerHTML=`
-        <div class="v10-open-system" role="img" aria-label="${ar()?'المشكلة تدخل إلى Andrew Tharwat Studio، وتتجمع حولها خبرات HSE والأنظمة الرقمية والإبداع والذكاء الاصطناعي، ثم تتحول إلى حل متكامل':'A real problem flows into Andrew Tharwat Studio, where HSE, digital, creative and AI expertise combine into a complete solution'}">
+        <div class="v10-open-system" role="img" aria-label="${ar()?'المشكلة تدخل إلى ATS، وتتجمع حولها خبرات HSE والأنظمة الرقمية والإبداع والذكاء الاصطناعي، ثم تتحول إلى حل متكامل':'A real problem flows into ATS, where HSE, digital, creative and AI expertise combine into a complete solution'}">
           <div class="v10-ambient-orbit orbit-1" aria-hidden="true"></div>
           <div class="v10-ambient-orbit orbit-2" aria-hidden="true"></div>
           <div class="v10-ambient-orbit orbit-3" aria-hidden="true"></div>
@@ -89,7 +89,7 @@
             <div class="core-orbit core-orbit-c"></div>
             <div class="core-pulse"></div>
             <div class="core-brand"><img src="/assets/logo-mark-official.png" alt="" /></div>
-            <small>ANDREW THARWAT</small>
+            <small>ATS</small>
             <b>STUDIO CORE</b>
             <em>${ar()?'نفهم · نكوّن · نبني':'UNDERSTAND · ASSEMBLE · BUILD'}</em>
           </div>
