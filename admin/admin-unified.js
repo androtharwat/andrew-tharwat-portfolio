@@ -4,10 +4,11 @@
   const esc=(v='')=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const money=v=>new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt=v=>v?new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)):'—';
-  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[]};
+  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[]};
   let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
   const briefNames={goal:'CHALLENGE & OUTCOME',type:'STARTING POINT',team:'POSSIBLE EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
+  const leadStatusLabels={new:'New',contacted:'Contacted',discovery:'Discovery',reviewing:'Reviewing',qualified:'Qualified',proposal_sent:'Proposal Sent',negotiation:'Negotiation',won:'Won',lost:'Lost'};
   const stageOrder=['Onboarding','Content Preparation','Design','Development','Internal QA','Client Review','Revisions','Final Approval','Final Payment','Deployment','Completed'];
   const defaultLayout={work:{columns:3,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['goal','type','team','scope','contact'],hidden:[]}};
 
@@ -41,25 +42,29 @@
     if(state.loaded.dashboard&&!force)return;
     loading('#ops-priority-list');
     try{
-      const [newLeads,unreadInbox,clients,projects,payments,sentProposals,latestLeads,latestMessages,pendingPayments]=await Promise.all([
+      const now=new Date().toISOString();
+      const [newLeads,dueFollowups,unreadInbox,clients,projects,payments,sentProposals,latestLeads,latestMessages,pendingPayments,followups]=await Promise.all([
         count('studio_leads',q=>q.eq('status','new')),
+        count('studio_leads',q=>q.lte('next_action_due_at',now).not('status','in','(won,lost)')),
         count('studio_messages',q=>q.eq('sender_type','client').eq('is_read_by_admin',false)),
         count('studio_clients',q=>q.eq('status','active')),
         count('studio_projects',q=>q.neq('status','completed')),
         count('studio_payments',q=>q.eq('status','pending')),
         count('studio_proposals',q=>q.eq('status','sent')),
-        sb().from('studio_leads').select('id,lead_code,full_name,company_name,service,status,created_at').order('created_at',{ascending:false}).limit(5),
+        sb().from('studio_leads').select('id,lead_code,full_name,company_name,service,status,created_at,next_action,next_action_due_at').order('created_at',{ascending:false}).limit(5),
         sb().from('studio_messages').select('id,project_id,body,created_at,studio_projects(project_code,title)').eq('sender_type','client').eq('is_read_by_admin',false).order('created_at',{ascending:false}).limit(4),
-        sb().from('studio_payments').select('id,payment_code,payment_type,amount,currency,status,due_date').eq('status','pending').order('due_date',{ascending:true}).limit(3)
+        sb().from('studio_payments').select('id,payment_code,payment_type,amount,currency,status,due_date').eq('status','pending').order('due_date',{ascending:true}).limit(3),
+        sb().from('studio_leads').select('id,lead_code,full_name,next_action,next_action_due_at,status').lte('next_action_due_at',now).not('status','in','(won,lost)').order('next_action_due_at',{ascending:true}).limit(5)
       ]);
-      [latestLeads,latestMessages,pendingPayments].forEach(r=>{if(r.error)throw r.error});
-      $('#ops-m-leads').textContent=newLeads;$('#ops-m-inbox').textContent=unreadInbox;$('#ops-m-clients').textContent=clients;$('#ops-m-projects').textContent=projects;$('#ops-m-payments').textContent=payments;$('#ops-m-proposals').textContent=sentProposals;
+      [latestLeads,latestMessages,pendingPayments,followups].forEach(r=>{if(r.error)throw r.error});
+      $('#ops-m-leads').textContent=newLeads;$('#ops-m-followups').textContent=dueFollowups;$('#ops-m-inbox').textContent=unreadInbox;$('#ops-m-clients').textContent=clients;$('#ops-m-projects').textContent=projects;$('#ops-m-payments').textContent=payments;$('#ops-m-proposals').textContent=sentProposals;
       const badge=$('#ops-inbox-badge');if(badge){badge.textContent=unreadInbox;badge.classList.toggle('hidden',!unreadInbox)}
       const items=[];
+      (followups.data||[]).forEach(x=>items.push({type:'lead',id:x.id,title:'Follow-up due',detail:(x.lead_code||'Lead')+' · '+(x.full_name||'Client')+' · '+(x.next_action||'Next action')}));
       (latestMessages.data||[]).forEach(x=>items.push({type:'inbox',title:'Client message',detail:(x.studio_projects?.project_code||'Project')+' · '+String(x.body||'').slice(0,90)}));
-      (latestLeads.data||[]).filter(x=>x.status==='new').forEach(x=>items.push({type:'lead',title:'Review new lead',detail:(x.lead_code||'Lead')+' · '+(x.full_name||'Unknown')}));
+      (latestLeads.data||[]).filter(x=>x.status==='new').forEach(x=>items.push({type:'lead',id:x.id,title:'Review new lead',detail:(x.lead_code||'Lead')+' · '+(x.full_name||'Unknown')}));
       (pendingPayments.data||[]).forEach(x=>items.push({type:'payment',title:'Pending payment',detail:(x.payment_code||'Payment')+' · '+(x.currency||'EGP')+' '+money(x.amount)}));
-      $('#ops-priority-list').innerHTML=items.length?items.slice(0,7).map(x=>'<div class="ops-priority-item"><i class="ops-dot"></i><div><b>'+esc(x.title)+'</b><small>'+esc(x.detail)+'</small></div><button class="row-action" data-jump="'+esc(x.type==='lead'?'leads':x.type==='payment'?'payments':'inbox')+'">OPEN →</button></div>').join(''):'<div class="ops-empty">Nothing needs immediate attention.</div>';
+      $('#ops-priority-list').innerHTML=items.length?items.slice(0,8).map(x=>'<div class="ops-priority-item"><i class="ops-dot"></i><div><b>'+esc(x.title)+'</b><small>'+esc(x.detail)+'</small></div><button class="row-action" '+(x.type==='lead'&&x.id?'data-priority-lead="'+esc(x.id)+'"':'data-jump="'+esc(x.type==='payment'?'payments':'inbox')+'"')+'>OPEN →</button></div>').join(''):'<div class="ops-empty">Nothing needs immediate attention.</div>';
       $('#ops-latest-list').innerHTML=(latestLeads.data||[]).map(x=>'<div class="entity-row"><b>'+esc(x.full_name||'Unnamed lead')+'</b><small>'+esc((x.lead_code||'—')+' · '+(x.company_name||'Individual')+' · '+(x.service||'Not specified'))+'</small><div>'+chip(x.status)+'</div></div>').join('')||'<div class="ops-empty">No leads yet.</div>';
       state.loaded.dashboard=true;
     }catch(e){$('#ops-priority-list').innerHTML='<div class="ops-empty">Could not load operations dashboard.</div>';notify(e.message||'Dashboard load failed','error')}
@@ -97,9 +102,9 @@
     state.leads=r.data||[];state.loaded.leads=true;renderLeads();
   }
   function renderLeads(){
-    const q=($('#ops-lead-search')?.value||'').trim().toLowerCase(), f=$('#ops-lead-filter')?.value||'all';
-    const rows=state.leads.filter(x=>(f==='all'||x.status===f)&&(!q||[x.lead_code,x.full_name,x.company_name,x.email,x.phone,x.service].some(v=>String(v||'').toLowerCase().includes(q))));
-    $('#ops-leads-list').innerHTML=rows.length?'<div class="data-table-wrap"><table class="data-table"><thead><tr><th>LEAD</th><th>SERVICE</th><th>TIMELINE</th><th>STATUS</th><th>RECEIVED</th><th></th></tr></thead><tbody>'+rows.map(x=>'<tr><td><div class="entity-title"><b>'+esc(x.full_name||'Unnamed')+'</b><small>'+esc((x.lead_code||'—')+' · '+(x.company_name||'Individual'))+'</small></div></td><td>'+esc(x.service||'—')+'</td><td>'+esc(x.timeline||'—')+'</td><td>'+chip(x.status)+'</td><td>'+esc(fmt(x.created_at))+'</td><td><div class="row-actions"><button class="row-action primary-action" data-open-lead="'+esc(x.id)+'">OPEN</button></div></td></tr>').join('')+'</tbody></table></div>':'<div class="ops-empty">No matching leads.</div>';
+    const q=($('#ops-lead-search')?.value||'').trim().toLowerCase(), f=$('#ops-lead-filter')?.value||'all',now=Date.now();
+    const rows=state.leads.filter(x=>(f==='all'||x.status===f)&&(!q||[x.lead_code,x.full_name,x.company_name,x.email,x.phone,x.service,x.next_action].some(v=>String(v||'').toLowerCase().includes(q))));
+    $('#ops-leads-list').innerHTML=rows.length?'<div class="data-table-wrap"><table class="data-table"><thead><tr><th>LEAD</th><th>SERVICE</th><th>NEXT ACTION</th><th>STATUS</th><th>RECEIVED</th><th></th></tr></thead><tbody>'+rows.map(x=>{const due=x.next_action_due_at?new Date(x.next_action_due_at).getTime():0,overdue=due&&due<now&&!['won','lost'].includes(x.status);return '<tr class="'+(overdue?'lead-overdue':'')+'"><td><div class="entity-title"><b>'+esc(x.full_name||'Unnamed')+'</b><small>'+esc((x.lead_code||'—')+' · '+(x.company_name||'Individual'))+'</small></div></td><td>'+esc(x.service||'—')+'</td><td><div class="entity-title"><b>'+esc(x.next_action||'Not set')+'</b><small>'+esc(x.next_action_due_at?(overdue?'OVERDUE · ':'Due ')+fmt(x.next_action_due_at):'No due date')+'</small></div></td><td>'+chip(x.status)+'</td><td>'+esc(fmt(x.created_at))+'</td><td><div class="row-actions"><button class="row-action primary-action" data-open-lead="'+esc(x.id)+'">OPEN WORKSPACE</button></div></td></tr>'}).join('')+'</tbody></table></div>':'<div class="ops-empty">No matching leads.</div>';
   }
 
   async function loadClients(force=false){
@@ -205,32 +210,150 @@
     if(tab==='v9')return loadV9(force);
   }
 
-  function openLead(id){
+  function parseLeadBrief(text){
+    const raw=String(text||'').trim();
+    const defs=[
+      ['Challenge / Goal','Challenge / Goal:'],['Audience','Audience:'],['Success looks like','Success looks like:'],['Current stage','Current stage:'],['Possible expertise','Possible expertise:'],
+      ['Original client words','ORIGINAL CLIENT WORDS:'],['Context link','CONTEXT LINK:'],['Current situation','Current situation:'],['Core problem','Core problem:'],['Possible direction','Possible direction:'],['Likely capabilities','Likely capabilities:'],
+      ['Issue','Issue:'],['Context','Context:'],['Jurisdiction','Jurisdiction:'],['People exposed','People exposed:'],['Immediate danger','Immediate danger / uncontrolled condition:'],['Control concern','Control concern:'],
+      ['المشكلة','المشكلة:'],['السياق','السياق:'],['جهة التطبيق','جهة التطبيق:'],['الأشخاص المعرضون','الأشخاص المعرضون:'],['الخطر الفوري','خطر فوري / حالة غير مسيطر عليها:'],['أكبر قلق','أكبر قلق في وسائل التحكم:']
+    ];
+    const hits=[];
+    defs.forEach(([label,marker])=>{let from=0;const lower=raw.toLowerCase(),needle=marker.toLowerCase();while(true){const i=lower.indexOf(needle,from);if(i<0)break;hits.push({label,marker,index:i,end:i+marker.length});from=i+marker.length}});
+    hits.sort((a,b)=>a.index-b.index);
+    const cards=[];
+    for(let i=0;i<hits.length;i++){const h=hits[i],next=hits[i+1]?.index??raw.length;let value=raw.slice(h.end,next).trim().replace(/^[\s\-–—:]+|[\s]+$/g,'');value=value.replace(/^(DISCOVERY SNAPSHOT|MANAGEMENT-SYSTEM SELF-CHECK|وسائل التحكم المذكورة)\s*:?/i,'').trim();if(value&&value.length<1200&&!cards.some(x=>x.label===h.label))cards.push({label:h.label,value})}
+    return cards.length?cards:[{label:'Original brief',value:raw||'No project brief recorded.'}];
+  }
+  function briefValue(cards,...labels){for(const label of labels){const x=cards.find(c=>c.label.toLowerCase()===label.toLowerCase());if(x?.value)return x.value}return''}
+  function suggestedUnderstanding(x,cards){
+    return x.ats_understanding||briefValue(cards,'Core problem','Challenge / Goal','المشكلة','Issue','Original client words')||String(x.project_goal||'').slice(0,700);
+  }
+  function suggestedMissing(x,cards){
+    if(x.missing_information?.length)return x.missing_information;
+    const missing=[];
+    if(!briefValue(cards,'Audience','People exposed','الأشخاص المعرضون'))missing.push('Primary audience / people affected');
+    if(!briefValue(cards,'Success looks like')&&!String(x.project_goal||'').toLowerCase().includes('outcome'))missing.push('Success criteria / measurable outcome');
+    if(!x.timeline)missing.push('Timeline / urgency');
+    if(!x.budget_range)missing.push('Budget / investment range');
+    const stage=briefValue(cards,'Current stage').toLowerCase();
+    if(!(x.current_assets||[]).length&&!stage.includes('asset')&&!String(x.project_goal||'').toLowerCase().includes('evidence'))missing.push('Available assets / references');
+    return missing;
+  }
+  function dateTimeLocal(value){
+    if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';const pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  function localToIso(value){return value?new Date(value).toISOString():null}
+  function humanActivity(action,meta={}){
+    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
+    const title=labels[action]||String(action||'Activity').replaceAll('_',' ');
+    let detail=meta.summary||meta.note||'';
+    if(action==='lead_status_changed')detail=(leadStatusLabels[meta.from]||meta.from||'—')+' → '+(leadStatusLabels[meta.to]||meta.to||'—');
+    if(action==='lead_next_action_changed')detail=(meta.next_action||'No action')+(meta.due_at?' · due '+fmt(meta.due_at):'');
+    if(action==='lead_contact_logged')detail=(meta.channel||'Contact')+' · '+String(meta.outcome||'').replaceAll('_',' ')+(meta.summary?' · '+meta.summary:'');
+    return {title,detail};
+  }
+  function renderLeadTimeline(){
+    const x=state.currentLead;if(!x)return;
+    const items=[
+      {action:'lead_received',created_at:x.created_at,metadata:{summary:'Lead received from '+(x.source||'website')}},
+      ...state.leadActivities
+    ].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+    $('#lead-timeline').innerHTML=items.length?items.map(item=>{const h=item.action==='lead_received'?{title:'Lead received',detail:item.metadata?.summary||''}:humanActivity(item.action,item.metadata||{});return '<div class="lead-timeline-item"><i></i><div><b>'+esc(h.title)+'</b><p>'+esc(h.detail||'')+'</p><small>'+esc(fmt(item.created_at))+'</small></div></div>'}).join(''):'<div class="ops-empty">No activity recorded yet.</div>';
+  }
+  async function loadLeadTimeline(leadId){
+    $('#lead-timeline').innerHTML='<div class="loading-line">Loading activity…</div>';
+    const r=await sb().from('studio_activity').select('*').eq('entity_type','lead').eq('entity_id',leadId).order('created_at',{ascending:false}).limit(120);
+    if(r.error){$('#lead-timeline').innerHTML='<div class="ops-empty">Activity could not be loaded.</div>';return}
+    state.leadActivities=r.data||[];renderLeadTimeline();
+  }
+  async function logLeadActivity(action,metadata={},leadId=state.currentLead?.id){
+    if(!leadId)return;
+    const r=await sb().from('studio_activity').insert({actor_type:'admin',entity_type:'lead',entity_id:leadId,action,metadata}).select('*').single();
+    if(!r.error&&state.currentLead?.id===leadId){state.leadActivities.unshift(r.data);renderLeadTimeline()}
+  }
+  function updateLeadWorkspaceState(){
+    const status=$('#lead-status').value||'new',x=state.currentLead;
+    $('#lead-workspace-status').className='status-chip '+status;$('#lead-workspace-status').textContent=leadStatusLabels[status]||status;
+    $('#lead-lost-wrap').classList.toggle('hidden',status!=='lost');
+    const proposalReady=['qualified','proposal_sent','negotiation'].includes(status);
+    $('#lead-create-proposal').classList.toggle('hidden',!proposalReady);
+    $('#lead-proposal-gate').classList.toggle('hidden',proposalReady);
+    const due=$('#lead-next-due').value?new Date($('#lead-next-due').value).getTime():0,overdue=due&&due<Date.now()&&!['won','lost'].includes(status);
+    const warning=$('#lead-next-warning');
+    if(overdue){warning.textContent='OVERDUE · This follow-up needs attention.';warning.className='lead-next-warning overdue'}
+    else if(!$('#lead-next-action').value&&!['won','lost'].includes(status)){warning.textContent='Set one clear next action before leaving this lead.';warning.className='lead-next-warning'}
+    else{warning.textContent='';warning.className='lead-next-warning'}
+    if(status==='won'&&x?.existing_client_id){warning.textContent='Converted client · manage delivery from Client Projects.';warning.className='lead-next-warning success'}
+  }
+  async function openLead(id){
     const x=state.leads.find(v=>v.id===id);if(!x)return;
-    state.currentLead=x;
-    $('#lead-dialog-title').textContent=x.full_name||'Lead';
-    $('#lead-dialog-code').textContent=x.lead_code||'—';
+    state.currentLead=x;state.leadActivities=[];
+    const cards=parseLeadBrief(x.project_goal);
+    $('#lead-dialog-title').textContent=x.full_name||'Lead';$('#lead-dialog-code').textContent=x.lead_code||'—';$('#lead-workspace-source').textContent=(x.source||'website').replaceAll('_',' ');$('#lead-workspace-received').textContent='Received '+fmt(x.created_at);
     $('#lead-dialog-summary').innerHTML=[
-      ['Email',x.email],['Phone / WhatsApp',x.phone],['Company',x.company_name||'Individual'],
-      ['Service',x.service],['Timeline',x.timeline],['Budget',x.budget_range]
+      ['Email',x.email],['Phone / WhatsApp',x.phone],['Company',x.company_name||'Individual'],['Service',x.service],['Timeline',x.timeline],['Budget',x.budget_range]
     ].map(v=>'<div><span>'+esc(v[0].toUpperCase())+'</span><b>'+esc(v[1]||'—')+'</b></div>').join('');
+    $('#lead-brief-grid').innerHTML=cards.slice(0,10).map(c=>'<article><span>'+esc(c.label.toUpperCase())+'</span><p dir="auto">'+esc(c.value)+'</p></article>').join('');
     $('#lead-goal').textContent=x.project_goal||'No project goal recorded.';
-    $('#lead-assets').textContent=(x.current_assets||[]).join(' · ')||'No assets listed.';
-    $('#lead-status').value=x.status||'new';
-    $('#lead-fit').value=x.fit||'';
-    $('#lead-notes').value=x.internal_notes||'';
-    $('#lead-lost-reason').value=x.lost_reason||'';
+    const assets=(x.current_assets||[]);$('#lead-assets').innerHTML=assets.length?assets.map(a=>'<span>'+esc(a)+'</span>').join(''):'<em>No structured assets listed.</em>';
+    $('#lead-understanding').value=suggestedUnderstanding(x,cards);
+    $('#lead-missing-info').value=suggestedMissing(x,cards).join('\n');
+    $('#lead-status').value=x.status||'new';$('#lead-fit').value=x.fit||'';$('#lead-fit-reason').value=x.fit_reason||'';$('#lead-next-action').value=x.next_action||'';$('#lead-next-due').value=dateTimeLocal(x.next_action_due_at);$('#lead-contact-preference').value=x.preferred_contact_channel||'';$('#lead-notes').value=x.internal_notes||'';$('#lead-lost-reason').value=x.lost_reason||'';
+    $('#lead-contact-channel').value=x.preferred_contact_channel||'whatsapp';$('#lead-contact-outcome').value='contacted';$('#lead-contact-summary').value='';
+    $('#lead-last-contact').textContent=x.last_contacted_at?'Last contact '+fmt(x.last_contacted_at):'No contact logged';
     const mail=$('#lead-email-link');mail.href=x.email?'mailto:'+encodeURIComponent(x.email):'#';mail.classList.toggle('hidden',!x.email);
     const wa=$('#lead-wa-link');const digits=String(x.phone||'').replace(/\D/g,'');wa.href=digits?'https://wa.me/'+digits:'#';wa.classList.toggle('hidden',!digits);
-    $('#lead-dialog').showModal();
+    updateLeadWorkspaceState();$('#lead-dialog').showModal();await loadLeadTimeline(x.id);
   }
-  async function saveLead(){
-    const x=state.currentLead;if(!x)return;
-    const patch={status:$('#lead-status').value,fit:$('#lead-fit').value||null,internal_notes:$('#lead-notes').value.trim()||null,lost_reason:$('#lead-lost-reason').value.trim()||null};
+  async function saveLead(close=true){
+    const x=state.currentLead;if(!x)return false;
+    const status=$('#lead-status').value,fit=$('#lead-fit').value||null,nextAction=$('#lead-next-action').value||null,dueAt=localToIso($('#lead-next-due').value);
+    const lostReason=$('#lead-lost-reason').value.trim()||null,understanding=$('#lead-understanding').value.trim();
+    if(status==='lost'&&!lostReason){notify('Add a lost reason before closing this lead','error');$('#lead-lost-reason').focus();return false}
+    if(status==='qualified'&&!fit){notify('Set the ATS fit before qualifying this lead','error');$('#lead-fit').focus();return false}
+    if(status==='qualified'&&!understanding){notify('Write the ATS understanding before qualifying this lead','error');$('#lead-understanding').focus();return false}
+    const patch={
+      status,fit,fit_reason:$('#lead-fit-reason').value.trim()||null,
+      ats_understanding:understanding||null,
+      missing_information:$('#lead-missing-info').value.split('\n').map(v=>v.trim()).filter(Boolean),
+      next_action:nextAction,next_action_due_at:dueAt,
+      preferred_contact_channel:$('#lead-contact-preference').value||null,
+      internal_notes:$('#lead-notes').value.trim()||null,
+      lost_reason:status==='lost'?lostReason:null
+    };
+    const before={status:x.status,next_action:x.next_action,next_action_due_at:x.next_action_due_at};
     const r=await sb().from('studio_leads').update(patch).eq('id',x.id).select('*').single();
-    if(r.error)return notify(r.error.message,'error');
+    if(r.error){notify(r.error.message,'error');return false}
     const i=state.leads.findIndex(v=>v.id===x.id);if(i>=0)state.leads[i]=r.data;state.currentLead=r.data;
-    notify('Lead updated');renderLeads();state.loaded.dashboard=false;loadDashboard(true);$('#lead-dialog').close();
+    if(before.status!==r.data.status)await logLeadActivity('lead_status_changed',{from:before.status,to:r.data.status});
+    if(before.next_action!==r.data.next_action||String(before.next_action_due_at||'')!==String(r.data.next_action_due_at||''))await logLeadActivity('lead_next_action_changed',{next_action:r.data.next_action,due_at:r.data.next_action_due_at});
+    notify('Lead workspace saved');renderLeads();state.loaded.dashboard=false;void loadDashboard(true);updateLeadWorkspaceState();
+    if(close)$('#lead-dialog').close();
+    return true;
+  }
+  async function startDiscovery(){
+    if(!state.currentLead)return;
+    if(['new','contacted','reviewing'].includes($('#lead-status').value))$('#lead-status').value='discovery';
+    if(!$('#lead-next-action').value)$('#lead-next-action').value='Discovery call';
+    if(!$('#lead-next-due').value){const d=new Date(Date.now()+24*60*60*1000);$('#lead-next-due').value=dateTimeLocal(d)}
+    updateLeadWorkspaceState();
+    const ok=await saveLead(false);if(ok)await logLeadActivity('lead_discovery_started',{summary:'Discovery workflow started'});
+  }
+  async function logLeadContact(){
+    const x=state.currentLead;if(!x)return;
+    const channel=$('#lead-contact-channel').value,outcome=$('#lead-contact-outcome').value,summary=$('#lead-contact-summary').value.trim();
+    if(!summary)return notify('Add a short interaction summary','error');
+    const now=new Date().toISOString();
+    const patch={last_contacted_at:now,preferred_contact_channel:channel};
+    if(x.status==='new')patch.status='contacted';
+    const beforeStatus=x.status;
+    const r=await sb().from('studio_leads').update(patch).eq('id',x.id).select('*').single();if(r.error)return notify(r.error.message,'error');
+    const i=state.leads.findIndex(v=>v.id===x.id);if(i>=0)state.leads[i]=r.data;state.currentLead=r.data;
+    $('#lead-status').value=r.data.status;$('#lead-contact-preference').value=channel;$('#lead-last-contact').textContent='Last contact '+fmt(now);$('#lead-contact-summary').value='';
+    if(beforeStatus!==r.data.status)await logLeadActivity('lead_status_changed',{from:beforeStatus,to:r.data.status});
+    await logLeadActivity('lead_contact_logged',{channel,outcome,summary});
+    notify('Interaction added to timeline');renderLeads();state.loaded.dashboard=false;void loadDashboard(true);updateLeadWorkspaceState();
   }
 
   function fillLeadOptions(selectId,selected){
@@ -256,7 +379,7 @@
   }
   async function saveProposal(){
     const leadId=$('#proposal-lead').value;if(!leadId)return notify('Select a lead','error');
-    const status=$('#proposal-status').value;
+    const status=$('#proposal-status').value,wasNew=!state.currentProposal;
     const payload={
       lead_id:leadId,title:$('#proposal-title').value.trim(),scope:$('#proposal-scope').value.trim(),
       deliverables:$('#proposal-deliverables').value.split('\n').map(x=>x.trim()).filter(Boolean),
@@ -270,7 +393,9 @@
     if(state.currentProposal)r=await sb().from('studio_proposals').update(payload).eq('id',state.currentProposal.id).select('*').single();
     else r=await sb().from('studio_proposals').insert(payload).select('*').single();
     if(r.error)return notify(r.error.message,'error');
-    if(status==='sent')await sb().from('studio_leads').update({status:'proposal_sent'}).eq('id',leadId);
+    if(status==='sent')await sb().from('studio_leads').update({status:'proposal_sent',next_action:'Follow up proposal',next_action_due_at:null}).eq('id',leadId);
+    if(status==='sent')await logLeadActivity('proposal_sent',{proposal_id:r.data.id,proposal_code:r.data.proposal_code,title:r.data.title},leadId);
+    else if(wasNew)await logLeadActivity('proposal_created',{proposal_id:r.data.id,proposal_code:r.data.proposal_code,title:r.data.title},leadId);
     notify(status==='sent'?'Proposal saved and marked sent':'Proposal saved');
     $('#proposal-dialog').close();state.loaded.proposals=false;state.loaded.leads=false;state.loaded.dashboard=false;
     await loadProposals(true);loadDashboard(true);
@@ -281,6 +406,8 @@
     const acceptedAt=new Date().toISOString();
     const u=await sb().from('studio_proposals').update({status:'accepted',accepted_at:acceptedAt}).eq('id',p.id);
     if(u.error)return notify(u.error.message,'error');
+    await sb().from('studio_leads').update({next_action:'Await deposit payment',next_action_due_at:null}).eq('id',p.lead_id);
+    await logLeadActivity('proposal_accepted',{proposal_id:p.id,proposal_code:p.proposal_code,title:p.title},p.lead_id);
     const ex=await sb().from('studio_payments').select('*').eq('proposal_id',p.id).eq('payment_type','deposit').maybeSingle();
     if(ex.error)return notify(ex.error.message,'error');
     if(!ex.data){
@@ -389,11 +516,12 @@
   document.addEventListener('click',e=>{
     const jump=e.target.closest('[data-jump]');if(jump){window.ATS_ADMIN?.switchTab?.(jump.dataset.jump);loadPanel(jump.dataset.jump);return}
     const refresh=e.target.closest('[data-ops-refresh]');if(refresh){loadPanel(refresh.dataset.opsRefresh,true);return}
-    const lead=e.target.closest('[data-open-lead]');if(lead){openLead(lead.dataset.openLead);return}
+    const priorityLead=e.target.closest('[data-priority-lead]');if(priorityLead){void (async()=>{window.ATS_ADMIN?.switchTab?.('leads');await loadLeads();await openLead(priorityLead.dataset.priorityLead)})();return}
+    const lead=e.target.closest('[data-open-lead]');if(lead){void openLead(lead.dataset.openLead);return}
     const proposal=e.target.closest('[data-open-proposal]');if(proposal){openProposal(proposal.dataset.openProposal);return}
     const project=e.target.closest('[data-open-studio-project]');if(project){void openStudioProject(project.dataset.openStudioProject);return}
     const inboxProject=e.target.closest('[data-inbox-project]');if(inboxProject){void (async()=>{await loadProjects();await openStudioProject(inboxProject.dataset.inboxProject)})();return}
-    const inboxLead=e.target.closest('[data-inbox-lead]');if(inboxLead){void (async()=>{window.ATS_ADMIN?.switchTab?.('leads');await loadLeads();openLead(inboxLead.dataset.inboxLead)})();return}
+    const inboxLead=e.target.closest('[data-inbox-lead]');if(inboxLead){void (async()=>{window.ATS_ADMIN?.switchTab?.('leads');await loadLeads();await openLead(inboxLead.dataset.inboxLead)})();return}
     const accept=e.target.closest('[data-accept-proposal]');if(accept){acceptProposal(accept.dataset.acceptProposal);return}
     const paid=e.target.closest('[data-mark-paid]');if(paid){markPaid(paid.dataset.markPaid);return}
     const fileOpen=e.target.closest('[data-admin-file-open]');if(fileOpen){void openProjectFile(fileOpen);return}
@@ -411,8 +539,22 @@
   $('#ops-proposal-search')?.addEventListener('input',renderProposals);$('#ops-proposal-filter')?.addEventListener('change',renderProposals);
   $('#ops-payment-search')?.addEventListener('input',renderPayments);$('#ops-payment-filter')?.addEventListener('change',renderPayments);
   $('#new-proposal')?.addEventListener('click',async()=>{await loadProposals();openProposal()});
-  $('#save-lead')?.addEventListener('click',saveLead);
-  $('#lead-create-proposal')?.addEventListener('click',async()=>{const id=state.currentLead?.id;$('#lead-dialog').close();await loadProposals();openProposal(null,id)});
+  $('#save-lead')?.addEventListener('click',()=>saveLead(true));
+  $('#lead-save-open')?.addEventListener('click',()=>saveLead(false));
+  $('#lead-start-discovery')?.addEventListener('click',startDiscovery);
+  $('#lead-log-contact')?.addEventListener('click',logLeadContact);
+  $('#lead-refresh-timeline')?.addEventListener('click',()=>state.currentLead&&loadLeadTimeline(state.currentLead.id));
+  $('#lead-status')?.addEventListener('change',updateLeadWorkspaceState);
+  $('#lead-next-action')?.addEventListener('change',updateLeadWorkspaceState);
+  $('#lead-next-due')?.addEventListener('change',updateLeadWorkspaceState);
+  $('#lead-create-proposal')?.addEventListener('click',async()=>{
+    const id=state.currentLead?.id,status=$('#lead-status').value;
+    if(!id||!['qualified','proposal_sent','negotiation'].includes(status))return notify('Qualify the lead before creating a proposal','error');
+    if(!await saveLead(false))return;
+    $('#lead-dialog').close();await loadProposals(true);
+    const existing=state.proposals.find(p=>p.lead_id===id&&!['declined','expired'].includes(p.status));
+    openProposal(existing?.id||null,id);
+  });
   $('#save-proposal')?.addEventListener('click',saveProposal);
   $('#save-studio-project')?.addEventListener('click',saveStudioProject);
   $('#post-studio-project-update')?.addEventListener('click',postProjectUpdate);

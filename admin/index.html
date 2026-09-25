@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin.css?v=5" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
-  <link rel="stylesheet" href="/admin/admin-unified.css?v=2" />
+  <link rel="stylesheet" href="/admin/admin-unified.css?v=3" />
 </head>
 <body>
   <div id="toast" class="toast"></div>
@@ -65,6 +65,7 @@
       <section class="tab-panel active" data-panel="dashboard">
         <div class="unified-metric-grid">
           <article><span>NEW LEADS</span><strong id="ops-m-leads">—</strong><small>Awaiting review</small></article>
+          <article><span>FOLLOW-UPS DUE</span><strong id="ops-m-followups">—</strong><small>Need your action</small></article>
           <article><span>CLIENT INBOX</span><strong id="ops-m-inbox">—</strong><small>Unread messages</small></article>
           <article><span>ACTIVE CLIENTS</span><strong id="ops-m-clients">—</strong><small>Client records</small></article>
           <article><span>ACTIVE PROJECTS</span><strong id="ops-m-projects">—</strong><small>In delivery</small></article>
@@ -87,7 +88,7 @@
 
 
       <section class="tab-panel" data-panel="leads">
-        <div class="data-toolbar"><input id="ops-lead-search" type="search" placeholder="Search lead, company, email, phone…" /><select id="ops-lead-filter"><option value="all">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="qualified">Qualified</option><option value="proposal_sent">Proposal Sent</option><option value="won">Won</option><option value="lost">Lost</option></select><button class="secondary" data-ops-refresh="leads">REFRESH</button></div>
+        <div class="data-toolbar"><input id="ops-lead-search" type="search" placeholder="Search lead, company, email, phone…" /><select id="ops-lead-filter"><option value="all">All statuses</option><option value="new">New</option><option value="contacted">Contacted</option><option value="discovery">Discovery</option><option value="reviewing">Reviewing · Legacy</option><option value="qualified">Qualified</option><option value="proposal_sent">Proposal Sent</option><option value="negotiation">Negotiation</option><option value="won">Won</option><option value="lost">Lost</option></select><button class="secondary" data-ops-refresh="leads">REFRESH</button></div>
         <div id="ops-leads-list"><div class="loading-line">Open Leads to load live data.</div></div>
       </section>
 
@@ -204,20 +205,82 @@
   </dialog>
 
 
-  <dialog id="lead-dialog" class="dialog unified-dialog">
-    <form method="dialog">
-      <div class="dialog-head"><div><span id="lead-dialog-code">LEAD</span><h2 id="lead-dialog-title">Lead</h2></div><button type="button" data-close-unified="lead-dialog">×</button></div>
-      <div id="lead-dialog-summary" class="entity-summary"></div>
-      <p class="dialog-section-title">WHAT THE CLIENT NEEDS</p><p id="lead-goal"></p>
-      <p class="dialog-section-title">CURRENT ASSETS</p><p id="lead-assets"></p>
-      <div class="unified-form">
-        <label>STATUS<select id="lead-status"><option value="new">New</option><option value="reviewing">Reviewing</option><option value="qualified">Qualified</option><option value="proposal_sent">Proposal Sent</option><option value="won">Won</option><option value="lost">Lost</option></select></label>
-        <label>FIT<select id="lead-fit"><option value="">Not set</option><option>High Fit</option><option>Medium Fit</option><option>Low Fit</option></select></label>
-        <label class="wide">INTERNAL NOTES<textarea id="lead-notes"></textarea></label>
-        <label class="wide">LOST REASON<input id="lead-lost-reason" placeholder="Only when closed / lost" /></label>
+  <dialog id="lead-dialog" class="dialog unified-dialog lead-workspace-dialog">
+    <form onsubmit="return false">
+      <div class="lead-workspace-head">
+        <div>
+          <div class="lead-head-meta"><span id="lead-dialog-code">LEAD</span><span id="lead-workspace-status" class="status-chip">NEW</span><span id="lead-workspace-source"></span></div>
+          <h2 id="lead-dialog-title">Lead</h2>
+          <p id="lead-workspace-received"></p>
+        </div>
+        <button type="button" class="dialog-close" data-close-unified="lead-dialog" aria-label="Close lead workspace">×</button>
       </div>
-      <div class="ops-inline-actions"><a id="lead-email-link" class="secondary" href="#">EMAIL</a><a id="lead-wa-link" class="secondary" href="#" target="_blank">WHATSAPP ↗</a><button id="lead-create-proposal" class="secondary" type="button">CREATE PROPOSAL</button></div>
-      <div class="dialog-actions"><span></span><span></span><button type="button" class="secondary" data-close-unified="lead-dialog">CLOSE</button><button id="save-lead" type="button" class="primary">SAVE LEAD</button></div>
+
+      <div id="lead-dialog-summary" class="lead-contact-summary"></div>
+
+      <div class="lead-workspace-grid">
+        <div class="lead-workspace-main">
+          <section class="lead-workspace-card">
+            <div class="workspace-section-head"><div><span>CLIENT BRIEF</span><h3>What they told us</h3></div><small>Structured from the original intake</small></div>
+            <div id="lead-brief-grid" class="lead-brief-grid"></div>
+            <details class="lead-raw-brief"><summary>View original intake</summary><pre id="lead-goal"></pre></details>
+          </section>
+
+          <section class="lead-workspace-card lead-understanding-card">
+            <div class="workspace-section-head"><div><span>ATS UNDERSTANDING</span><h3>Turn the intake into a clear problem</h3></div><small>Internal · editable</small></div>
+            <label class="workspace-field">WHAT WE UNDERSTAND<textarea id="lead-understanding" placeholder="Write the problem in clear ATS language…"></textarea></label>
+            <label class="workspace-field">MISSING INFORMATION<textarea id="lead-missing-info" placeholder="One missing item per line…"></textarea></label>
+            <div class="lead-assets-line"><span>CURRENT ASSETS</span><div id="lead-assets" class="asset-chip-list"></div></div>
+          </section>
+
+          <section class="lead-workspace-card">
+            <div class="workspace-section-head"><div><span>RELATIONSHIP HISTORY</span><h3>Communication Timeline</h3></div><button id="lead-refresh-timeline" type="button" class="row-action">REFRESH</button></div>
+            <div id="lead-timeline" class="lead-timeline"><div class="loading-line">Loading activity…</div></div>
+          </section>
+        </div>
+
+        <aside class="lead-workspace-side">
+          <section class="lead-workspace-card lead-next-card">
+            <div class="workspace-section-head"><div><span>ATS NEXT MOVE</span><h3>What happens next?</h3></div></div>
+            <div class="lead-next-grid">
+              <label class="workspace-field">STATUS<select id="lead-status">
+                <option value="new">New</option><option value="contacted">Contacted</option><option value="discovery">Discovery</option><option value="reviewing">Reviewing · Legacy</option><option value="qualified">Qualified</option><option value="proposal_sent">Proposal Sent</option><option value="negotiation">Negotiation</option><option value="won">Won</option><option value="lost">Lost</option>
+              </select></label>
+              <label class="workspace-field">FIT<select id="lead-fit"><option value="">Not set</option><option value="high">High Fit</option><option value="medium">Medium Fit</option><option value="low">Low Fit</option></select></label>
+              <label class="workspace-field wide">FIT REASON<input id="lead-fit-reason" placeholder="Why is this a good / weak fit for ATS?" /></label>
+              <label class="workspace-field wide">NEXT ACTION<select id="lead-next-action">
+                <option value="">Choose next action</option><option>Discovery call</option><option>WhatsApp follow-up</option><option>Email follow-up</option><option>Request information / assets</option><option>Internal review</option><option>Prepare proposal</option><option>Follow up proposal</option><option>Waiting for client</option><option>Start onboarding</option><option>Await deposit payment</option><option>Closed</option>
+              </select></label>
+              <label class="workspace-field">DUE DATE<input id="lead-next-due" type="datetime-local" /></label>
+              <label class="workspace-field">PREFERRED CHANNEL<select id="lead-contact-preference"><option value="">Not set</option><option value="whatsapp">WhatsApp</option><option value="email">Email</option><option value="call">Call</option><option value="portal">Portal</option></select></label>
+              <label id="lead-lost-wrap" class="workspace-field wide hidden">LOST REASON<input id="lead-lost-reason" placeholder="Budget, timing, no response, not ATS fit…" /></label>
+            </div>
+            <div id="lead-next-warning" class="lead-next-warning"></div>
+            <div class="lead-next-actions"><button id="lead-start-discovery" type="button" class="secondary">START DISCOVERY</button><button id="lead-save-open" type="button" class="primary">SAVE NEXT MOVE</button></div>
+          </section>
+
+          <section class="lead-workspace-card">
+            <div class="workspace-section-head"><div><span>CONTACT</span><h3>Reach the client</h3></div><small id="lead-last-contact">No contact logged</small></div>
+            <div class="lead-contact-actions"><a id="lead-wa-link" class="primary" href="#" target="_blank">WHATSAPP ↗</a><a id="lead-email-link" class="secondary" href="#">EMAIL</a></div>
+            <div class="lead-contact-log">
+              <label class="workspace-field">CHANNEL<select id="lead-contact-channel"><option value="whatsapp">WhatsApp</option><option value="email">Email</option><option value="call">Call</option><option value="portal">Portal</option></select></label>
+              <label class="workspace-field">OUTCOME<select id="lead-contact-outcome"><option value="contacted">Contacted</option><option value="no_response">No response</option><option value="waiting_client">Waiting for client</option><option value="meeting_completed">Discovery completed</option></select></label>
+              <label class="workspace-field wide">SUMMARY<textarea id="lead-contact-summary" placeholder="What happened? What did the client say?"></textarea></label>
+              <button id="lead-log-contact" type="button" class="secondary wide">+ LOG INTERACTION</button>
+            </div>
+          </section>
+
+          <section class="lead-workspace-card">
+            <div class="workspace-section-head"><div><span>PRIVATE</span><h3>Internal Notes</h3></div><small>Never shown to client</small></div>
+            <label class="workspace-field"><textarea id="lead-notes" placeholder="Context, concerns, commercial notes, handover details…"></textarea></label>
+          </section>
+        </aside>
+      </div>
+
+      <div class="lead-workspace-footer">
+        <div><button id="lead-create-proposal" class="secondary" type="button">CREATE PROPOSAL →</button><span id="lead-proposal-gate">Qualify the lead before creating a proposal.</span></div>
+        <div><button type="button" class="secondary" data-close-unified="lead-dialog">CLOSE</button><button id="save-lead" type="button" class="primary">SAVE & CLOSE</button></div>
+      </div>
     </form>
   </dialog>
 
@@ -270,6 +333,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
   <script src="/config.js"></script>
   <script src="/admin.js?v=10"></script>
-  <script src="/admin/admin-unified.js?v=3"></script>
+  <script src="/admin/admin-unified.js?v=4"></script>
 </body>
 </html>
