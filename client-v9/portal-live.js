@@ -184,7 +184,7 @@
     $$('.portal-view').forEach(x=>x.classList.toggle('active',x.dataset.portalView===v));
     $$('[data-portal-nav]').forEach(x=>x.classList.toggle('active',x.dataset.portalNav===v));
     if(v==='home'){const first=(currentClient?.full_name||'Client').split(' ')[0];$('#portal-title').textContent=`Welcome, ${first}.`;$('#portal-subtitle').textContent='Everything important about your project, in one place.'}
-    else { $('#portal-title').textContent=({'projects':'My Projects','project-detail':'Project','files':'Files','payments':'Payments','new-project':'Start New Project','account':'Account'})[v]||'Client Portal'; $('#portal-subtitle').textContent='Andrew Tharwat Studio · Client Portal'; }
+    else { $('#portal-title').textContent=({'projects':'My Projects','project-detail':'Project','files':'Files','payments':'Payments','new-project':'Start New Project','account':'Account'})[v]||'Client Portal'; $('#portal-subtitle').textContent='ATS · Client Portal'; }
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function navigate(v){ if(v==='payments')renderPayments();if(v==='files')renderFiles();showView(v);history.replaceState(null,'',`#${v}`); }
