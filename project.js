@@ -4,7 +4,7 @@
   if(!cfg || !window.supabase){root.innerHTML='<section class="project-error"><h1>Configuration error</h1></section>';return;}
   const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
-  const media=(u='')=>{if(!u)return'/assets/app-icon-official.png';if(/^https?:\/\//i.test(u))return u;const clean=String(u).replace(/^\/+/, '');if(window.PORTFOLIO_ASSETS&&window.PORTFOLIO_ASSETS[clean])return window.PORTFOLIO_ASSETS[clean];return '/'+clean;};
+  const media=(u='')=>{if(!u)return'/assets/ats-logo-mark.webp';if(/^https?:\/\//i.test(u))return u;const clean=String(u).replace(/^\/+/, '');if(window.PORTFOLIO_ASSETS&&window.PORTFOLIO_ASSETS[clean])return window.PORTFOLIO_ASSETS[clean];return '/'+clean;};
   const pathSlug=location.pathname.match(/\/projects\/([^/?#]+)/)?.[1];
   const slug=decodeURIComponent(pathSlug || new URLSearchParams(location.search).get('slug') || '');
   const lang=()=>window.PORTFOLIO_I18N?.getLang?.()||'en';
