@@ -48,32 +48,57 @@ Deno.serve(async(req:Request)=>{
   try{
     const form=await req.formData()
     const grant=clean(form.get('grant'),200)
+    const requestedLeadId=clean(form.get('lead_id'),80)
     const file=form.get('file')
-    if(!grant||!(file instanceof File))return json({error:'Upload grant and file are required'},400)
+    if(!(file instanceof File))return json({error:'File is required'},400)
     if(file.size<=0)return json({error:'File is empty'},400)
     if(file.size>26214400)return json({error:'File exceeds the 25 MB limit'},413)
 
     const mime=clean(mimeFor(file.name,file.type),160)
     if(!allowed.has(mime))return json({error:'This file type is not supported'},415)
 
-    const tokenHash=await sha256(grant)
-    const {data:g,error:gError}=await admin.from('studio_public_upload_grants')
-      .select('id,lead_id,status,max_files,files_used,expires_at')
-      .eq('token_hash',tokenHash).maybeSingle()
-    if(gError||!g)return json({error:'Upload permission is invalid'},403)
-    if(g.status!=='active'||new Date(g.expires_at).getTime()<=Date.now())return json({error:'Upload permission has expired'},403)
-    if(Number(g.files_used||0)>=Number(g.max_files||10))return json({error:'Maximum number of files reached'},429)
+    let targetLeadId=''
+    let grantRow:any=null
+    let uploadedBy:string|null=null
+    let activityAction='lead_file_uploaded_at_intake'
 
-    const {data:lead}=await admin.from('studio_leads').select('id,status').eq('id',g.lead_id).maybeSingle()
+    if(grant){
+      const tokenHash=await sha256(grant)
+      const {data:g,error:gError}=await admin.from('studio_public_upload_grants')
+        .select('id,lead_id,status,max_files,files_used,expires_at')
+        .eq('token_hash',tokenHash).maybeSingle()
+      if(gError||!g)return json({error:'Upload permission is invalid'},403)
+      if(g.status!=='active'||new Date(g.expires_at).getTime()<=Date.now())return json({error:'Upload permission has expired'},403)
+      if(Number(g.files_used||0)>=Number(g.max_files||10))return json({error:'Maximum number of files reached'},429)
+      targetLeadId=g.lead_id
+      grantRow=g
+    }else{
+      const authHeader=req.headers.get('authorization')||''
+      const token=authHeader.replace(/^Bearer\s+/i,'').trim()
+      if(!token)return json({error:'Authentication required'},401)
+      const {data:userData,error:userError}=await admin.auth.getUser(token)
+      const user=userData?.user
+      const email=clean(user?.email,320).toLowerCase()
+      if(userError||!user?.id||!email)return json({error:'Authentication required'},401)
+      if(!requestedLeadId)return json({error:'Lead is required'},400)
+      const {data:requestedLead}=await admin.from('studio_leads').select('id,email,status').eq('id',requestedLeadId).maybeSingle()
+      if(!requestedLead||String(requestedLead.email||'').toLowerCase()!==email)return json({error:'File access denied'},403)
+      if(['won','lost'].includes(String(requestedLead.status)))return json({error:'This request no longer accepts files'},403)
+      targetLeadId=requestedLead.id
+      uploadedBy=user.id
+      activityAction='lead_file_uploaded_from_client_access'
+    }
+
+    const {data:lead}=await admin.from('studio_leads').select('id,status').eq('id',targetLeadId).maybeSingle()
     if(!lead||['won','lost'].includes(String(lead.status)))return json({error:'This request no longer accepts files'},403)
 
-    const path='leads/'+g.lead_id+'/client_upload/'+crypto.randomUUID()+'_'+safeName(file.name)
+    const path='leads/'+targetLeadId+'/client_upload/'+crypto.randomUUID()+'_'+safeName(file.name)
     const up=await admin.storage.from('studio-client-files').upload(path,file,{upsert:false,contentType:mime})
     if(up.error)return json({error:'Could not store file',detail:up.error.message},500)
 
     const meta=await admin.from('studio_files').insert({
-      lead_id:g.lead_id,
-      uploaded_by:null,
+      lead_id:targetLeadId,
+      uploaded_by:uploadedBy,
       file_name:file.name,
       storage_path:path,
       category:'client_upload',
@@ -88,18 +113,22 @@ Deno.serve(async(req:Request)=>{
       return json({error:'Could not register file',detail:meta.error.message},500)
     }
 
-    const nextUsed=Number(g.files_used||0)+1
-    await admin.from('studio_public_upload_grants').update({
-      files_used:nextUsed,
-      last_used_at:new Date().toISOString()
-    }).eq('id',g.id)
+    let remaining:null|number=null
+    if(grantRow){
+      const nextUsed=Number(grantRow.files_used||0)+1
+      await admin.from('studio_public_upload_grants').update({
+        files_used:nextUsed,
+        last_used_at:new Date().toISOString()
+      }).eq('id',grantRow.id)
+      remaining=Math.max(0,Number(grantRow.max_files||10)-nextUsed)
+    }
 
     await admin.from('studio_activity').insert({
-      actor_type:'prospect',entity_type:'lead',entity_id:g.lead_id,action:'lead_file_uploaded_at_intake',
+      actor_type:'prospect',entity_type:'lead',entity_id:targetLeadId,action:activityAction,
       metadata:{file_id:meta.data.id,file_name:file.name,file_size:file.size,mime_type:mime}
     })
 
-    return json({ok:true,file:meta.data,remaining:Math.max(0,Number(g.max_files||10)-nextUsed)})
+    return json({ok:true,file:meta.data,remaining})
   }catch(error){
     console.error('ATS public lead file upload failed',{message:(error as any)?.message})
     return json({error:'File upload failed'},500)

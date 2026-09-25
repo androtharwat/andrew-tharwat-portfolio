@@ -35,6 +35,146 @@ function sanitizeGeminiSchema(value:any):any{
   }
   return out
 }
+function normalizeDiagnosticAnalysis(raw:any,snapshot:any){
+  const ar=/[\u0600-\u06ff]/.test(JSON.stringify(raw||{})+JSON.stringify(snapshot||{}))
+  const out=(raw&&typeof raw==='object')?structuredClone(raw):{}
+  const readiness=Math.max(0,Math.min(100,Number(snapshot?.discovery?.readiness_score||0)))
+
+  if(typeof out.problem_framing==='string'){
+    const statement=clean(out.problem_framing,5000)
+    out.problem_framing={
+      symptom_summary:statement,
+      current_state:clean(snapshot?.discovery?.current_state||snapshot?.lead?.project_goal,3500),
+      desired_state:clean(snapshot?.discovery?.desired_outcome,2500),
+      gap:statement,
+      impact_summary:clean(snapshot?.discovery?.impact,2500),
+      root_problem_candidate:statement,
+      confidence:Math.max(35,Math.min(85,readiness))
+    }
+  }else if(!out.problem_framing||typeof out.problem_framing!=='object'){
+    out.problem_framing={}
+  }
+  if(!clean(out.problem_framing.root_problem_candidate,5000)){
+    out.problem_framing.root_problem_candidate=clean(
+      out.problem_framing.problem_statement||out.problem_framing.symptom_summary||out.executive_summary||snapshot?.discovery?.current_state,
+      5000
+    )
+  }
+  if(!Number.isFinite(Number(out.problem_framing.confidence))||Number(out.problem_framing.confidence)<=0){
+    out.problem_framing.confidence=Math.max(25,Math.min(85,readiness))
+  }
+
+  if(!out.evidence_assessment||typeof out.evidence_assessment!=='object'){
+    out.evidence_assessment={
+      facts:Array.isArray(out.facts)?out.facts:[],
+      assumptions:Array.isArray(out.assumptions)?out.assumptions:[],
+      contradictions:Array.isArray(out.contradictions)?out.contradictions:[],
+      evidence_quality:readiness>=75?'good':readiness>=50?'partial':'weak'
+    }
+  }
+
+  const rawLedger=Array.isArray(out.evidence_ledger)?out.evidence_ledger:[]
+  out.evidence_ledger=rawLedger.map((item:any,i:number)=>{
+    const strengthRaw=String(item?.strength||'unknown').toLowerCase()
+    const strength=strengthRaw==='high'?'strong':(['strong','medium','weak','unknown'].includes(strengthRaw)?strengthRaw:'unknown')
+    const sourceRaw=String(item?.source||'unknown').toLowerCase().replace(/[^a-z0-9]+/g,'_')
+    const sourceMap:any={
+      smart_intake_form:'intake',intake:'intake',client_discovery:'client_discovery',portal:'client_discovery',
+      admin_contact:'admin_contact',whatsapp:'admin_contact',call:'admin_contact',email:'admin_contact',
+      document:'document',metric:'metric',system_inference:'system_inference'
+    }
+    const clsRaw=String(item?.classification||'client_statement').toLowerCase()
+    const classification=['verified_fact','document_evidence','client_statement','admin_observation','assumption','gap','contradiction'].includes(clsRaw)?clsRaw:'client_statement'
+    return{
+      ref_id:'E'+(i+1),
+      classification,
+      source:sourceMap[sourceRaw]||'unknown',
+      strength,
+      statement:clean(item?.statement||item?.text||item?.fact||'',3500),
+      why_it_matters:clean(item?.why_it_matters||'',2200),
+      verification_needed:typeof item?.verification_needed==='string'
+        ?clean(item.verification_needed,1800)
+        :(item?.verification_needed?(ar?'يحتاج تحقق قبل الاعتماد النهائي.':'Verify before final reliance.'):'')
+    }
+  })
+
+  if(!Array.isArray(out.root_causes)&&Array.isArray(out.causal_hypotheses)){
+    out.root_causes=out.causal_hypotheses.map((c:any)=>({
+      category:clean(c?.category,80)||'other',
+      causal_level:clean(c?.causal_level,80)||'contributing',
+      statement:clean(c?.statement||c?.suspected_cause,3000),
+      evidence_for:clean(c?.evidence_for||'',5000),
+      evidence_against:clean(c?.evidence_against||'',5000),
+      evidence_refs:Array.isArray(c?.evidence_refs)?c.evidence_refs:[],
+      missing_evidence_refs:Array.isArray(c?.missing_evidence_refs)?c.missing_evidence_refs:[],
+      confidence:Math.max(25,Math.min(75,Number(c?.confidence||45))),
+      validation_method:clean(c?.validation_method,3000)||(ar?'تحقق من الفرضية مقابل الأدلة وبيانات العميل قبل اعتمادها كسبب جذري.':'Validate this hypothesis against project evidence and client data before accepting it as a root cause.')
+    }))
+  }
+  if(!Array.isArray(out.root_causes))out.root_causes=[]
+
+  if(!Array.isArray(out.recommended_tasks)&&Array.isArray(out.tasks)){
+    out.recommended_tasks=out.tasks.map((t:any)=>({
+      root_cause_index:Number.isInteger(Number(t?.root_cause_index))?Number(t.root_cause_index):-1,
+      task_type:clean(t?.task_type,80)||'investigate',
+      title:clean(t?.title,500)||'Diagnostic task',
+      rationale:clean(t?.rationale||t?.description,5000),
+      owner_type:clean(t?.owner_type,80)||'ats',
+      priority:clean(t?.priority,80)||'medium',
+      expected_effect:clean(t?.expected_effect||t?.description,5000),
+      dependency_note:clean(t?.dependency_note,3000),
+      acceptance_criteria:clean(t?.acceptance_criteria,5000)||(ar?'يتم توثيق الناتج ومراجعته قبل الانتقال للخطوة التالية.':'Document and review the output before moving to the next step.'),
+      evidence_refs:Array.isArray(t?.evidence_refs)?t.evidence_refs:[]
+    }))
+  }
+  if(!Array.isArray(out.recommended_tasks))out.recommended_tasks=[]
+
+  if(typeof out.highest_value_question==='string'&&!out.next_best_question){
+    out.next_best_question={
+      question:clean(out.highest_value_question,2200),
+      reason:ar?'أعلى فجوة معلوماتية تؤثر على القرار التالي.':'The highest-value information gap affecting the next decision.',
+      decision_value:ar?'الإجابة تقلل الافتراضات وتحدد الخطوة التالية بدقة.':'The answer reduces assumptions and sharpens the next step.'
+    }
+  }
+  if(out.next_best_question&&typeof out.next_best_question==='string'){
+    out.next_best_question={question:clean(out.next_best_question,2200),reason:'',decision_value:''}
+  }
+
+  if(typeof out.solution_direction==='string'){
+    const strategy=clean(out.solution_direction,5000)
+    out.solution_direction={strategy,why_this_direction:'',risks:[],not_yet_justified:[]}
+  }else if(!out.solution_direction||typeof out.solution_direction!=='object'){
+    out.solution_direction={strategy:'',why_this_direction:'',risks:[],not_yet_justified:[]}
+  }
+
+  if(out.verification_plan&&Array.isArray(out.verification_plan.criteria)){
+    out.verification_plan={
+      success_signals:out.verification_plan.criteria,
+      failure_signals:Array.isArray(out.verification_plan.failure_signals)?out.verification_plan.failure_signals:[],
+      review_point:clean(out.verification_plan.review_point,2200)||(ar?'بعد تنفيذ واختبار المهام المعتمدة.':'After approved tasks are implemented and tested.')
+    }
+  }else if(!out.verification_plan||typeof out.verification_plan!=='object'){
+    out.verification_plan={success_signals:[],failure_signals:[],review_point:''}
+  }
+
+  if(!clean(out.executive_summary,8000)){
+    out.executive_summary=clean(
+      out.problem_framing.root_problem_candidate||out.problem_framing.symptom_summary||out.solution_direction.strategy,
+      8000
+    )
+  }
+  if(!clean(out.next_best_action,3000)){
+    out.next_best_action=clean(
+      out.recommended_tasks?.[0]?.title||out.next_best_question?.question||'',
+      3000
+    )
+  }
+  if(!['needs_evidence','needs_validation','solution_ready','execution'].includes(String(out.decision_stage))){
+    out.decision_stage=readiness>=75?'needs_validation':'needs_evidence'
+  }
+  return out
+}
+
 function buildDeterministicAnalysis(snapshot:any){
   const d=snapshot?.discovery||{}
   const ar=/[\u0600-\u06ff]/.test(JSON.stringify(snapshot))
@@ -273,10 +413,23 @@ Deno.serve(async(req:Request)=>{
       .select('id,analysis,model,completed_at').eq('case_id',caseRow.id).eq('input_hash',inputHash).eq('status','completed').neq('model','deterministic-fallback')
       .order('created_at',{ascending:false}).limit(1).maybeSingle()
     if(cached?.analysis){
-      await admin.from('studio_discovery_cases').update({
-        analysis_state:'ready',last_diagnostic_run_id:cached.id,last_analyzed_at:cached.completed_at
-      }).eq('id',caseRow.id)
-      return json({ok:true,cached:true,run_id:cached.id,analysis:cached.analysis,model:cached.model})
+      const cachedAnalysis=normalizeDiagnosticAnalysis(cached.analysis,snapshot)
+      const cacheUsable=typeof cachedAnalysis?.problem_framing==='object'
+        &&!!clean(cachedAnalysis?.problem_framing?.root_problem_candidate,5000)
+        &&Array.isArray(cachedAnalysis?.recommended_tasks)
+      if(cacheUsable){
+        // Only reuse cache when the persisted DB projection is already complete.
+        const {count:cachedTaskCount}=await admin.from('studio_solution_tasks')
+          .select('id',{count:'exact',head:true}).eq('case_id',caseRow.id).eq('diagnostic_run_id',cached.id)
+        const {data:cachedCase}=await admin.from('studio_discovery_cases')
+          .select('system_problem_statement,system_confidence').eq('id',caseRow.id).maybeSingle()
+        if((cachedTaskCount||0)>0&&clean(cachedCase?.system_problem_statement,5000)){
+          await admin.from('studio_discovery_cases').update({
+            analysis_state:'ready',last_diagnostic_run_id:cached.id,last_analyzed_at:cached.completed_at
+          }).eq('id',caseRow.id)
+          return json({ok:true,cached:true,run_id:cached.id,analysis:cachedAnalysis,model:cached.model})
+        }
+      }
     }
 
     await admin.from('studio_discovery_cases').update({analysis_state:'analyzing'}).eq('id',caseRow.id)
@@ -419,7 +572,7 @@ ${JSON.stringify(snapshot)}`
           const text=(body?.candidates?.[0]?.content?.parts||[]).map((p:any)=>p?.text||'').join('\n').trim()
           if(!text){lastError='No model output';attempts.push({model,mode:config.mode,status:200,error:lastError});continue}
           try{
-            analysis=parseTextAsJson(text);usedModel=model;attempts.push({model,mode:config.mode,status:200,ok:true});break
+            analysis=normalizeDiagnosticAnalysis(parseTextAsJson(text),snapshot);usedModel=model;attempts.push({model,mode:config.mode,status:200,ok:true});break
           }catch(parseError){
             lastError='Model returned invalid diagnostic JSON'
             attempts.push({model,mode:config.mode,status:200,error:lastError})
@@ -438,12 +591,13 @@ ${JSON.stringify(snapshot)}`
 
     let fallbackUsed=false
     if(!analysis){
-      analysis=buildDeterministicAnalysis(snapshot)
+      analysis=normalizeDiagnosticAnalysis(buildDeterministicAnalysis(snapshot),snapshot)
       usedModel='deterministic-fallback'
       fallbackUsed=true
       lastError=(lastError||'AI provider unavailable')+' | attempts: '+attempts.map((x:any)=>x.model+':'+x.status).join(', ')
     }
 
+    analysis=normalizeDiagnosticAnalysis(analysis,snapshot)
     const ledger=Array.isArray(analysis.evidence_ledger)?analysis.evidence_ledger.slice(0,20):[]
     const validEvidenceRefs=new Set<string>()
     ledger.forEach((item:any,i:number)=>{
@@ -505,13 +659,16 @@ ${JSON.stringify(snapshot)}`
     }
 
     const completedAt=new Date().toISOString()
+    const projectionUsable=!!rootCandidate&&(tasks.length>0||!!nextQuestion||!!nextAction)
     await admin.from('studio_diagnostic_runs').update({
-      status:'completed',model:usedModel,analysis,error_text:fallbackUsed?lastError:null,completed_at:completedAt
+      status:projectionUsable?'completed':'failed',model:usedModel,analysis,
+      error_text:projectionUsable?(fallbackUsed?lastError:null):'Diagnostic output could not be projected into ATS decision fields',
+      completed_at:completedAt
     }).eq('id',run.id)
     await admin.from('studio_discovery_cases').update({
-      analysis_state:'ready',decision_stage:stage,system_problem_statement:rootCandidate||null,
+      analysis_state:projectionUsable?'ready':'stale',decision_stage:stage,system_problem_statement:rootCandidate||null,
       system_diagnosis_summary:executive||null,system_confidence:confidence,system_next_action:nextAction||null,
-      system_next_question:nextQuestion,last_analyzed_at:completedAt,last_diagnostic_run_id:run.id
+      system_next_question:nextQuestion,last_analyzed_at:projectionUsable?completedAt:null,last_diagnostic_run_id:projectionUsable?run.id:null
     }).eq('id',caseRow.id)
 
     await admin.from('studio_activity').insert({
@@ -519,7 +676,7 @@ ${JSON.stringify(snapshot)}`
       metadata:{run_id:run.id,decision_stage:stage,system_confidence:confidence,root_causes:insertedCauses.length,tasks:tasks.length}
     })
 
-    return json({ok:true,cached:false,fallback:fallbackUsed,run_id:run.id,analysis,model:usedModel,root_causes:insertedCauses.length,tasks:tasks.length})
+    return json({ok:projectionUsable,cached:false,fallback:fallbackUsed,run_id:run.id,analysis,model:usedModel,root_causes:insertedCauses.length,tasks:tasks.length,projection_usable:projectionUsable},projectionUsable?200:502)
   }catch(error){
     console.error('ATS diagnostic engine failed',{message:(error as any)?.message})
     return json({error:'ATS diagnostic engine failed',detail:clean((error as any)?.message||error,280)},500)

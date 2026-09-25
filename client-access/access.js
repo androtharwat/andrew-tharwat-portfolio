@@ -32,40 +32,57 @@
     if(q.error){window.ATS_AUTH_CLIENT.logError('lead-files',q.error);return}
     renderLeadEvidenceFiles(q.data||[]);
   }
+  function uploadState(message='',error=false){
+    const el=$('#discovery-upload-state');if(!el)return;
+    el.textContent=message;el.classList.toggle('error',!!error);el.classList.toggle('ok',!!message&&!error);
+  }
   async function uploadLeadEvidenceFiles(input){
-    const lead=context?.lead;if(!lead?.id||!input?.files?.length)return;
+    const lead=context?.lead;
+    if(!lead?.id)return uploadState('This request is not ready for file uploads yet.',true);
+    if(!input?.files?.length)return;
     const selected=[...input.files].slice(0,10);
     input.value='';
     const tooLarge=selected.find(f=>f.size>26214400);
-    if(tooLarge)return toast(tooLarge.name+' exceeds the 25 MB limit');
-    const picker=$('#discovery-file-picker');picker?.classList.add('busy');
+    if(tooLarge)return uploadState(tooLarge.name+' exceeds the 25 MB limit.',true);
+    const picker=$('#discovery-file-picker');
+    picker?.classList.add('busy');if(picker)picker.disabled=true;
     try{
-      const {data:userData,error:userError}=await sb.auth.getUser();if(userError||!userData?.user)throw userError||new Error('Authentication required');
+      const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+      const accessToken=sessionData?.session?.access_token;
+      if(sessionError||!accessToken)throw sessionError||new Error('Your client session expired. Please sign in again.');
+      let completed=0;
       for(const file of selected){
-        const mime=mimeForFile(file);
-        const path='leads/'+lead.id+'/client_upload/'+crypto.randomUUID()+'_'+safeName(file.name);
-        toast('Uploading '+file.name+'…');
-        const up=await sb.storage.from('studio-client-files').upload(path,file,{upsert:false,contentType:mime});
-        if(up.error)throw up.error;
-        const meta=await sb.from('studio_files').insert({
-          lead_id:lead.id,uploaded_by:userData.user.id,file_name:file.name,storage_path:path,
-          category:'client_upload',visibility:'client_visible',mime_type:mime,file_size:file.size,analysis_status:'not_analyzed'
-        }).select('*').single();
-        if(meta.error){await sb.storage.from('studio-client-files').remove([path]);throw meta.error}
+        uploadState('Uploading '+file.name+'…');
+        const form=new FormData();
+        form.append('lead_id',lead.id);
+        form.append('file',file,file.name);
+        const response=await fetch(cfg.supabaseUrl+'/functions/v1/ats-public-lead-file-upload',{
+          method:'POST',
+          headers:{apikey:cfg.supabaseKey,Authorization:'Bearer '+accessToken},
+          body:form
+        });
+        const uploaded=await response.json().catch(()=>null);
+        if(!response.ok||!uploaded?.file?.id)throw new Error(uploaded?.detail||uploaded?.error||'Could not upload '+file.name);
         await loadLeadEvidenceFiles(lead.id);
-        toast('Analyzing '+file.name+'…');
-        const analyzed=await sb.functions.invoke('ats-lead-file-analyzer',{body:{file_id:meta.data.id}});
-        if(analyzed.error)window.ATS_AUTH_CLIENT.logError('file-analysis',analyzed.error);
+        uploadState('Analyzing '+file.name+'…');
+        const analyzed=await sb.functions.invoke('ats-lead-file-analyzer',{body:{file_id:uploaded.file.id}});
+        if(analyzed.error)throw new Error(analyzed.error.message||'The file was uploaded but ATS could not analyze it.');
+        completed++;
         await loadLeadEvidenceFiles(lead.id);
       }
+      uploadState(completed+' file'+(completed===1?'':'s')+' uploaded and analyzed successfully.');
       toast('Project evidence added · ATS is updating the diagnosis');
       await refreshDiagnosticFromClient(false);
       await loadContext();
     }catch(error){
       window.ATS_AUTH_CLIENT.logError('file-upload',error);
-      toast(error.message||'Could not upload the project file');
+      const message=error?.message||'Could not upload the project file';
+      uploadState(message,true);
+      toast(message);
       if(lead?.id)await loadLeadEvidenceFiles(lead.id);
-    }finally{picker?.classList.remove('busy')}
+    }finally{
+      picker?.classList.remove('busy');if(picker)picker.disabled=false;
+    }
   }
 
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1900)}
@@ -284,6 +301,11 @@
   }
 
   $('#verify-code')?.addEventListener('click',openWithAccessCode);$('#sign-out')?.addEventListener('click',signOut);$('#refresh-access')?.addEventListener('click',()=>loadContext().catch(e=>toast(e.message)));$('#submit-discovery')?.addEventListener('click',submitDiscoveryAnswer);
+  $('#discovery-file-picker')?.addEventListener('click',()=>{
+    uploadState('');
+    const input=$('#discovery-files');
+    if(input){input.value='';input.click()}
+  });
   $('#discovery-files')?.addEventListener('change',e=>uploadLeadEvidenceFiles(e.currentTarget));
   document.addEventListener('click',e=>{if(e.target.closest('#accept-proposal'))proposalAction('accept');if(e.target.closest('#decline-proposal'))proposalAction('decline')});
   $('#access-otp')?.addEventListener('keydown',e=>{if(e.key==='Enter')openWithAccessCode()});

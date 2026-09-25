@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/client-access/access.css?v=4" />
+  <link rel="stylesheet" href="/client-access/access.css?v=5" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
 </head>
 <body>
@@ -65,10 +65,13 @@
         <div class="discovery-evidence">
           <div class="discovery-evidence-head">
             <div><span>PROJECT EVIDENCE · ملفات المشروع</span><b>Share anything that helps ATS understand the real situation.</b><small>Reports, screenshots, PDFs, Word, Excel, PowerPoint, ZIP, data exports, text, images, audio or short video files. ATS analyzes the content automatically.</small></div>
-            <label id="discovery-file-picker" class="discovery-file-picker" for="discovery-files">
-              <input id="discovery-files" type="file" multiple accept=".pdf,.txt,.csv,.json,.xml,.md,.html,.rtf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg" />
-              <strong>+ ADD FILES</strong><span>Max 25 MB per file</span>
-            </label>
+            <div class="discovery-file-upload">
+              <button id="discovery-file-picker" class="discovery-file-picker" type="button">
+                <strong>+ ADD FILES</strong><span>Max 25 MB per file</span>
+              </button>
+              <input id="discovery-files" class="discovery-file-input" type="file" multiple accept=".pdf,.txt,.csv,.json,.xml,.md,.html,.rtf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg" />
+              <small id="discovery-upload-state" class="discovery-upload-state" aria-live="polite"></small>
+            </div>
           </div>
           <div id="discovery-file-list" class="discovery-file-list"><div class="discovery-file-empty">No project files shared yet.</div></div>
         </div>
@@ -111,6 +114,6 @@
   <script src="/auth-otp-config.js?v=3"></script>
   <script src="/auth-client.js?v=1"></script>
   <script src="/client-access/prefill.js?v=1"></script>
-  <script src="/client-access/access.js?v=9"></script>
+  <script src="/client-access/access.js?v=10"></script>
 </body>
 </html>
