@@ -88,7 +88,7 @@
             <div class="core-orbit core-orbit-b"></div>
             <div class="core-orbit core-orbit-c"></div>
             <div class="core-pulse"></div>
-            <div class="core-brand"><img src="/assets/logo-mark-official.png" alt="" /></div>
+            <div class="core-brand"><img src="/assets/ats-logo-mark.webp" alt="" /></div>
             <small>ATS</small>
             <b>STUDIO CORE</b>
             <em>${ar()?'نفهم · نكوّن · نبني':'UNDERSTAND · ASSEMBLE · BUILD'}</em>
@@ -376,7 +376,7 @@
           <i class="team-orbit orbit-b"></i>
           <i class="team-orbit orbit-c"></i>
           <div class="team-core-pulse"></div>
-          <div class="team-core-mark"><img src="/assets/logo-mark-official.png" alt="" /></div>
+          <div class="team-core-mark"><img src="/assets/ats-logo-mark.webp" alt="" /></div>
           <span class="team-node n1">HSE</span>
           <span class="team-node n2">DEV</span>
           <span class="team-node n3">DES</span>
