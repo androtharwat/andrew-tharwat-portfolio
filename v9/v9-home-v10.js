@@ -22,11 +22,11 @@
   function hero(){
     const h=$('.hero');if(!h)return;
     set($('.hero .eyebrow'),'ATS · PROBLEM-SOLVING STUDIO','ATS · استوديو لحل المشكلات');
-    set($('.hero h1'),'YOU BRING THE PROBLEM.<br><span>WE BUILD THE SOLUTION.</span>','أنت ابدأ بالمشكلة.<br><span>وإحنا نبني الحل.</span>',true);
-    set($('#hero-subtitle'),'HSE · DIGITAL · BRAND · CONTENT · AI — one studio built around the problem.','HSE · حلول رقمية · هوية · محتوى · AI — استوديو واحد بيتبني حول المشكلة.');
+    set($('.hero h1'),'BRING THE PROBLEM.<br><span>WE BUILD THE SOLUTION.</span>','ابدأ بالمشكلة.<br><span>وإحنا نبني الحل.</span>',true);
+    set($('#hero-subtitle'),'HSE · DIGITAL · BRAND · CONTENT · AI — one studio shaped around the problem.','HSE · حلول رقمية · هوية · محتوى · AI — استوديو واحد يتشكّل حول المشكلة.');
     const actions=$$('.hero-actions .btn');
     if(actions[0]){set(actions[0],'START WITH YOUR PROBLEM →','ابدأ من مشكلتك ←');actions[0].href='#contact'}
-    if(actions[1]){set(actions[1],'SEE WHAT WE BUILD','شوف بنبني إيه');actions[1].href='#work'}
+    if(actions[1]){set(actions[1],'EXPLORE THE WORK','شوف الحلول اللي بنبنيها');actions[1].href='#work'}
     const visual=$('.hero-visual');
     if(visual){
       visual.className='hero-visual v10-identity-visual v10-open-identity';
@@ -91,7 +91,7 @@
             <div class="core-brand"><img src="/assets/ats-logo-mark.webp" alt="" /></div>
             <small>ATS</small>
             <b>STUDIO CORE</b>
-            <em>${ar()?'نفهم · نكوّن · نبني':'UNDERSTAND · ASSEMBLE · BUILD'}</em>
+            <em>${ar()?'نفهم · نجمع · نبني':'UNDERSTAND · ASSEMBLE · BUILD'}</em>
           </div>
 
           <div class="v10-expertise expert-hse">
@@ -110,7 +110,7 @@
             <div class="expert-icon">
               <svg viewBox="0 0 24 24"><path d="M4 20l4.5-1 10-10-3.5-3.5-10 10L4 20zM14 6l3.5 3.5"/></svg>
             </div>
-            <b>CREATIVE</b><small>${ar()?'هوية · محتوى · قصة':'BRAND · CONTENT · STORY'}</small>
+            <b>CREATIVE</b><small>${ar()?'هوية · محتوى · سرد':'BRAND · CONTENT · STORY'}</small>
           </div>
           <div class="v10-expertise expert-ai">
             <div class="expert-icon">
@@ -282,8 +282,8 @@
     wrap.innerHTML=`
       <div class="v10-method-head">
         <span class="eyebrow">${ar()?'طريقة العمل':'HOW THE STUDIO WORKS'}</span>
-        <h2>${ar()?'مشكلة واحدة.<br><span>ثلاث حركات.</span>':'ONE PROBLEM.<br><span>THREE MOVES.</span>'}</h2>
-        <p>${ar()?'مش بنبدأ ببيع خدمة. بنبدأ بفهم المشكلة، وبعدها نكوّن الطريق المناسب ليها.':'We do not start by selling a service. We start by understanding the problem, then shape the right path around it.'}</p>
+        <h2>${ar()?'مشكلة واحدة.<br><span>ثلاث خطوات.</span>':'ONE PROBLEM.<br><span>THREE MOVES.</span>'}</h2>
+        <p>${ar()?'لا نبدأ ببيع خدمة. نبدأ بفهم المشكلة، ثم نجمع الخبرة المناسبة ونبني المسار الأنسب للحل.':'We do not start by selling a service. We start by understanding the problem, then shape the right path around it.'}</p>
       </div>
 
       <div class="v10-method-flow" aria-label="${ar()?'مراحل عمل الاستوديو':'Studio working method'}">
@@ -293,8 +293,8 @@
             <i></i><i></i><i></i><b></b>
           </div>
           <small>${ar()?'نفهم':'UNDERSTAND'}</small>
-          <h3>${ar()?'إيه اللي بيحصل فعلًا؟':'WHAT IS REALLY HAPPENING?'}</h3>
-          <p>${ar()?'نفصل الأعراض عن المشكلة الحقيقية.':'Separate the symptoms from the real problem.'}</p>
+          <h3>${ar()?'ما الذي يحدث فعلًا؟':'WHAT IS REALLY HAPPENING?'}</h3>
+          <p>${ar()?'نفصل بين الأعراض والمشكلة الحقيقية.':'Separate the symptoms from the real problem.'}</p>
         </article>
 
         <div class="v10-method-link" aria-hidden="true"><i></i><b>→</b></div>
@@ -304,9 +304,9 @@
           <div class="stage-visual visual-assemble" aria-hidden="true">
             <i>HSE</i><i>DEV</i><i>DES</i><i>AI</i><b></b>
           </div>
-          <small>${ar()?'نكوّن':'ASSEMBLE'}</small>
-          <h3>${ar()?'مين وإيه اللي نحتاجه؟':'WHAT EXPERTISE DOES IT NEED?'}</h3>
-          <p>${ar()?'نختار فقط الخبرة والأدوات اللي تضيف قيمة.':'Bring in only the expertise and tools that add value.'}</p>
+          <small>${ar()?'نجمع':'ASSEMBLE'}</small>
+          <h3>${ar()?'ما الخبرات والأدوات المطلوبة؟':'WHAT EXPERTISE DOES IT NEED?'}</h3>
+          <p>${ar()?'نختار فقط الخبرات والأدوات التي تضيف قيمة حقيقية.':'Bring in only the expertise and tools that add value.'}</p>
         </article>
 
         <div class="v10-method-link" aria-hidden="true"><i></i><b>→</b></div>
@@ -317,17 +317,17 @@
             <i></i><b></b><em>✓</em>
           </div>
           <small>${ar()?'نبني':'BUILD'}</small>
-          <h3>${ar()?'حل يشتغل في الواقع.':'MAKE THE SOLUTION USEFUL.'}</h3>
-          <p>${ar()?'نحوّل الاتجاه إلى نتيجة واضحة وقابلة للاستخدام.':'Turn the direction into a clear, usable outcome.'}</p>
+          <h3>${ar()?'نبني حلًا يعمل في الواقع.':'MAKE THE SOLUTION USEFUL.'}</h3>
+          <p>${ar()?'نحوّل الاتجاه إلى نتيجة واضحة وقابلة للتنفيذ.':'Turn the direction into a clear, usable outcome.'}</p>
         </article>
       </div>
 
       <div class="v10-method-rule">
-        <span>${ar()?'مش بنفرض فريق ثابت':'NO FIXED TEAM'}</span>
+        <span>${ar()?'لا فريق ثابت':'NO FIXED TEAM'}</span>
         <i></i>
-        <span>${ar()?'مش بنفرض خدمة':'NO SERVICE-FIRST PITCH'}</span>
+        <span>${ar()?'لا خدمة مفروضة':'NO SERVICE-FIRST PITCH'}</span>
         <i></i>
-        <strong>${ar()?'المشكلة هي اللي تحدد الطريق':'THE PROBLEM SHAPES THE PATH'}</strong>
+        <strong>${ar()?'المشكلة تحدد المسار':'THE PROBLEM SHAPES THE PATH'}</strong>
       </div>
     `;
   }
@@ -360,8 +360,8 @@
     section.classList.add('v10-team-system');
     if(h){
       set($('.eyebrow',h),'THE STUDIO NETWORK','شبكة الاستوديو');
-      set($('h2',h),'NOT A FIXED TEAM.<br><span>THE RIGHT TEAM.</span>','مش فريق ثابت.<br><span>الفريق المناسب.</span>',true);
-      set($('div>p',h),'A focused studio core. Specialist expertise joins only when the problem needs it.','نواة واضحة للاستوديو، والخبرة المتخصصة تدخل فقط لما المشكلة تحتاجها.');
+      set($('h2',h),'NOT A FIXED TEAM.<br><span>THE RIGHT TEAM.</span>','ليس فريقًا ثابتًا.<br><span>بل الفريق المناسب.</span>',true);
+      set($('div>p',h),'A focused studio core. Specialist expertise joins only when the problem needs it.','نواة واضحة للاستوديو، وتدخل الخبرات المتخصصة فقط عندما تحتاجها المشكلة.');
     }
 
     const model=$('.team-model',section);
@@ -398,8 +398,8 @@
     const panel=$('.specialist-panel',section);
     if(panel){
       set($('.eyebrow',panel),'SPECIALIST NETWORK','شبكة الخبرات');
-      set($('h3',panel),'EXPERTISE JOINS<br>WHEN THE PROBLEM NEEDS IT.','الخبرة تدخل<br>لما المشكلة تحتاجها.',true);
-      set($('p',panel),'Select any area to explore a possible expertise mix. This is a flexible network, not a fixed staff list.','اختار أي مجال علشان تشوف مزيج خبرات محتمل. دي شبكة مرنة، مش قائمة موظفين ثابتة.');
+      set($('h3',panel),'EXPERTISE JOINS<br>WHEN THE PROBLEM NEEDS IT.','الخبرة تنضم<br>عندما تحتاجها المشكلة.',true);
+      set($('p',panel),'Select any area to explore a possible expertise mix. This is a flexible network, not a fixed staff list.','اختر أي مجال لاستكشاف مزيج الخبرات الممكن. هذه شبكة مرنة وليست قائمة موظفين ثابتة.');
       const selHead=$('.team-selection-head',panel);
       if(selHead){
         set($('b',selHead),'POSSIBLE PROJECT MIX','مزيج محتمل للمشروع');
@@ -429,8 +429,8 @@
     section.classList.add('v10-contact-system');
     if(h){
       set($('.eyebrow',h),'START WITH ONE SENTENCE','ابدأ بجملة واحدة');
-      set($('h2',h),'WHAT NEEDS TO<br><span>CHANGE?</span>','إيه اللي محتاج<br><span>يتغيّر؟</span>',true);
-      set($('div>p',h),'Do not choose a service. Tell us the problem first — we will shape the brief with you.','ما تختارش خدمة. احكِ لنا المشكلة الأول، وإحنا نبني البريف معاك.');
+      set($('h2',h),'WHAT NEEDS TO<br><span>CHANGE?</span>','ما الذي يحتاج<br><span>إلى التغيير؟</span>',true);
+      set($('div>p',h),'Do not choose a service. Tell us the problem first — we will shape the brief with you.','لا تختَر خدمة. احكِ لنا المشكلة أولًا، وسنُشكّل البريف معك.');
     }
 
     let entry=$('.v10-contact-entry',section);
@@ -456,19 +456,19 @@
       shell?.insertAdjacentElement('beforebegin',entry);
     }
 
-    set($('.v10-contact-entry-copy>small',entry),'NO SERVICE CHOICE REQUIRED','مش لازم تختار خدمة');
+    set($('.v10-contact-entry-copy>small',entry),'NO SERVICE CHOICE REQUIRED','لا تحتاج لاختيار خدمة');
     set($('.v10-contact-entry-copy h3',entry),'START WITH THE REAL PROBLEM.','ابدأ بالمشكلة الحقيقية.');
-    set($('.v10-contact-entry-copy p',entry),'One clear sentence is enough to start.','جملة واضحة واحدة كفاية علشان نبدأ.');
+    set($('.v10-contact-entry-copy p',entry),'One clear sentence is enough to start.','جملة واضحة واحدة تكفي لنبدأ.');
     const trust=$$('.v10-contact-trust span',entry);
     if(trust[0])set(trust[0],'UNDERSTAND','نفهم');
     if(trust[1])set(trust[1],'SHAPE','نحدد المسار');
     if(trust[2])set(trust[2],'BUILD','نبني');
-    const label=$('label',entry);if(label)set(label,'WHAT IS THE PROBLEM?','إيه المشكلة؟');
+    const label=$('label',entry);if(label)set(label,'WHAT IS THE PROBLEM?','ما المشكلة؟');
     const textarea=$('#v10-problem-start',entry);
-    if(textarea)textarea.placeholder=ar()?'مثال: عندنا عملية يدوية بتضيع وقت وعايزين نحولها لنظام أبسط...':'Example: We have a manual process wasting time and need a simpler digital workflow...';
-    set($('.v10-start-brief',entry),'SHAPE MY BRIEF →','ابنِ البريف معايا ←');
-    set($('.v10-open-full-brief',entry),'OPEN FULL BRIEF','افتح البريف كامل');
-    set($('.v10-contact-entry-note',entry),'NO PERFECT BRIEF NEEDED · WE BUILD IT STEP BY STEP','مش محتاج بريف كامل · بنبنيه خطوة بخطوة');
+    if(textarea)textarea.placeholder=ar()?'مثال: لدينا عملية يدوية تستهلك وقتًا ونريد تحويلها إلى نظام أبسط...':'Example: We have a manual process wasting time and need a simpler digital workflow...';
+    set($('.v10-start-brief',entry),'SHAPE MY BRIEF →','لنُشكّل البريف معًا ←');
+    set($('.v10-open-full-brief',entry),'OPEN FULL BRIEF','افتح البريف الكامل');
+    set($('.v10-contact-entry-note',entry),'NO PERFECT BRIEF NEEDED · WE BUILD IT STEP BY STEP','لا تحتاج بريفًا مثاليًا · نبنيه معًا خطوة بخطوة');
 
     if(shell&&!shell.classList.contains('brief-submitted')&&!shell.classList.contains('v10-brief-open'))shell.classList.add('v10-brief-gated');
 

@@ -4,7 +4,7 @@
   const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
   const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
-  const media=(url='')=>{if(!url)return'/assets/logo-mark.png';if(/^https?:\/\//i.test(url))return url;return'/'+url.replace(/^\//,'')};
+  const media=(url='')=>{if(!url)return'/assets/ats-logo-mark.webp';if(/^https?:\/\//i.test(url))return url;return'/'+url.replace(/^\//,'')};
   const defaults={work:{columns:3,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['type','goal','team','scope','contact'],hidden:[]}};
   const state={lang:'en',projects:[],settings:{},layout:structuredClone(defaults),filter:'all',query:'',brief:{type:'',goal:'',audience:'',success:'',disciplines:[],timeline:'',budget:'Not specified',stage:'Idea only',name:'',email:'',phone:'',company:''},briefIndex:0};
 
@@ -52,11 +52,33 @@
   }
 
   function setLang(lang){
-    state.lang=lang;document.body.dataset.lang=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
-    $$('[data-en]').forEach(el=>el.textContent=el.dataset[lang]||el.dataset.en);
-    $$('[data-en-html]').forEach(el=>el.innerHTML=el.dataset[lang+'Html']||el.dataset.enHtml);
-    $('#lang-toggle').textContent=lang==='en'?'EN | عربي':'English | AR';
-    $('#project-search').placeholder=lang==='ar'?'ابحث في المشاريع...':'Search projects...';
+    state.lang=lang;
+    document.body.dataset.lang=lang;
+    document.documentElement.lang=lang;
+    document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+    $('[data-en]').forEach(el=>el.textContent=el.dataset[lang]||el.dataset.en);
+    $('[data-en-html]').forEach(el=>el.innerHTML=el.dataset[lang+'Html']||el.dataset.enHtml);
+
+    const isAr=lang==='ar';
+    document.title=isAr?'ATS — حل المشكلات من خلال الإبداع':'ATS — Problem Solving Through Creativity';
+    const meta=$('meta[name="description"]');
+    if(meta)meta.content=isAr
+      ?'ATS استوديو متعدد التخصصات يجمع خبرات HSE والأنظمة الرقمية والهوية والمحتوى والذكاء الاصطناعي لبناء حلول عملية لمشكلات حقيقية.'
+      :'ATS is a multidisciplinary problem-solving studio combining HSE, digital systems, brand, content and AI to build practical solutions for real problems.';
+
+    const toggle=$('#lang-toggle');
+    if(toggle){
+      toggle.textContent=isAr?'English':'العربية';
+      toggle.setAttribute('aria-label',isAr?'Switch to English':'التبديل إلى العربية');
+    }
+    const nav=$('#main-nav');
+    if(nav)nav.setAttribute('aria-label',isAr?'التنقل الرئيسي':'Main navigation');
+
+    const search=$('#project-search');
+    if(search){
+      search.placeholder=isAr?'ابحث في المشاريع...':'Search projects...';
+      search.setAttribute('aria-label',isAr?'البحث في المشاريع':'Search projects');
+    }
     renderWork();renderRoles();renderBrief();
   }
   $('#lang-toggle').addEventListener('click',()=>setLang(state.lang==='en'?'ar':'en'));
@@ -83,7 +105,8 @@
   function projectCard(p,index){
     const size=state.layout.work.sizes?.[p.slug]||'normal',cat=state.lang==='ar'?categoryAr(p.portfolio_categories?.name):categoryEn(p.portfolio_categories?.name);
     const tags=(state.lang==='ar'&&p.tags_ar?.length?p.tags_ar:p.tags||[]).slice(0,3).join(' · ');
-    return `<a class="project-card ${size!=='normal'?'size-'+esc(size):''}" href="/projects/${encodeURIComponent(p.slug)}" aria-label="${esc(local(p,'title'))}"><div class="project-media"><img src="${esc(media(p.cover_url))}" alt="${esc(local(p,'title'))}" loading="lazy"><span class="project-index">${String(index+1).padStart(2,'0')}</span></div><div class="project-body"><small>${esc(cat)}</small><h3>${esc(local(p,'title'))}</h3><p>${esc(local(p,'excerpt')||local(p,'description')||tags)}</p><div class="project-foot"><span>${esc(tags||'CASE STUDY')}</span><b>↗</b></div></div></a>`;
+    const fallbackCase=state.lang==='ar'?'دراسة حالة':'CASE STUDY';
+    return `<a class="project-card ${size!=='normal'?'size-'+esc(size):''}" href="/projects/${encodeURIComponent(p.slug)}" aria-label="${esc(local(p,'title'))}"><div class="project-media"><img src="${esc(media(p.cover_url))}" alt="${esc(local(p,'title'))}" loading="lazy"><span class="project-index">${String(index+1).padStart(2,'0')}</span></div><div class="project-body"><small>${esc(cat)}</small><h3>${esc(local(p,'title'))}</h3><p>${esc(local(p,'excerpt')||local(p,'description')||tags)}</p><div class="project-foot"><span>${esc(tags||fallbackCase)}</span><b>↗</b></div></div></a>`;
   }
   function categoryAr(name=''){return({Safety:'السلامة والصحة المهنية',Digital:'الحلول الرقمية',Creative:'الإبداع والتصميم','Stories & AI':'الذكاء الاصطناعي والسرد'}[name]||name||'مشروع')}
   function renderWork(){
@@ -96,7 +119,7 @@
       const cat=state.lang==='ar'?categoryAr(featured.portfolio_categories?.name):categoryEn(featured.portfolio_categories?.name);
       const tags=(state.lang==='ar'&&featured.tags_ar?.length?featured.tags_ar:featured.tags||[]).slice(0,5);
       f.classList.remove('hidden','skeleton');
-      f.innerHTML=`<div class="featured-media"><img src="${esc(media(featured.cover_url))}" alt="${esc(local(featured,'title'))}"><span class="featured-word">${esc((featured.slug||'V9').split('-')[0].toUpperCase())}</span></div><div class="featured-copy"><div><small>FEATURED CASE STUDY · ${esc(cat.toUpperCase())}</small><h3>${esc(local(featured,'title'))}</h3><p>${esc(local(featured,'excerpt')||local(featured,'description')||'Selected studio project.')}</p><div class="featured-tags">${tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div></div><a class="btn primary" href="/projects/${encodeURIComponent(featured.slug)}">${state.lang==='ar'?'عرض دراسة الحالة ←':'VIEW CASE STUDY →'}</a></div>`;
+      f.innerHTML=`<div class="featured-media"><img src="${esc(media(featured.cover_url))}" alt="${esc(local(featured,'title'))}"><span class="featured-word">${esc((featured.slug||'V9').split('-')[0].toUpperCase())}</span></div><div class="featured-copy"><div><small>${state.lang==='ar'?'دراسة حالة مميزة':'FEATURED CASE STUDY'} · ${esc(cat.toUpperCase())}</small><h3>${esc(local(featured,'title'))}</h3><p>${esc(local(featured,'excerpt')||local(featured,'description')||'Selected studio project.')}</p><div class="featured-tags">${tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div></div><a class="btn primary" href="/projects/${encodeURIComponent(featured.slug)}">${state.lang==='ar'?'عرض دراسة الحالة ←':'VIEW CASE STUDY →'}</a></div>`;
     }else{
       f.classList.add('hidden');
       f.classList.remove('skeleton');
@@ -142,9 +165,9 @@
   $('#brief-next').onclick=()=>{state.briefIndex=Math.min(visibleBriefKeys().length-1,state.briefIndex+1);renderBrief()};
   function renderBriefSummary(){
     const b=state.brief;$('#brief-summary').innerHTML=`<div class="summary-row"><small>PROJECT TYPE</small><b>${esc(b.type||'—')}</b></div><div class="summary-row"><small>GOAL</small><span>${esc(b.goal||'—')}</span></div><div class="summary-row"><small>EXPERTISE</small><span>${esc(b.disciplines.join(' · ')||'—')}</span></div><div class="summary-row"><small>TIMELINE</small><b>${esc(b.timeline||'—')}</b></div><div class="summary-row"><small>CONTACT</small><span>${esc([b.name,b.company,b.email,b.phone].filter(Boolean).join(' · ')||'—')}</span></div>`;
-    const email=$('#send-brief').dataset.email||state.settings.contact?.email||'androsarot3@gmail.com';$('#send-brief').href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Andrew Tharwat Studio — Project Brief')}&body=${encodeURIComponent(briefText())}`;
+    const email=$('#send-brief').dataset.email||state.settings.contact?.email||'androsarot3@gmail.com';$('#send-brief').href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('ATS — Project Brief')}&body=${encodeURIComponent(briefText())}`;
   }
-  function briefText(){const b=state.brief;return`ANDREW THARWAT STUDIO — PROJECT BRIEF\n\nProject Type: ${b.type||'—'}\nGoal: ${b.goal||'—'}\nAudience: ${b.audience||'—'}\nSuccess: ${b.success||'—'}\nExpertise: ${b.disciplines.join(', ')||'—'}\nTimeline: ${b.timeline||'—'}\nBudget: ${b.budget||'—'}\nStage: ${b.stage||'—'}\nContact: ${b.name||'—'} | ${b.company||'—'} | ${b.email||'—'} | ${b.phone||'—'}`}
+  function briefText(){const b=state.brief;return`ATS — PROJECT BRIEF\n\nProject Type: ${b.type||'—'}\nGoal: ${b.goal||'—'}\nAudience: ${b.audience||'—'}\nSuccess: ${b.success||'—'}\nExpertise: ${b.disciplines.join(', ')||'—'}\nTimeline: ${b.timeline||'—'}\nBudget: ${b.budget||'—'}\nStage: ${b.stage||'—'}\nContact: ${b.name||'—'} | ${b.company||'—'} | ${b.email||'—'} | ${b.phone||'—'}`}
   $('#copy-brief').onclick=async()=>{try{await navigator.clipboard.writeText(briefText());toast(state.lang==='ar'?'تم نسخ البريف':'BRIEF COPIED')}catch(e){toast('COPY NOT AVAILABLE')}};
 
   load().catch(err=>console.error('V9 load failed',err));

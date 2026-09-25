@@ -1,0 +1,27 @@
+/* ATS public interface — final bilingual polish layer */
+body.v10-home .site-header{height:76px;padding-inline:clamp(18px,3vw,46px);gap:clamp(14px,2vw,28px);background:rgba(3,16,25,.965);border-bottom:1px solid rgba(255,255,255,.085);box-shadow:0 12px 34px rgba(0,0,0,.10)}
+body.v10-home .site-header .brand{flex:0 0 auto;min-width:max-content}
+body.v10-home .site-header .brand small{max-width:178px;white-space:normal;line-height:1.4}
+body.v10-home .main-nav{gap:clamp(14px,1.8vw,26px)}
+body.v10-home .main-nav a{white-space:nowrap;font-size:10px;letter-spacing:.055em}
+body.v10-home .header-actions{gap:9px}
+body.v10-home #lang-toggle{min-width:76px;padding-inline:13px;white-space:nowrap}
+body.v10-home .header-cta{white-space:nowrap}
+body.v10-home .hero-copy{max-width:860px}
+body.v10-home .hero h1{text-wrap:balance}
+body.v10-home .hero-copy>p{max-width:660px}
+body.v10-home .hero-actions{align-items:center}
+body.v10-home[data-lang=ar] .site-header,body.v10-home[data-lang=ar] .main-nav,body.v10-home[data-lang=ar] .header-actions{direction:rtl}
+body.v10-home[data-lang=ar] .brand small,body.v10-home[data-lang=ar] .main-nav a,body.v10-home[data-lang=ar] #lang-toggle,body.v10-home[data-lang=ar] .header-cta{font-family:Alexandria,Tahoma,Arial,sans-serif;letter-spacing:0!important}
+body.v10-home[data-lang=ar] .hero-copy{text-align:right}
+body.v10-home[data-lang=ar] .hero .eyebrow,body.v10-home[data-lang=ar] .hero-copy>p,body.v10-home[data-lang=ar] .hero-actions .btn{letter-spacing:0!important}
+body.v10-home[data-lang=ar] .hero-actions{direction:rtl;justify-content:flex-start}
+body.v10-home[data-lang=ar] .process-strip{direction:rtl;text-align:right}
+body.v10-home[data-lang=ar] .v10-contact-entry-action label,body.v10-home[data-lang=ar] .v10-contact-entry-action textarea{text-align:right}
+body.v10-home[data-lang=ar] .v10-contact-entry-action textarea{direction:rtl;font-family:Alexandria,Tahoma,Arial,sans-serif}
+body.v10-home[data-lang=en] .v10-contact-entry-action textarea{direction:ltr;text-align:left}
+body.v10-home .core-brand,body.v10-home .team-core-mark{overflow:visible}
+body.v10-home .core-brand img,body.v10-home .team-core-mark img{filter:drop-shadow(0 7px 15px rgba(0,0,0,.22))}
+@media(max-width:1180px){body.v10-home .site-header{padding-inline:20px}body.v10-home #lang-toggle{min-width:72px}}
+@media(max-width:760px){body.v10-home .site-header{height:66px;padding-inline:14px;gap:8px}body.v10-home .site-header .brand{min-height:46px}body.v10-home #lang-toggle{min-width:62px;height:36px;padding-inline:9px;font-size:8px}body.v10-home .header-actions{gap:6px}body.v10-home .menu-toggle{width:40px;min-width:40px;padding:0 10px}body.v10-home[data-lang=ar] .hero-copy{text-align:right}body.v10-home[data-lang=ar] .hero-actions{align-items:stretch}}
+@media(max-width:420px){body.v10-home #lang-toggle{min-width:58px;padding-inline:7px}}
