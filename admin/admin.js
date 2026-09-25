@@ -5,6 +5,7 @@
   const state={projects:[],categories:[],settings:{},editingProject:null,editingCategory:null};
   const authView=$('#auth-view'), adminView=$('#admin-view'), toast=$('#toast');
   const DEVICE_KEY='andrew_portfolio_device_v2';
+  const DEVICE_CHECK_TIMEOUT_MS=4500;
   let device=null, sb=null, pollTimer=null;
   const slugify=s=>String(s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
   const arr=v=>String(v||'').split(',').map(x=>x.trim()).filter(Boolean);
@@ -18,18 +19,22 @@
   function randomSecret(){const a=new Uint8Array(32);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
   function randomCode(){const a=new Uint32Array(1);crypto.getRandomValues(a);return String(a[0]%1000000).padStart(6,'0')}
   async function sha256hex(value){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
-  function showTrust(){authView.classList.remove('hidden');adminView.classList.add('hidden');$('#device-start').classList.remove('hidden');$('#pairing-box').classList.add('hidden');$('#device-message').textContent='No email. No password. Approve this browser once and it will open the Control Center automatically every time.'}
-  function showPending(code){authView.classList.remove('hidden');adminView.classList.add('hidden');$('#device-start').classList.add('hidden');$('#pairing-box').classList.remove('hidden');$('#pairing-code').textContent=code||'------';$('#device-message').textContent='This browser is waiting for one-time approval.';startPolling()}
-  async function enterAdmin(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}authView.classList.add('hidden');adminView.classList.remove('hidden');$('#admin-email').textContent='TRUSTED DEVICE';await refreshAll()}
+  function showTrust(message='No email. No password. Approve this browser once and it will open the Control Center automatically every time.'){authView.classList.remove('hidden');adminView.classList.add('hidden');$('#device-start').classList.remove('hidden');$('#pairing-box').classList.add('hidden');$('#device-message').textContent=message;const b=$('#trust-device');if(b)b.textContent=device?.id&&device?.secret?'RETRY ACCESS':'TRUST THIS DEVICE'}
+  function showPending(code){authView.classList.remove('hidden');adminView.classList.add('hidden');$('#device-start').classList.add('hidden');$('#pairing-box').classList.remove('hidden');$('#pairing-code').textContent=code||'------';$('#device-message').textContent='One-time approval pending. After approval this browser stays trusted.';startPolling()}
+  async function enterAdmin(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}authView.classList.add('hidden');adminView.classList.remove('hidden');$('#admin-email').textContent='TRUSTED DEVICE';window.dispatchEvent(new CustomEvent('ats-admin-ready'));refreshAll().catch(e=>notify(e.message||'Website data could not load','error'))}
   async function checkDevice(){
     if(!device||!sb)return false;
-    const {data,error}=await sb.from('portfolio_trusted_devices').select('status,claim_code,label').eq('device_id',device.id).maybeSingle();
-    if(error||!data)return false;
+    const timeout=new Promise(resolve=>setTimeout(()=>resolve({data:null,error:{code:'ATS_DEVICE_TIMEOUT',message:'Device verification timed out.'}}),DEVICE_CHECK_TIMEOUT_MS));
+    const request=sb.from('portfolio_trusted_devices').select('status,claim_code,label').eq('device_id',device.id).maybeSingle();
+    const {data,error}=await Promise.race([request,timeout]);
+    if(error?.code==='ATS_DEVICE_TIMEOUT'){if(pollTimer){clearInterval(pollTimer);pollTimer=null}showTrust('The security check is taking too long. Your existing browser approval is محفوظ. Press RETRY ACCESS.');return false}
+    if(error){if(pollTimer){clearInterval(pollTimer);pollTimer=null}showTrust('Control Center could not confirm this browser right now. Press RETRY ACCESS.');return false}
+    if(!data){localStorage.removeItem(DEVICE_KEY);device=null;sb=null;showTrust('This browser is not registered yet. Create a one-time approval request.');return false}
     if(data.status==='approved'){await enterAdmin();return true}
     if(data.status==='pending'){showPending(data.claim_code);return false}
-    localStorage.removeItem(DEVICE_KEY);device=null;sb=null;showTrust();return false;
+    localStorage.removeItem(DEVICE_KEY);device=null;sb=null;showTrust('This device is no longer approved. Create a new approval request.');return false;
   }
-  function startPolling(){if(pollTimer)return;pollTimer=setInterval(async()=>{if(await checkDevice())clearInterval(pollTimer)},3000)}
+  function startPolling(){if(pollTimer)return;pollTimer=setInterval(async()=>{if(await checkDevice())clearInterval(pollTimer)},1500)}
   async function init(){
     try{device=JSON.parse(localStorage.getItem(DEVICE_KEY)||'null')}catch(_e){device=null}
     if(!device?.id||!device?.secret){showTrust();return}
@@ -37,8 +42,10 @@
     const ok=await checkDevice();if(!ok&&$('#pairing-box').classList.contains('hidden'))showTrust();
   }
   $('#trust-device').addEventListener('click',async()=>{
-    const btn=$('#trust-device');btn.disabled=true;btn.textContent='CREATING DEVICE…';
+    const btn=$('#trust-device');btn.disabled=true;
     try{
+      if(device?.id&&device?.secret){btn.textContent='CHECKING…';sb=sb||makeClient(device);await checkDevice();return}
+      btn.textContent='CREATING DEVICE…';
       device={id:crypto.randomUUID(),secret:randomSecret(),code:randomCode()};
       sb=makeClient(device);
       const secret_hash=await sha256hex(device.secret);
@@ -46,13 +53,13 @@
       if(error){device=null;sb=null;return notify(error.message,'error')}
       localStorage.setItem(DEVICE_KEY,JSON.stringify(device));
       showPending(device.code);
-    }finally{btn.disabled=false;btn.textContent='TRUST THIS DEVICE'}
+    }finally{btn.disabled=false;btn.textContent=device?.id&&device?.secret?'RETRY ACCESS':'TRUST THIS DEVICE'}
   });
   $('#sign-out').addEventListener('click',()=>{localStorage.removeItem(DEVICE_KEY);location.reload()});
 
   $$('#admin-nav button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
   $$('[data-goto]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.goto)));
-  function switchTab(tab){$$('#admin-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$$('.tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===tab));$('#page-title').textContent=tab[0].toUpperCase()+tab.slice(1);if(tab==='media')loadMedia();}
+  function switchTab(tab){const names={dashboard:'Dashboard',leads:'Leads',clients:'Clients','studio-projects':'Client Projects',proposals:'Proposals',payments:'Payments',projects:'Website Projects',categories:'Categories',content:'Site Content',v9:'V9 Layout',media:'Media Library'};$('#admin-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$('.tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===tab));$('#page-title').textContent=names[tab]||tab;if(tab==='media')loadMedia();}
 
   async function refreshAll(){await Promise.all([loadCategories(),loadProjects(),loadSettings()]);renderDashboard();}
   async function loadCategories(){const {data,error}=await sb.from('portfolio_categories').select('*').order('sort_order');if(error)return notify(error.message,'error');state.categories=data||[];renderCategories();renderCategoryOptions();}
@@ -93,5 +100,6 @@
 
   $$('[data-close]').forEach(b=>b.addEventListener('click',()=>dclose(b.dataset.close)));
   function dclose(id){const d=document.getElementById(id);if(d?.open)d.close()}
+  window.ATS_ADMIN=Object.freeze({getClient:()=>sb,notify,switchTab,refreshSite:refreshAll});
   init();
 })();

@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin.css?v=5" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
+  <link rel="stylesheet" href="/admin/admin-unified.css?v=1" />
 </head>
 <body>
   <div id="toast" class="toast"></div>
@@ -38,10 +39,18 @@
       <a class="admin-brand ats-brand-lockup" href="/"><img class="ats-logo-compact" src="/assets/ats-logo-compact.webp" alt="ATS"><div><b>ATS</b><span>CONTROL CENTER</span></div></a>
       <nav id="admin-nav">
         <button data-tab="dashboard" class="active">◫ <span>Dashboard</span></button>
-        <button data-tab="projects">◆ <span>Projects</span></button>
+        <small class="nav-section">CLIENT OPERATIONS</small>
+        <button data-tab="leads">◎ <span>Leads</span></button>
+        <button data-tab="clients">◇ <span>Clients</span></button>
+        <button data-tab="studio-projects">▣ <span>Client Projects</span></button>
+        <button data-tab="proposals">▤ <span>Proposals</span></button>
+        <button data-tab="payments">£ <span>Payments</span></button>
+        <small class="nav-section">WEBSITE</small>
+        <button data-tab="projects">◆ <span>Website Projects</span></button>
         <button data-tab="categories">◈ <span>Categories</span></button>
         <button data-tab="content">✎ <span>Site Content</span></button>
-        <button data-tab="media">▣ <span>Media Library</span></button>
+        <button data-tab="v9">⌘ <span>V9 Layout</span></button>
+        <button data-tab="media">▧ <span>Media Library</span></button>
       </nav>
       <div class="sidebar-foot">
         <a href="/" target="_blank">View Website ↗</a>
@@ -50,16 +59,54 @@
     </aside>
 
     <main class="admin-main">
-      <header class="admin-topbar"><div><span class="eyebrow">ATS CMS</span><h1 id="page-title">Dashboard</h1></div><div class="top-actions"><span id="admin-email"></span><button id="quick-add" class="primary">+ NEW PROJECT</button></div></header>
+      <header class="admin-topbar"><div><span class="eyebrow">ATS CONTROL CENTER</span><h1 id="page-title">Dashboard</h1></div><div class="top-actions"><span id="admin-email"></span><button id="quick-add" class="primary">+ WEBSITE PROJECT</button></div></header>
 
       <section class="tab-panel active" data-panel="dashboard">
+        <div class="unified-metric-grid">
+          <article><span>NEW LEADS</span><strong id="ops-m-leads">—</strong><small>Awaiting review</small></article>
+          <article><span>ACTIVE CLIENTS</span><strong id="ops-m-clients">—</strong><small>Client records</small></article>
+          <article><span>ACTIVE PROJECTS</span><strong id="ops-m-projects">—</strong><small>In delivery</small></article>
+          <article><span>PENDING PAYMENTS</span><strong id="ops-m-payments">—</strong><small>Need confirmation</small></article>
+          <article><span>PROPOSALS OUT</span><strong id="ops-m-proposals">—</strong><small>Awaiting decision</small></article>
+        </div>
+        <div class="ops-dashboard-grid">
+          <div class="panel-card"><div class="panel-head"><div><span>PRIORITY QUEUE</span><h2>Needs Attention</h2></div><button class="secondary ops-refresh" data-ops-refresh="dashboard">REFRESH</button></div><div id="ops-priority-list"></div></div>
+          <div class="panel-card"><div class="panel-head"><div><span>LATEST</span><h2>Recent Leads</h2></div><button class="secondary" data-jump="leads">OPEN LEADS</button></div><div id="ops-latest-list"></div></div>
+        </div>
+        <div class="site-summary-label"><span>WEBSITE CONTENT</span><button class="secondary" data-goto="projects">MANAGE WEBSITE</button></div>
         <div class="metric-grid">
-          <article><span>Projects</span><strong id="m-projects">0</strong><small>Total project items</small></article>
+          <article><span>Website Projects</span><strong id="m-projects">0</strong><small>Total project items</small></article>
           <article><span>Published</span><strong id="m-published">0</strong><small>Visible on website</small></article>
           <article><span>Drafts</span><strong id="m-drafts">0</strong><small>Work in progress</small></article>
-          <article><span>Categories</span><strong id="m-categories">0</strong><small>Creative worlds</small></article>
+          <article><span>Categories</span><strong id="m-categories">0</strong><small>Website structure</small></article>
         </div>
-        <div class="panel-card"><div class="panel-head"><div><span>RECENT CONTENT</span><h2>Latest Projects</h2></div><button class="secondary" data-goto="projects">Manage Projects</button></div><div id="recent-projects" class="recent-list"></div></div>
+        <div class="panel-card"><div class="panel-head"><div><span>RECENT CONTENT</span><h2>Latest Website Projects</h2></div><button class="secondary" data-goto="projects">Manage Website Projects</button></div><div id="recent-projects" class="recent-list"></div></div>
+      </section>
+
+
+      <section class="tab-panel" data-panel="leads">
+        <div class="data-toolbar"><input id="ops-lead-search" type="search" placeholder="Search lead, company, email, phone…" /><select id="ops-lead-filter"><option value="all">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="qualified">Qualified</option><option value="proposal_sent">Proposal Sent</option><option value="won">Won</option><option value="lost">Lost</option></select><button class="secondary" data-ops-refresh="leads">REFRESH</button></div>
+        <div id="ops-leads-list"><div class="loading-line">Open Leads to load live data.</div></div>
+      </section>
+
+      <section class="tab-panel" data-panel="clients">
+        <div class="data-toolbar"><input id="ops-client-search" type="search" placeholder="Search client, email, phone…" /><span></span><button class="secondary" data-ops-refresh="clients">REFRESH</button></div>
+        <div id="ops-clients-list"><div class="loading-line">Open Clients to load live data.</div></div>
+      </section>
+
+      <section class="tab-panel" data-panel="studio-projects">
+        <div class="data-toolbar"><input id="ops-project-search" type="search" placeholder="Search project, client, stage…" /><select id="ops-project-filter"><option value="all">All statuses</option><option value="active">Active</option><option value="completed">Completed</option><option value="paused">Paused</option></select><button class="secondary" data-ops-refresh="studio-projects">REFRESH</button></div>
+        <div id="ops-projects-list"><div class="loading-line">Open Client Projects to load live data.</div></div>
+      </section>
+
+      <section class="tab-panel" data-panel="proposals">
+        <div class="data-toolbar"><input id="ops-proposal-search" type="search" placeholder="Search proposal or lead…" /><select id="ops-proposal-filter"><option value="all">All statuses</option><option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted">Accepted</option><option value="declined">Declined</option><option value="expired">Expired</option></select><button id="new-proposal" class="primary">+ NEW PROPOSAL</button></div>
+        <div id="ops-proposals-list"><div class="loading-line">Open Proposals to load live data.</div></div>
+      </section>
+
+      <section class="tab-panel" data-panel="payments">
+        <div class="data-toolbar"><input id="ops-payment-search" type="search" placeholder="Search payment code or reference…" /><select id="ops-payment-filter"><option value="all">All statuses</option><option value="pending">Pending</option><option value="paid">Paid</option><option value="overdue">Overdue</option></select><button class="secondary" data-ops-refresh="payments">REFRESH</button></div>
+        <div id="ops-payments-list"><div class="loading-line">Open Payments to load live data.</div></div>
       </section>
 
       <section class="tab-panel" data-panel="projects">
@@ -79,6 +126,29 @@
           <div class="panel-card"><span class="card-kicker">CONTACT</span><h2>Links</h2><label>Email<input name="contact.email"></label><label>WhatsApp<input name="contact.whatsapp"></label><label>LinkedIn<input name="contact.linkedin"></label><label>Instagram — Personal<input name="contact.instagram_personal"></label><label>Instagram — DO Stories<input name="contact.instagram_do_stories"></label><label>Instagram — DO Document<input name="contact.instagram_do_document"></label></div>
           <div class="save-bar"><button type="submit" class="primary">SAVE WEBSITE CONTENT</button></div>
         </form>
+      </section>
+
+
+      <section class="tab-panel" data-panel="v9">
+        <div class="v9-grid">
+          <div class="panel-card">
+            <div class="panel-head"><div><span>SELECTED WORK</span><h2>Homepage Project Layout</h2></div><label>Columns<select id="v9-work-columns"><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div>
+            <p class="muted">Reorder, resize or hide published website projects without changing their published status.</p>
+            <div id="v9-work-list" class="v9-list"><div class="loading-line">Open V9 Layout to load settings.</div></div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-head"><div><span>SPECIALIST NETWORK</span><h2>Expertise Presentation</h2></div><label>Founder width<select id="v9-founder-width"><option value="32">32%</option><option value="38">38%</option><option value="44">44%</option></select></label></div>
+            <div id="v9-team-list" class="v9-list"></div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-head"><div><span>PROJECT BRIEF</span><h2>Problem-First Steps</h2></div></div>
+            <div id="v9-brief-list" class="v9-list"></div>
+          </div>
+          <div class="panel-card">
+            <span class="card-kicker">ONE CONTROL CENTER</span><h2>Public V9</h2><p>These settings control presentation only. ATS positioning and core brand language stay locked.</p>
+            <div class="ops-inline-actions"><a class="secondary" href="/v9/" target="_blank">OPEN WEBSITE ↗</a><button id="save-v9-layout" class="primary" type="button">SAVE V9 LAYOUT</button></div>
+          </div>
+        </div>
       </section>
 
       <section class="tab-panel" data-panel="media">
@@ -126,8 +196,60 @@
     </form>
   </dialog>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <dialog id="lead-dialog" class="dialog unified-dialog">
+    <form method="dialog">
+      <div class="dialog-head"><div><span id="lead-dialog-code">LEAD</span><h2 id="lead-dialog-title">Lead</h2></div><button type="button" data-close-unified="lead-dialog">×</button></div>
+      <div id="lead-dialog-summary" class="entity-summary"></div>
+      <p class="dialog-section-title">WHAT THE CLIENT NEEDS</p><p id="lead-goal"></p>
+      <p class="dialog-section-title">CURRENT ASSETS</p><p id="lead-assets"></p>
+      <div class="unified-form">
+        <label>STATUS<select id="lead-status"><option value="new">New</option><option value="reviewing">Reviewing</option><option value="qualified">Qualified</option><option value="proposal_sent">Proposal Sent</option><option value="won">Won</option><option value="lost">Lost</option></select></label>
+        <label>FIT<select id="lead-fit"><option value="">Not set</option><option>High Fit</option><option>Medium Fit</option><option>Low Fit</option></select></label>
+        <label class="wide">INTERNAL NOTES<textarea id="lead-notes"></textarea></label>
+        <label class="wide">LOST REASON<input id="lead-lost-reason" placeholder="Only when closed / lost" /></label>
+      </div>
+      <div class="ops-inline-actions"><a id="lead-email-link" class="secondary" href="#">EMAIL</a><a id="lead-wa-link" class="secondary" href="#" target="_blank">WHATSAPP ↗</a><button id="lead-create-proposal" class="secondary" type="button">CREATE PROPOSAL</button></div>
+      <div class="dialog-actions"><span></span><span></span><button type="button" class="secondary" data-close-unified="lead-dialog">CLOSE</button><button id="save-lead" type="button" class="primary">SAVE LEAD</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="proposal-dialog" class="dialog unified-dialog">
+    <form method="dialog">
+      <div class="dialog-head"><div><span>COMMERCIAL</span><h2 id="proposal-dialog-title">New Proposal</h2></div><button type="button" data-close-unified="proposal-dialog">×</button></div>
+      <div class="unified-form">
+        <label class="wide">LEAD<select id="proposal-lead"></select></label>
+        <label class="wide">TITLE<input id="proposal-title" /></label>
+        <label class="wide">SCOPE<textarea id="proposal-scope"></textarea></label>
+        <label class="wide">DELIVERABLES · ONE PER LINE<textarea id="proposal-deliverables"></textarea></label>
+        <label>TIMELINE<input id="proposal-timeline" /></label><label>REVISIONS<input id="proposal-revisions" type="number" min="0" value="2" /></label>
+        <label>TOTAL · EGP<input id="proposal-total" type="number" min="0" /></label><label>DEPOSIT %<input id="proposal-deposit" type="number" min="0" max="100" value="50" /></label>
+        <label>VALID UNTIL<input id="proposal-valid" type="date" /></label><label>STATUS<select id="proposal-status"><option value="draft">Draft</option><option value="sent">Sent</option></select></label>
+        <label class="wide">TERMS<textarea id="proposal-terms"></textarea></label>
+      </div>
+      <div class="dialog-actions"><span></span><span></span><button type="button" class="secondary" data-close-unified="proposal-dialog">CANCEL</button><button id="save-proposal" type="button" class="primary">SAVE PROPOSAL</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="studio-project-dialog" class="dialog unified-dialog">
+    <form method="dialog">
+      <div class="dialog-head"><div><span id="studio-project-code">PROJECT</span><h2 id="studio-project-title">Project</h2><small id="studio-project-client"></small></div><button type="button" data-close-unified="studio-project-dialog">×</button></div>
+      <div class="unified-form">
+        <label>STAGE<select id="studio-project-stage"><option>Onboarding</option><option>Content Preparation</option><option>Design</option><option>Development</option><option>Internal QA</option><option>Client Review</option><option>Revisions</option><option>Final Approval</option><option>Final Payment</option><option>Deployment</option><option>Completed</option></select></label>
+        <label>HEALTH<select id="studio-project-health"><option>On Track</option><option>At Risk</option><option>Blocked</option></select></label>
+        <label>PROGRESS %<input id="studio-project-progress" type="number" min="0" max="100" /></label><label>DUE DATE<input id="studio-project-due" type="date" /></label>
+        <label class="wide">CLIENT ACTION<input id="studio-project-client-action" /></label>
+        <label class="wide">INTERNAL ACTION<input id="studio-project-internal-action" /></label>
+        <label class="wide">CLIENT-VISIBLE UPDATE<textarea id="studio-project-update" placeholder="Write a concise update for the Client Portal…"></textarea></label>
+      </div>
+      <div class="ops-inline-actions"><button id="post-studio-project-update" type="button" class="secondary">POST CLIENT UPDATE</button></div>
+      <div class="dialog-actions"><span></span><span></span><button type="button" class="secondary" data-close-unified="studio-project-dialog">CLOSE</button><button id="save-studio-project" type="button" class="primary">SAVE PROJECT</button></div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
   <script src="/config.js"></script>
-  <script src="/admin.js?v=7"></script>
+  <script src="/admin.js?v=8"></script>
+  <script src="/admin/admin-unified.js?v=1"></script>
 </body>
 </html>
