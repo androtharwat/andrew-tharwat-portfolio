@@ -11,7 +11,7 @@
 - `assets/ats-logo-compact.webp` — primary website lockup: ATS + hoopoe/ring. Default for headers, navigation and sidebars.
 - `assets/ats-logo-mark.webp` — square ATS mark for auth states, compact UI areas, system graphics and empty states.
 - `assets/ats-favicon.png` — browser tab / favicon.
-- `assets/ats-logo-full.webp` — master-derived full signature asset. Keep for controlled brand/reference use; do not use as the default navbar identity.
+- `assets/ats-logo-full.webp` — high-resolution ATS-only full lockup derived from the approved master. Use for larger brand placements and presentation-scale output.
 - `ats-brand.css` — shared sizing and responsive behavior for ATS lockups across public, client and admin surfaces.
 
 ## Website usage map
@@ -45,4 +45,4 @@ The older `logo-*-official.png`, `logo-mark.png`, `app-icon-official.png` and `f
 - Do not change the approved red hard hat or the fixed red accent.
 - Do not stretch or distort the lockup.
 - Do not crop the hoopoe, the ATS letters or the ring in visible brand placement.
-- Do not use the full master signature in tight navigation spaces.
+- Do not use the high-resolution full lockup in tight navigation spaces; use the compact lockup instead.
