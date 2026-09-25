@@ -249,6 +249,86 @@
     'This browser is not registered yet. Create a one-time approval request.':'هذا المتصفح غير مسجل بعد. أنشئ طلب اعتماد لمرة واحدة.',
     'This device is no longer approved. Create a new approval request.':'لم يعد هذا الجهاز معتمدًا. أنشئ طلب اعتماد جديد.',
     'Website data could not load':'تعذر تحميل بيانات الموقع',
+    'Discovery answers':'إجابات الاستكشاف',
+    'PROBLEM DIAGNOSIS':'تشخيص المشكلة',
+    'Evidence → Root Cause → Solution Tasks':'الأدلة ← السبب الجذري ← مهام الحل',
+    'Do not scope the solution before the problem is understood.':'لا تحدد نطاق الحل قبل فهم المشكلة.',
+    'DISCOVERY COVERAGE':'اكتمال الاستكشاف',
+    'What we know vs. what is still assumption':'ما نعرفه فعليًا مقابل ما يزال افتراضًا',
+    'Loading discovery evidence…':'جارٍ تحميل أدلة الاستكشاف…',
+    'ROOT PROBLEM STATEMENT':'صياغة المشكلة الجذرية',
+    'DIAGNOSIS SUMMARY':'ملخص التشخيص',
+    'CONFIDENCE %':'نسبة الثقة %',
+    'SAVE DIAGNOSIS':'حفظ التشخيص',
+    'ROOT CAUSE BOARD':'لوحة الأسباب الجذرية',
+    'Hypotheses must be validated against evidence':'يجب التحقق من الفرضيات باستخدام الأدلة',
+    'Loading root-cause hypotheses…':'جارٍ تحميل فرضيات الأسباب الجذرية…',
+    'Process':'العملية','People':'الأشخاص','Technology':'التقنية','Strategy':'الاستراتيجية','Content':'المحتوى',
+    'Experience':'التجربة','Commercial':'تجاري','Environment':'البيئة','Other':'أخرى',
+    'HYPOTHESIS':'الفرضية','EVIDENCE FOR':'أدلة مؤيدة','EVIDENCE AGAINST / GAPS':'أدلة مضادة / فجوات',
+    '+ ADD HYPOTHESIS':'+ إضافة فرضية',
+    'SOLUTION TASK MAP':'خريطة مهام الحل',
+    'Every task must connect back to a cause or a verification need':'كل مهمة يجب أن ترتبط بسبب أو بحاجة للتحقق',
+    'Loading solution tasks…':'جارٍ تحميل مهام الحل…',
+    'TASK':'المهمة','Investigate':'تحقق / استقصاء','Define Solution':'تحديد الحل','Implement':'تنفيذ','Verify Effectiveness':'التحقق من الفاعلية','Client Action':'إجراء من العميل',
+    'OWNER':'المسؤول','Shared':'مشترك','PRIORITY':'الأولوية','Critical':'حرج','High':'عالية','Medium':'متوسطة','Low':'منخفضة',
+    'ROOT CAUSE':'السبب الجذري','General / not linked yet':'عام / غير مرتبط بعد',
+    'WHY THIS TASK':'لماذا هذه المهمة','DONE WHEN':'تعتبر مكتملة عندما',
+    '+ ADD TASK':'+ إضافة مهمة',
+    'DISCOVERY SIGNAL':'إشارة تشخيصية','Do not update diagnosis':'لا تحدث التشخيص',
+    'Impact':'التأثير','Evidence / proof':'الدليل / الإثبات','People affected':'الأشخاص المتأثرون','Where it happens':'مكان ظهور المشكلة',
+    'Previous attempts':'المحاولات السابقة','Desired outcome':'النتيجة المطلوبة','Constraints':'القيود',
+    'State the real problem without embedding the solution…':'اكتب المشكلة الحقيقية بدون تضمين الحل داخلها…',
+    'Summarize what the evidence says, what is still uncertain, and why this is the root problem…':'لخص ما تقوله الأدلة، وما يزال غير مؤكد، ولماذا تعتبر هذه هي المشكلة الجذرية…',
+    'Why do we believe this is causing the problem?':'لماذا نعتقد أن هذا هو سبب المشكلة؟',
+    'Facts, examples, data or observations that support it…':'حقائق أو أمثلة أو بيانات أو ملاحظات تؤيد الفرضية…',
+    'What could disprove it or is still missing?':'ما الذي قد ينفي الفرضية أو ما الذي لا يزال ناقصًا؟',
+    'What must be done to remove or control the cause?':'ما الذي يجب تنفيذه لإزالة السبب أو التحكم فيه؟',
+    'How does this task address the problem or reduce uncertainty?':'كيف تعالج هذه المهمة المشكلة أو تقلل عدم اليقين؟',
+    'Acceptance criteria / evidence that proves the task worked…':'معايير القبول / الدليل الذي يثبت أن المهمة نجحت…',
+    'Current situation':'الوضع الحالي','What is happening now?':'ما الذي يحدث الآن؟',
+    'What does the problem cause?':'ما الذي تسببه المشكلة؟','What proves the problem exists?':'ما الذي يثبت وجود المشكلة؟',
+    'Who experiences the problem?':'من الذي يتأثر بالمشكلة؟','Where in the process / journey does it appear?':'أين تظهر داخل العملية / الرحلة؟',
+    'What was already tried?':'ما الذي تم تجربته سابقًا؟','What should change if solved correctly?':'ما الذي يجب أن يتغير إذا تم الحل بشكل صحيح؟',
+    'What limits must the solution respect?':'ما القيود التي يجب أن يلتزم بها الحل؟',
+    'Ask the next high-value question or record evidence from a call / WhatsApp interaction.':'اسأل السؤال التالي الأعلى قيمة أو سجّل دليلًا من مكالمة / تواصل واتساب.',
+    'Describe the problem itself without embedding the requested solution.':'صف المشكلة نفسها بدون تضمين الحل المطلوب داخلها.',
+    'Validate assumptions with evidence until confidence is at least 60%.':'تحقق من الافتراضات بالأدلة حتى تصل الثقة إلى 60% على الأقل.',
+    'A suspected cause is not enough. Record evidence for and against it, then validate or reject it.':'السبب المشتبه به غير كافٍ. سجّل الأدلة المؤيدة والمضادة ثم تحقّق منه أو ارفضه.',
+    'Create a task that directly removes, controls or tests the validated cause.':'أنشئ مهمة تزيل السبب المتحقق منه أو تتحكم فيه أو تختبره مباشرة.',
+    'Add a verification task tied to the desired outcome so we can prove the solution worked.':'أضف مهمة تحقق مرتبطة بالنتيجة المطلوبة حتى نثبت أن الحل نجح.',
+    'The problem, cause and first solution task are sufficiently defined.':'المشكلة والسبب وأول مهمة للحل محددة بدرجة كافية.',
+    'process':'العملية','people':'الأشخاص','technology':'التقنية','strategy':'الاستراتيجية','content':'المحتوى','experience':'التجربة','commercial':'تجاري','environment':'البيئة','other':'أخرى','hse':'السلامة والصحة المهنية',
+    'investigate':'تحقق / استقصاء','solution':'حل','implementation':'تنفيذ','verification':'تحقق من الفاعلية','client_action':'إجراء من العميل',
+    'ats':'ATS','client':'العميل','shared':'مشترك','critical':'حرج','high':'عالية','medium':'متوسطة','low':'منخفضة',
+    'suspected':'مشتبه به','validated':'تم التحقق','rejected':'مرفوض','todo':'للعمل','in_progress':'قيد التنفيذ','blocked':'متوقف','done':'مكتمل',
+    'Diagnosis saved':'تم حفظ التشخيص',
+    'Write a root-cause hypothesis first':'اكتب فرضية للسبب الجذري أولًا.',
+    'Root-cause hypothesis added':'تمت إضافة فرضية السبب الجذري.',
+    'Root cause updated':'تم تحديث السبب الجذري.',
+    'Write the solution task first':'اكتب مهمة الحل أولًا.',
+    'Solution task added':'تمت إضافة مهمة الحل.',
+    'Task updated':'تم تحديث المهمة.',
+    'Complete the Diagnosis Gate before qualifying this lead':'أكمل بوابة التشخيص قبل تأهيل العميل المحتمل.',
+    'Complete the Diagnosis Gate before creating a proposal':'أكمل بوابة التشخيص قبل إنشاء عرض.',
+    'Complete the Diagnosis Gate before creating a proposal.':'أكمل بوابة التشخيص قبل إنشاء عرض.',
+    'Qualify the lead after the Diagnosis Gate is ready.':'قم بتأهيل العميل بعد اكتمال بوابة التشخيص.',
+    'Next client question:':'سؤال العميل التالي:',
+    'Discovery questions complete · validate the root cause.':'اكتملت أسئلة الاستكشاف · تحقق من السبب الجذري.',
+    'Evidence coverage':'اكتمال الأدلة','Problem synthesis':'صياغة المشكلة','Validated cause':'سبب تم التحقق منه','Solution task':'مهمة حل',
+    'Root problem written':'تمت كتابة المشكلة الجذرية','Root problem missing':'المشكلة الجذرية غير مكتوبة',
+    'CONFIRMED DATA':'بيانات مؤكدة','MISSING':'ناقص',
+    'Collect Current situation':'استكمال الوضع الحالي','Collect Impact':'استكمال التأثير','Collect Evidence / proof':'استكمال الدليل / الإثبات',
+    'Collect People affected':'استكمال الأشخاص المتأثرين','Collect Where it happens':'استكمال مكان ظهور المشكلة',
+    'Collect Previous attempts':'استكمال المحاولات السابقة','Collect Desired outcome':'استكمال النتيجة المطلوبة','Collect Constraints':'استكمال القيود',
+    'Write the root problem statement':'اكتب صياغة المشكلة الجذرية','Increase diagnosis confidence':'ارفع مستوى الثقة في التشخيص',
+    'Validate a root-cause hypothesis':'تحقق من فرضية سبب جذري','Define the first solution task':'حدد أول مهمة للحل',
+    'Define effectiveness verification':'حدد طريقة التحقق من الفاعلية','Diagnosis Gate ready':'بوابة التشخيص جاهزة',
+    'No root-cause hypotheses yet.':'لا توجد فرضيات للأسباب الجذرية حتى الآن.','No solution tasks yet.':'لا توجد مهام حل حتى الآن.',
+    'VALIDATE':'تحقق','SUSPECTED':'مشتبه به','REJECT':'رفض','START':'بدء','DONE':'تم','UNBLOCK':'إلغاء الحظر',
+    'CAUSE:':'السبب:','GAPS / AGAINST:':'الفجوات / الأدلة المضادة:','Discovery answer received':'تم استلام إجابة استكشاف',
+    'Discovery evidence added':'تمت إضافة دليل للاستكشاف','Diagnosis updated':'تم تحديث التشخيص',
+    'Root-cause hypothesis added':'تمت إضافة فرضية السبب الجذري','Solution task updated':'تم تحديث مهمة الحل',
     'admin only':'للإدارة فقط','client visible':'ظاهر للعميل'
   };
 
@@ -310,6 +390,13 @@
     if((m=core.match(/^Delete (.+)\?$/))) return 'هل تريد حذف '+m[1]+'؟';
     if((m=core.match(/^(.+) uploaded$/))) return 'تم رفع '+m[1];
     if((m=core.match(/^Revision #(\d+) completed$/))) return 'تم إكمال التعديل رقم '+m[1];
+    if((m=core.match(/^Collect (.+)$/))) return 'استكمال '+(EN_AR[m[1]]||m[1]);
+    if((m=core.match(/^Next client question:\s*(.+)$/))) return 'سؤال العميل التالي: '+(EN_AR[m[1]]||m[1]);
+    if((m=core.match(/^(\d+)% \/ 75% minimum$/))) return m[1]+'% / الحد الأدنى 75%';
+    if((m=core.match(/^(.+) · (\d+)% confidence$/))) return (EN_AR[m[1]]||m[1])+' · ثقة '+m[2]+'%';
+    if((m=core.match(/^(\d+)% confidence$/))) return 'ثقة '+m[1]+'%';
+    if((m=core.match(/^(\d+) validated$/))) return m[1]+' تم التحقق منه';
+    if((m=core.match(/^(\d+) task\(s\) defined$/))) return m[1]+' مهام محددة';
     return core;
   }
 
@@ -335,7 +422,7 @@
     const el=node.parentElement;if(!el)return true;
     if(el.closest('script,style,pre,code,[data-i18n-skip]'))return true;
     if(el.closest('textarea,input'))return true;
-    if(el.matches('.entity-title b,.entity-title small,.lead-contact-summary b,.lead-brief-grid p,.asset-chip-list span,.message-bubble p,.collab-row p,.recent-item h3,.project-row h3,.category-row h3,.text-cms-card-head strong,.text-cms-card-head small'))return true;
+    if(el.matches('.entity-title b,.entity-title small,.lead-contact-summary b,.lead-brief-grid p,.asset-chip-list span,.message-bubble p,.collab-row p,.diagnosis-dimension p,.cause-row b,.cause-row p,.solution-task-row b,.solution-task-row p,.recent-item h3,.project-row h3,.category-row h3,.text-cms-card-head strong,.text-cms-card-head small'))return true;
     if(el.matches('td')&&!el.closest('th'))return true;
     return false;
   }

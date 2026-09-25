@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin.css?v=5" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
-  <link rel="stylesheet" href="/admin/admin-unified.css?v=3" />
+  <link rel="stylesheet" href="/admin/admin-unified.css?v=4" />
   <link rel="stylesheet" href="/admin/admin-i18n.css?v=1" />
 </head>
 <body>
@@ -94,7 +94,7 @@
       </section>
 
       <section class="tab-panel" data-panel="inbox">
-        <div class="data-toolbar"><input id="ops-inbox-search" type="search" placeholder="Search message, project, client…" /><select id="ops-inbox-filter"><option value="all">All client activity</option><option value="message">Messages</option><option value="revision">Revision requests</option><option value="upload">Client uploads</option><option value="lead">New project requests</option></select><button class="secondary" data-ops-refresh="inbox">REFRESH</button></div>
+        <div class="data-toolbar"><input id="ops-inbox-search" type="search" placeholder="Search message, project, client…" /><select id="ops-inbox-filter"><option value="all">All client activity</option><option value="message">Messages</option><option value="discovery">Discovery answers</option><option value="revision">Revision requests</option><option value="upload">Client uploads</option><option value="lead">New project requests</option></select><button class="secondary" data-ops-refresh="inbox">REFRESH</button></div>
         <div id="ops-inbox-list"><div class="loading-line">Open Client Inbox to load live client activity.</div></div>
       </section>
 
@@ -234,6 +234,51 @@
             <div class="lead-assets-line"><span>CURRENT ASSETS</span><div id="lead-assets" class="asset-chip-list"></div></div>
           </section>
 
+          <section class="lead-workspace-card diagnosis-workspace-card">
+            <div class="workspace-section-head diagnosis-head">
+              <div><span>PROBLEM DIAGNOSIS</span><h3>Evidence → Root Cause → Solution Tasks</h3><small>Do not scope the solution before the problem is understood.</small></div>
+              <b id="diagnosis-score" class="diagnosis-score">0%</b>
+            </div>
+            <div class="diagnosis-progress"><i id="diagnosis-progress-bar"></i></div>
+            <div id="diagnosis-gate" class="diagnosis-gate"></div>
+
+            <div class="diagnosis-subhead"><div><span>DISCOVERY COVERAGE</span><h4>What we know vs. what is still assumption</h4></div><small id="diagnosis-next-question"></small></div>
+            <div id="diagnosis-dimensions" class="diagnosis-dimensions"><div class="loading-line">Loading discovery evidence…</div></div>
+            <div id="diagnosis-system-tasks" class="diagnosis-system-tasks"></div>
+
+            <div class="diagnosis-synthesis">
+              <label class="workspace-field wide">ROOT PROBLEM STATEMENT<textarea id="diagnosis-root-problem" placeholder="State the real problem without embedding the solution…"></textarea></label>
+              <label class="workspace-field wide">DIAGNOSIS SUMMARY<textarea id="diagnosis-summary" placeholder="Summarize what the evidence says, what is still uncertain, and why this is the root problem…"></textarea></label>
+              <label class="workspace-field">CONFIDENCE %<input id="diagnosis-confidence" type="number" min="0" max="100" value="0" /></label>
+              <div class="diagnosis-save-wrap"><button id="save-diagnosis" type="button" class="secondary">SAVE DIAGNOSIS</button></div>
+            </div>
+
+            <div class="diagnosis-subhead"><div><span>ROOT CAUSE BOARD</span><h4>Hypotheses must be validated against evidence</h4></div></div>
+            <div id="root-cause-list" class="root-cause-list"><div class="loading-line">Loading root-cause hypotheses…</div></div>
+            <div class="root-cause-form">
+              <label class="workspace-field">CATEGORY<select id="root-cause-category"><option value="process">Process</option><option value="people">People</option><option value="technology">Technology</option><option value="strategy">Strategy</option><option value="content">Content</option><option value="experience">Experience</option><option value="hse">HSE</option><option value="commercial">Commercial</option><option value="environment">Environment</option><option value="other">Other</option></select></label>
+              <label class="workspace-field">CONFIDENCE %<input id="root-cause-confidence" type="number" min="0" max="100" value="50" /></label>
+              <label class="workspace-field wide">HYPOTHESIS<textarea id="root-cause-statement" placeholder="Why do we believe this is causing the problem?"></textarea></label>
+              <label class="workspace-field wide">EVIDENCE FOR<textarea id="root-cause-evidence-for" placeholder="Facts, examples, data or observations that support it…"></textarea></label>
+              <label class="workspace-field wide">EVIDENCE AGAINST / GAPS<textarea id="root-cause-evidence-against" placeholder="What could disprove it or is still missing?"></textarea></label>
+              <button id="add-root-cause" type="button" class="secondary wide">+ ADD HYPOTHESIS</button>
+            </div>
+
+            <div class="diagnosis-subhead"><div><span>SOLUTION TASK MAP</span><h4>Every task must connect back to a cause or a verification need</h4></div></div>
+            <div id="solution-task-list" class="solution-task-list"><div class="loading-line">Loading solution tasks…</div></div>
+            <div class="solution-task-form">
+              <label class="workspace-field wide">TASK<input id="solution-task-title" placeholder="What must be done to remove or control the cause?" /></label>
+              <label class="workspace-field">TYPE<select id="solution-task-type"><option value="investigate">Investigate</option><option value="solution">Define Solution</option><option value="implementation">Implement</option><option value="verification">Verify Effectiveness</option><option value="client_action">Client Action</option></select></label>
+              <label class="workspace-field">OWNER<select id="solution-task-owner"><option value="ats">ATS</option><option value="client">Client</option><option value="shared">Shared</option></select></label>
+              <label class="workspace-field">PRIORITY<select id="solution-task-priority"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></label>
+              <label class="workspace-field">ROOT CAUSE<select id="solution-task-cause"><option value="">General / not linked yet</option></select></label>
+              <label class="workspace-field wide">WHY THIS TASK<textarea id="solution-task-rationale" placeholder="How does this task address the problem or reduce uncertainty?"></textarea></label>
+              <label class="workspace-field wide">DONE WHEN<textarea id="solution-task-acceptance" placeholder="Acceptance criteria / evidence that proves the task worked…"></textarea></label>
+              <label class="workspace-field">DUE DATE<input id="solution-task-due" type="date" /></label>
+              <button id="add-solution-task" type="button" class="secondary">+ ADD TASK</button>
+            </div>
+          </section>
+
           <section class="lead-workspace-card">
             <div class="workspace-section-head"><div><span>RELATIONSHIP HISTORY</span><h3>Communication Timeline</h3></div><button id="lead-refresh-timeline" type="button" class="row-action">REFRESH</button></div>
             <div id="lead-timeline" class="lead-timeline"><div class="loading-line">Loading activity…</div></div>
@@ -267,6 +312,7 @@
               <label class="workspace-field">CHANNEL<select id="lead-contact-channel"><option value="whatsapp">WhatsApp</option><option value="email">Email</option><option value="call">Call</option><option value="portal">Portal</option></select></label>
               <label class="workspace-field">OUTCOME<select id="lead-contact-outcome"><option value="contacted">Contacted</option><option value="no_response">No response</option><option value="waiting_client">Waiting for client</option><option value="meeting_completed">Discovery completed</option></select></label>
               <label class="workspace-field wide">SUMMARY<textarea id="lead-contact-summary" placeholder="What happened? What did the client say?"></textarea></label>
+              <label class="workspace-field wide">DISCOVERY SIGNAL<select id="lead-contact-signal"><option value="">Do not update diagnosis</option><option value="current_state">Current situation</option><option value="impact">Impact</option><option value="evidence">Evidence / proof</option><option value="affected_people">People affected</option><option value="process_point">Where it happens</option><option value="prior_attempts">Previous attempts</option><option value="desired_outcome">Desired outcome</option><option value="constraints">Constraints</option></select></label>
               <button id="lead-log-contact" type="button" class="secondary wide">+ LOG INTERACTION</button>
             </div>
           </section>
@@ -333,8 +379,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1"></script>
   <script src="/config.js"></script>
-  <script src="/admin/admin-i18n.js?v=1"></script>
+  <script src="/admin/admin-i18n.js?v=2"></script>
   <script src="/admin.js?v=10"></script>
-  <script src="/admin/admin-unified.js?v=5"></script>
+  <script src="/admin/admin-unified.js?v=6"></script>
 </body>
 </html>

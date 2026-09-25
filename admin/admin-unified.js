@@ -4,11 +4,21 @@
   const esc=(v='')=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const money=v=>window.ATS_I18N?.formatNumber?.(v)??new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt=v=>v?(window.ATS_I18N?.formatDate?.(v,{day:'2-digit',month:'short',year:'numeric'})??new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v))):'—';
-  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[]};
+  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[]};
   let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
   const briefNames={goal:'CHALLENGE & OUTCOME',type:'STARTING POINT',team:'POSSIBLE EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
   const leadStatusLabels={new:'New',contacted:'Contacted',discovery:'Discovery',reviewing:'Reviewing',qualified:'Qualified',proposal_sent:'Proposal Sent',negotiation:'Negotiation',won:'Won',lost:'Lost'};
+  const discoveryDimensions=[
+    ['current_state','Current situation','What is happening now?'],
+    ['impact','Impact','What does the problem cause?'],
+    ['evidence','Evidence / proof','What proves the problem exists?'],
+    ['affected_people','People affected','Who experiences the problem?'],
+    ['process_point','Where it happens','Where in the process / journey does it appear?'],
+    ['prior_attempts','Previous attempts','What was already tried?'],
+    ['desired_outcome','Desired outcome','What should change if solved correctly?'],
+    ['constraints','Constraints','What limits must the solution respect?']
+  ];
   const stageOrder=['Onboarding','Content Preparation','Design','Development','Internal QA','Client Review','Revisions','Final Approval','Final Payment','Deployment','Completed'];
   const defaultLayout={work:{columns:3,order:[],sizes:{},hidden:[]},team:{founderWidth:38,order:['hse','software','design','video','content','ai'],hidden:[]},brief:{order:['goal','type','team','scope','contact'],hidden:[]}};
 
@@ -73,15 +83,17 @@
   async function loadInbox(force=false){
     if(state.loaded.inbox&&!force){renderInbox();return}
     loading('#ops-inbox-list');
-    const [messages,revisions,files,leads]=await Promise.all([
+    const [messages,revisions,files,leads,discoveryAnswers]=await Promise.all([
       sb().from('studio_messages').select('id,project_id,client_id,sender_type,body,is_read_by_admin,created_at,studio_projects(project_code,title,client_id)').eq('sender_type','client').order('created_at',{ascending:false}).limit(120),
       sb().from('studio_revisions').select('id,project_id,revision_number,status,notes,submitted_at,studio_projects(project_code,title)').in('status',['submitted','in_progress']).order('submitted_at',{ascending:false}).limit(80),
       sb().from('studio_files').select('id,project_id,file_name,category,created_at,studio_projects(project_code,title)').eq('category','client_upload').order('created_at',{ascending:false}).limit(80),
-      sb().from('studio_leads').select('id,lead_code,full_name,service,project_goal,source,created_at,status').eq('source','Client Portal').order('created_at',{ascending:false}).limit(80)
+      sb().from('studio_leads').select('id,lead_code,full_name,service,project_goal,source,created_at,status').eq('source','Client Portal').order('created_at',{ascending:false}).limit(80),
+      sb().from('studio_discovery_answers').select('id,case_id,question_key,answer,actor_type,is_read_by_admin,created_at,studio_discovery_cases(lead_id,studio_leads(lead_code,full_name))').eq('actor_type','prospect').order('created_at',{ascending:false}).limit(120)
     ]);
-    const failed=[messages,revisions,files,leads].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
+    const failed=[messages,revisions,files,leads,discoveryAnswers].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
     state.inbox=[
       ...(messages.data||[]).map(x=>({kind:'message',id:x.id,project_id:x.project_id,title:'Client message',summary:x.body,project:x.studio_projects?.project_code||x.studio_projects?.title||'Project',date:x.created_at,unread:!x.is_read_by_admin})),
+      ...(discoveryAnswers.data||[]).map(x=>({kind:'discovery',id:x.id,lead_id:x.studio_discovery_cases?.lead_id,title:'Discovery answer · '+String(x.question_key||'').replaceAll('_',' '),summary:x.answer,project:x.studio_discovery_cases?.studio_leads?.lead_code||x.studio_discovery_cases?.studio_leads?.full_name||'Lead',date:x.created_at,unread:!x.is_read_by_admin})),
       ...(revisions.data||[]).map(x=>({kind:'revision',id:x.id,project_id:x.project_id,title:'Revision request #'+x.revision_number,summary:x.notes||x.status,project:x.studio_projects?.project_code||x.studio_projects?.title||'Project',date:x.submitted_at,unread:true})),
       ...(files.data||[]).map(x=>({kind:'upload',id:x.id,project_id:x.project_id,title:'Client uploaded a file',summary:x.file_name,project:x.studio_projects?.project_code||x.studio_projects?.title||'Project',date:x.created_at,unread:false})),
       ...(leads.data||[]).map(x=>({kind:'lead',id:x.id,lead_id:x.id,title:'New project request',summary:(x.lead_code||'Lead')+' · '+(x.full_name||'Client')+' · '+(x.service||'Service'),project:'Client Portal',date:x.created_at,unread:x.status==='new'}))
@@ -91,7 +103,7 @@
   function renderInbox(){
     const q=($('#ops-inbox-search')?.value||'').trim().toLowerCase(),f=$('#ops-inbox-filter')?.value||'all';
     const rows=state.inbox.filter(x=>(f==='all'||x.kind===f)&&(!q||[x.title,x.summary,x.project].some(v=>String(v||'').toLowerCase().includes(q))));
-    $('#ops-inbox-list').innerHTML=rows.length?'<div class="data-table-wrap"><table class="data-table"><thead><tr><th>ACTIVITY</th><th>PROJECT</th><th>DETAIL</th><th>DATE</th><th></th></tr></thead><tbody>'+rows.map(x=>'<tr class="'+(x.unread?'inbox-unread':'')+'"><td><div class="entity-title"><b>'+esc(x.title)+'</b><small>'+esc(x.kind.toUpperCase())+'</small></div></td><td>'+esc(x.project||'—')+'</td><td>'+esc(String(x.summary||'').slice(0,120))+'</td><td>'+esc(fmt(x.date))+'</td><td><div class="row-actions"><button class="row-action primary-action" '+(x.kind==='lead'?'data-inbox-lead="'+esc(x.lead_id)+'"':'data-inbox-project="'+esc(x.project_id)+'"')+'>OPEN</button></div></td></tr>').join('')+'</tbody></table></div>':'<div class="ops-empty">No matching client activity.</div>';
+    $('#ops-inbox-list').innerHTML=rows.length?'<div class="data-table-wrap"><table class="data-table"><thead><tr><th>ACTIVITY</th><th>PROJECT</th><th>DETAIL</th><th>DATE</th><th></th></tr></thead><tbody>'+rows.map(x=>'<tr class="'+(x.unread?'inbox-unread':'')+'"><td><div class="entity-title"><b>'+esc(x.title)+'</b><small>'+esc(x.kind.toUpperCase())+'</small></div></td><td>'+esc(x.project||'—')+'</td><td>'+esc(String(x.summary||'').slice(0,120))+'</td><td>'+esc(fmt(x.date))+'</td><td><div class="row-actions"><button class="row-action primary-action" '+((x.kind==='lead'||x.kind==='discovery')?'data-inbox-lead="'+esc(x.lead_id)+'"':'data-inbox-project="'+esc(x.project_id)+'"')+'>OPEN</button></div></td></tr>').join('')+'</tbody></table></div>':'<div class="ops-empty">No matching client activity.</div>';
   }
 
   async function loadLeads(force=false){
@@ -245,12 +257,19 @@
   }
   function localToIso(value){return value?new Date(value).toISOString():null}
   function humanActivity(action,meta={}){
-    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
+    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
     const title=labels[action]||String(action||'Activity').replaceAll('_',' ');
     let detail=meta.summary||meta.note||'';
     if(action==='lead_status_changed')detail=(leadStatusLabels[meta.from]||meta.from||'—')+' → '+(leadStatusLabels[meta.to]||meta.to||'—');
     if(action==='lead_next_action_changed')detail=(meta.next_action||'No action')+(meta.due_at?' · due '+fmt(meta.due_at):'');
     if(action==='lead_contact_logged')detail=(meta.channel||'Contact')+' · '+String(meta.outcome||'').replaceAll('_',' ')+(meta.summary?' · '+meta.summary:'');
+    if(action==='discovery_answered')detail=String(meta.question_key||'Discovery').replaceAll('_',' ')+' · '+String(meta.answer_preview||'');
+    if(action==='discovery_signal_added')detail=String(meta.question_key||'Discovery').replaceAll('_',' ')+' · '+String(meta.answer_preview||'');
+    if(action==='diagnosis_updated')detail=(meta.root_problem||'Diagnosis updated')+' · '+String(meta.confidence||0)+'% confidence';
+    if(action==='root_cause_added')detail=(meta.statement||'Root-cause hypothesis')+' · '+String(meta.confidence||0)+'% confidence';
+    if(action==='root_cause_status_changed')detail=(meta.statement||'Root cause')+' · '+String(meta.status||'');
+    if(action==='solution_task_added')detail=(meta.title||'Solution task')+' · '+String(meta.owner||'ATS');
+    if(action==='solution_task_status_changed')detail=(meta.title||'Solution task')+' · '+String(meta.status||'');
     return {title,detail};
   }
   function renderLeadTimeline(){
@@ -272,13 +291,137 @@
     const r=await sb().from('studio_activity').insert({actor_type:'admin',entity_type:'lead',entity_id:leadId,action,metadata}).select('*').single();
     if(!r.error&&state.currentLead?.id===leadId){state.leadActivities.unshift(r.data);renderLeadTimeline()}
   }
+
+  function diagnosisGateState(){
+    const c=state.discoveryCase||{},validated=state.rootCauses.some(x=>x.status==='validated'),hasTask=state.solutionTasks.length>0;
+    const coverage=Number(c.readiness_score||0)>=75;
+    const synthesis=!!String(c.root_problem||'').trim()&&Number(c.diagnosis_confidence||0)>=60;
+    return {coverage,synthesis,validated,hasTask,ready:coverage&&synthesis&&validated&&hasTask};
+  }
+  function nextMissingDiscovery(){
+    const c=state.discoveryCase||{};
+    return discoveryDimensions.find(([key])=>!String(c[key]||'').trim())||null;
+  }
+  function latestDiscoveryAnswer(key){
+    return state.discoveryAnswers.find(x=>x.question_key===key)||null;
+  }
+  function renderLeadDiagnosis(){
+    const c=state.discoveryCase;
+    if(!c){
+      $('#diagnosis-score').textContent='0%';$('#diagnosis-progress-bar').style.width='0%';
+      $('#diagnosis-dimensions').innerHTML='<div class="ops-empty">Discovery case is not available yet.</div>';
+      return;
+    }
+    const score=Number(c.readiness_score||0),gate=diagnosisGateState(),next=nextMissingDiscovery();
+    $('#diagnosis-score').textContent=score+'%';$('#diagnosis-progress-bar').style.width=score+'%';
+    $('#diagnosis-root-problem').value=c.root_problem||'';$('#diagnosis-summary').value=c.diagnosis_summary||'';$('#diagnosis-confidence').value=Number(c.diagnosis_confidence||0);
+    $('#diagnosis-next-question').textContent=next?'Next client question: '+next[2]:'Discovery questions complete · validate the root cause.';
+    const gateItems=[
+      ['Evidence coverage',gate.coverage,score+'% / 75% minimum'],
+      ['Problem synthesis',gate.synthesis,(c.root_problem?'Root problem written':'Root problem missing')+' · '+Number(c.diagnosis_confidence||0)+'% confidence'],
+      ['Validated cause',gate.validated,state.rootCauses.filter(x=>x.status==='validated').length+' validated'],
+      ['Solution task',gate.hasTask,state.solutionTasks.length+' task(s) defined']
+    ];
+    $('#diagnosis-gate').innerHTML=gateItems.map(([title,pass,detail])=>'<div class="'+(pass?'pass':'')+'"><b>'+(pass?'✓ ':'○ ')+esc(title)+'</b><small>'+esc(detail)+'</small></div>').join('');
+
+    $('#diagnosis-dimensions').innerHTML=discoveryDimensions.map(([key,label,hint])=>{
+      const value=String(c[key]||'').trim(),latest=latestDiscoveryAnswer(key);
+      return '<article class="diagnosis-dimension '+(value?'complete':'missing')+'"><div><span>'+esc(label.toUpperCase())+'</span><b>'+(value?'CONFIRMED DATA':'MISSING')+'</b></div><p>'+esc(value||hint)+'</p>'+(latest?'<small>'+esc(String(latest.actor_type||'').toUpperCase()+' · '+String(latest.source_channel||'').toUpperCase()+' · '+fmt(latest.created_at))+'</small>':'')+'</article>'
+    }).join('');
+
+    const required=[];
+    discoveryDimensions.filter(([key])=>!String(c[key]||'').trim()).forEach(([,label])=>required.push(['Collect '+label,'Ask the next high-value question or record evidence from a call / WhatsApp interaction.']));
+    if(!String(c.root_problem||'').trim())required.push(['Write the root problem statement','Describe the problem itself without embedding the requested solution.']);
+    if(Number(c.diagnosis_confidence||0)<60)required.push(['Increase diagnosis confidence','Validate assumptions with evidence until confidence is at least 60%.']);
+    if(!gate.validated)required.push(['Validate a root-cause hypothesis','A suspected cause is not enough. Record evidence for and against it, then validate or reject it.']);
+    if(!gate.hasTask)required.push(['Define the first solution task','Create a task that directly removes, controls or tests the validated cause.']);
+    if(gate.hasTask&&!state.solutionTasks.some(x=>x.task_type==='verification'))required.push(['Define effectiveness verification','Add a verification task tied to the desired outcome so we can prove the solution worked.']);
+    $('#diagnosis-system-tasks').innerHTML=required.length?required.slice(0,8).map(([title,why])=>'<div class="system-task"><i></i><div><b>'+esc(title)+'</b><small>'+esc(why)+'</small></div></div>').join(''):'<div class="system-task"><i style="background:#58d99d"></i><div><b>Diagnosis Gate ready</b><small>The problem, cause and first solution task are sufficiently defined.</small></div></div>';
+
+    $('#root-cause-list').innerHTML=state.rootCauses.length?state.rootCauses.map(x=>'<article class="cause-row"><div class="cause-row-head"><div><b>'+esc(x.statement)+'</b><div class="cause-meta"><span>'+esc(x.category)+'</span><span>'+esc(String(x.confidence||0))+'% confidence</span><span class="'+esc(x.status)+'">'+esc(x.status.toUpperCase())+'</span></div></div></div>'+(x.evidence_for?'<p><strong>EVIDENCE FOR:</strong> '+esc(x.evidence_for)+'</p>':'')+(x.evidence_against?'<p><strong>GAPS / AGAINST:</strong> '+esc(x.evidence_against)+'</p>':'')+'<div class="cause-actions">'+(x.status!=='validated'?'<button data-cause-status="'+esc(x.id)+':validated">VALIDATE</button>':'')+(x.status!=='suspected'?'<button data-cause-status="'+esc(x.id)+':suspected">SUSPECTED</button>':'')+(x.status!=='rejected'?'<button data-cause-status="'+esc(x.id)+':rejected">REJECT</button>':'')+'</div></article>').join(''):'<div class="ops-empty">No root-cause hypotheses yet.</div>';
+
+    const causeSelect=$('#solution-task-cause'),selected=causeSelect?.value||'';
+    if(causeSelect){causeSelect.innerHTML='<option value="">General / not linked yet</option>'+state.rootCauses.filter(x=>x.status!=='rejected').map(x=>'<option value="'+esc(x.id)+'">'+esc(String(x.statement||'').slice(0,80))+'</option>').join('');if(state.rootCauses.some(x=>x.id===selected))causeSelect.value=selected}
+    $('#solution-task-list').innerHTML=state.solutionTasks.length?state.solutionTasks.map(x=>{
+      const cause=state.rootCauses.find(ca=>ca.id===x.root_cause_id);
+      return '<article class="solution-task-row"><div class="task-row-head"><div><b>'+esc(x.title)+'</b><div class="task-meta"><span>'+esc(x.task_type)+'</span><span>'+esc(x.owner_type)+'</span><span>'+esc(x.priority)+'</span><span>'+esc(x.status)+'</span></div></div></div>'+(x.rationale?'<p>'+esc(x.rationale)+'</p>':'')+(cause?'<p><strong>CAUSE:</strong> '+esc(cause.statement)+'</p>':'')+(x.acceptance_criteria?'<p><strong>DONE WHEN:</strong> '+esc(x.acceptance_criteria)+'</p>':'')+'<div class="task-actions">'+(x.status==='todo'?'<button data-task-status="'+esc(x.id)+':in_progress">START</button>':'')+(x.status!=='done'?'<button data-task-status="'+esc(x.id)+':done">DONE</button>':'')+(x.status==='blocked'?'<button data-task-status="'+esc(x.id)+':in_progress">UNBLOCK</button>':'')+'</div></article>'
+    }).join(''):'<div class="ops-empty">No solution tasks yet.</div>';
+    updateLeadWorkspaceState();
+  }
+  async function loadLeadDiagnosis(leadId){
+    state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];
+    $('#diagnosis-dimensions').innerHTML='<div class="loading-line">Loading discovery evidence…</div>';
+    let cq=await sb().from('studio_discovery_cases').select('*').eq('lead_id',leadId).maybeSingle();
+    if(cq.error)return notify(cq.error.message,'error');
+    if(!cq.data){
+      cq=await sb().from('studio_discovery_cases').insert({lead_id:leadId,phase:'discovery',source_snapshot:{}}).select('*').single();
+      if(cq.error)return notify(cq.error.message,'error');
+    }
+    state.discoveryCase=cq.data;
+    const [answers,causes,tasks]=await Promise.all([
+      sb().from('studio_discovery_answers').select('*').eq('case_id',cq.data.id).order('created_at',{ascending:false}).limit(250),
+      sb().from('studio_root_causes').select('*').eq('case_id',cq.data.id).order('created_at',{ascending:false}),
+      sb().from('studio_solution_tasks').select('*').eq('case_id',cq.data.id).order('sort_order',{ascending:true}).order('created_at',{ascending:true})
+    ]);
+    const failed=[answers,causes,tasks].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
+    state.discoveryAnswers=answers.data||[];state.rootCauses=causes.data||[];state.solutionTasks=tasks.data||[];
+    const unread=state.discoveryAnswers.filter(x=>x.actor_type==='prospect'&&!x.is_read_by_admin).map(x=>x.id);
+    if(unread.length){await sb().from('studio_discovery_answers').update({is_read_by_admin:true}).in('id',unread);state.discoveryAnswers.forEach(x=>{if(unread.includes(x.id))x.is_read_by_admin=true});state.loaded.inbox=false}
+    renderLeadDiagnosis();
+  }
+  async function syncDiagnosisPhase(){
+    const c=state.discoveryCase;if(!c)return;
+    const gate=diagnosisGateState(),validated=state.rootCauses.some(x=>x.status==='validated');
+    const phase=gate.ready?'solution_ready':validated?'diagnosis':'discovery';
+    if(c.phase!==phase){
+      const r=await sb().from('studio_discovery_cases').update({phase}).eq('id',c.id).select('*').single();
+      if(!r.error)state.discoveryCase=r.data;
+    }
+  }
+  async function saveDiagnosis(){
+    const c=state.discoveryCase;if(!c)return;
+    const patch={root_problem:$('#diagnosis-root-problem').value.trim()||null,diagnosis_summary:$('#diagnosis-summary').value.trim()||null,diagnosis_confidence:Math.max(0,Math.min(100,Number($('#diagnosis-confidence').value||0))),phase:'diagnosis'};
+    const r=await sb().from('studio_discovery_cases').update(patch).eq('id',c.id).select('*').single();if(r.error)return notify(r.error.message,'error');
+    state.discoveryCase=r.data;await syncDiagnosisPhase();await logLeadActivity('diagnosis_updated',{confidence:state.discoveryCase.diagnosis_confidence,root_problem:state.discoveryCase.root_problem});renderLeadDiagnosis();notify('Diagnosis saved');
+  }
+  async function addRootCause(){
+    const c=state.discoveryCase,statement=$('#root-cause-statement').value.trim();if(!c||!statement)return notify('Write a root-cause hypothesis first','error');
+    const payload={case_id:c.id,category:$('#root-cause-category').value,statement,evidence_for:$('#root-cause-evidence-for').value.trim()||null,evidence_against:$('#root-cause-evidence-against').value.trim()||null,confidence:Math.max(0,Math.min(100,Number($('#root-cause-confidence').value||50))),status:'suspected'};
+    const r=await sb().from('studio_root_causes').insert(payload).select('*').single();if(r.error)return notify(r.error.message,'error');
+    state.rootCauses.unshift(r.data);$('#root-cause-statement').value='';$('#root-cause-evidence-for').value='';$('#root-cause-evidence-against').value='';await logLeadActivity('root_cause_added',{root_cause_id:r.data.id,statement:r.data.statement,confidence:r.data.confidence});await syncDiagnosisPhase();renderLeadDiagnosis();notify('Root-cause hypothesis added');
+  }
+  async function setRootCauseStatus(id,status){
+    const r=await sb().from('studio_root_causes').update({status}).eq('id',id).select('*').single();if(r.error)return notify(r.error.message,'error');
+    const i=state.rootCauses.findIndex(x=>x.id===id);if(i>=0)state.rootCauses[i]=r.data;await logLeadActivity('root_cause_status_changed',{root_cause_id:id,status,statement:r.data.statement});await syncDiagnosisPhase();renderLeadDiagnosis();notify('Root cause updated');
+  }
+  async function addSolutionTask(){
+    const c=state.discoveryCase,title=$('#solution-task-title').value.trim();if(!c||!title)return notify('Write the solution task first','error');
+    const payload={case_id:c.id,root_cause_id:$('#solution-task-cause').value||null,task_type:$('#solution-task-type').value,title,rationale:$('#solution-task-rationale').value.trim()||null,owner_type:$('#solution-task-owner').value,priority:$('#solution-task-priority').value,status:'todo',acceptance_criteria:$('#solution-task-acceptance').value.trim()||null,due_date:$('#solution-task-due').value||null,sort_order:(state.solutionTasks.length+1)*10};
+    const r=await sb().from('studio_solution_tasks').insert(payload).select('*').single();if(r.error)return notify(r.error.message,'error');
+    state.solutionTasks.push(r.data);$('#solution-task-title').value='';$('#solution-task-rationale').value='';$('#solution-task-acceptance').value='';$('#solution-task-due').value='';await logLeadActivity('solution_task_added',{task_id:r.data.id,title:r.data.title,owner:r.data.owner_type});await syncDiagnosisPhase();renderLeadDiagnosis();notify('Solution task added');
+  }
+  async function setSolutionTaskStatus(id,status){
+    const r=await sb().from('studio_solution_tasks').update({status}).eq('id',id).select('*').single();if(r.error)return notify(r.error.message,'error');
+    const i=state.solutionTasks.findIndex(x=>x.id===id);if(i>=0)state.solutionTasks[i]=r.data;await logLeadActivity('solution_task_status_changed',{task_id:id,status,title:r.data.title});await syncDiagnosisPhase();renderLeadDiagnosis();notify('Task updated');
+  }
+  async function recordAdminDiscoverySignal(key,answer,channel){
+    const c=state.discoveryCase;if(!c||!key||!answer)return;
+    const allowed=discoveryDimensions.some(([k])=>k===key);if(!allowed)return;
+    const source=['whatsapp','email','call','portal'].includes(channel)?channel:'admin';
+    const ins=await sb().from('studio_discovery_answers').insert({case_id:c.id,question_key:key,answer,actor_type:'admin',source_channel:source,is_read_by_admin:true}).select('*').single();if(ins.error)return notify(ins.error.message,'error');
+    const up=await sb().from('studio_discovery_cases').update({[key]:answer}).eq('id',c.id).select('*').single();if(up.error)return notify(up.error.message,'error');
+    state.discoveryCase=up.data;state.discoveryAnswers.unshift(ins.data);await logLeadActivity('discovery_signal_added',{question_key:key,source_channel:source,answer_preview:answer.slice(0,220)});renderLeadDiagnosis();
+  }
+
   function updateLeadWorkspaceState(){
-    const status=$('#lead-status').value||'new',x=state.currentLead;
+    const status=$('#lead-status').value||'new',x=state.currentLead,gate=diagnosisGateState();
     $('#lead-workspace-status').className='status-chip '+status;$('#lead-workspace-status').textContent=leadStatusLabels[status]||status;
     $('#lead-lost-wrap').classList.toggle('hidden',status!=='lost');
-    const proposalReady=['qualified','proposal_sent','negotiation'].includes(status);
+    const existingCommercial=['proposal_sent','negotiation'].includes(status);
+    const proposalReady=existingCommercial||(status==='qualified'&&gate.ready);
     $('#lead-create-proposal').classList.toggle('hidden',!proposalReady);
-    $('#lead-proposal-gate').classList.toggle('hidden',proposalReady);
+    const gateText=$('#lead-proposal-gate');gateText.classList.toggle('hidden',proposalReady);
+    if(!proposalReady)gateText.textContent=status==='qualified'?'Complete the Diagnosis Gate before creating a proposal.':'Qualify the lead after the Diagnosis Gate is ready.';
     const due=$('#lead-next-due').value?new Date($('#lead-next-due').value).getTime():0,overdue=due&&due<Date.now()&&!['won','lost'].includes(status);
     const warning=$('#lead-next-warning');
     if(overdue){warning.textContent='OVERDUE · This follow-up needs attention.';warning.className='lead-next-warning overdue'}
@@ -288,7 +431,7 @@
   }
   async function openLead(id){
     const x=state.leads.find(v=>v.id===id);if(!x)return;
-    state.currentLead=x;state.leadActivities=[];
+    state.currentLead=x;state.leadActivities=[];state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];
     const cards=parseLeadBrief(x.project_goal);
     $('#lead-dialog-title').textContent=x.full_name||'Lead';$('#lead-dialog-code').textContent=x.lead_code||'—';$('#lead-workspace-source').textContent=(x.source||'website').replaceAll('_',' ');$('#lead-workspace-received').textContent='Received '+fmt(x.created_at);
     $('#lead-dialog-summary').innerHTML=[
@@ -300,11 +443,11 @@
     $('#lead-understanding').value=suggestedUnderstanding(x,cards);
     $('#lead-missing-info').value=suggestedMissing(x,cards).join('\n');
     $('#lead-status').value=x.status||'new';$('#lead-fit').value=x.fit||'';$('#lead-fit-reason').value=x.fit_reason||'';$('#lead-next-action').value=x.next_action||'';$('#lead-next-due').value=dateTimeLocal(x.next_action_due_at);$('#lead-contact-preference').value=x.preferred_contact_channel||'';$('#lead-notes').value=x.internal_notes||'';$('#lead-lost-reason').value=x.lost_reason||'';
-    $('#lead-contact-channel').value=x.preferred_contact_channel||'whatsapp';$('#lead-contact-outcome').value='contacted';$('#lead-contact-summary').value='';
+    $('#lead-contact-channel').value=x.preferred_contact_channel||'whatsapp';$('#lead-contact-outcome').value='contacted';$('#lead-contact-summary').value='';$('#lead-contact-signal').value='';
     $('#lead-last-contact').textContent=x.last_contacted_at?'Last contact '+fmt(x.last_contacted_at):'No contact logged';
     const mail=$('#lead-email-link');mail.href=x.email?'mailto:'+encodeURIComponent(x.email):'#';mail.classList.toggle('hidden',!x.email);
     const wa=$('#lead-wa-link');const digits=String(x.phone||'').replace(/\D/g,'');wa.href=digits?'https://wa.me/'+digits:'#';wa.classList.toggle('hidden',!digits);
-    updateLeadWorkspaceState();$('#lead-dialog').showModal();await loadLeadTimeline(x.id);
+    updateLeadWorkspaceState();$('#lead-dialog').showModal();await Promise.all([loadLeadTimeline(x.id),loadLeadDiagnosis(x.id)]);
   }
   async function saveLead(close=true){
     const x=state.currentLead;if(!x)return false;
@@ -313,6 +456,7 @@
     if(status==='lost'&&!lostReason){notify('Add a lost reason before closing this lead','error');$('#lead-lost-reason').focus();return false}
     if(status==='qualified'&&!fit){notify('Set the ATS fit before qualifying this lead','error');$('#lead-fit').focus();return false}
     if(status==='qualified'&&!understanding){notify('Write the ATS understanding before qualifying this lead','error');$('#lead-understanding').focus();return false}
+    if(status==='qualified'&&x.status!=='qualified'&&!diagnosisGateState().ready){notify('Complete the Diagnosis Gate before qualifying this lead','error');return false}
     const patch={
       status,fit,fit_reason:$('#lead-fit-reason').value.trim()||null,
       ats_understanding:understanding||null,
@@ -342,7 +486,7 @@
   }
   async function logLeadContact(){
     const x=state.currentLead;if(!x)return;
-    const channel=$('#lead-contact-channel').value,outcome=$('#lead-contact-outcome').value,summary=$('#lead-contact-summary').value.trim();
+    const channel=$('#lead-contact-channel').value,outcome=$('#lead-contact-outcome').value,summary=$('#lead-contact-summary').value.trim(),signal=$('#lead-contact-signal').value;
     if(!summary)return notify('Add a short interaction summary','error');
     const now=new Date().toISOString();
     const patch={last_contacted_at:now,preferred_contact_channel:channel};
@@ -353,7 +497,9 @@
     $('#lead-status').value=r.data.status;$('#lead-contact-preference').value=channel;$('#lead-last-contact').textContent='Last contact '+fmt(now);$('#lead-contact-summary').value='';
     if(beforeStatus!==r.data.status)await logLeadActivity('lead_status_changed',{from:beforeStatus,to:r.data.status});
     await logLeadActivity('lead_contact_logged',{channel,outcome,summary});
-    notify('Interaction added to timeline');renderLeads();state.loaded.dashboard=false;void loadDashboard(true);updateLeadWorkspaceState();
+    if(signal)await recordAdminDiscoverySignal(signal,summary,channel);
+    $('#lead-contact-signal').value='';
+    notify(signal?'Interaction logged and added to discovery':'Interaction added to timeline');renderLeads();state.loaded.dashboard=false;state.loaded.inbox=false;void loadDashboard(true);updateLeadWorkspaceState();
   }
 
   function fillLeadOptions(selectId,selected){
@@ -528,6 +674,8 @@
     const publish=e.target.closest('[data-publish-file-review]');if(publish){void publishProjectReview(publish.dataset.publishFileReview);return}
     const release=e.target.closest('[data-release-final]');if(release){void releaseFinalFile(release.dataset.releaseFinal);return}
     const complete=e.target.closest('[data-complete-revision]');if(complete){void completeRevision(complete.dataset.completeRevision);return}
+    const causeStatus=e.target.closest('[data-cause-status]');if(causeStatus){const [id,status]=causeStatus.dataset.causeStatus.split(':');void setRootCauseStatus(id,status);return}
+    const taskStatus=e.target.closest('[data-task-status]');if(taskStatus){const [id,status]=taskStatus.dataset.taskStatus.split(':');void setSolutionTaskStatus(id,status);return}
     const up=e.target.closest('[data-v9-up]');if(up&&state.v9){const [kind,key]=up.dataset.v9Up.split(':');const a=arrFor(kind),i=a.indexOf(key);if(i>0){[a[i-1],a[i]]=[a[i],a[i-1]];renderV9()}return}
     const toggle=e.target.closest('[data-v9-toggle]');if(toggle&&state.v9){const [kind,key]=toggle.dataset.v9Toggle.split(':'),h=hiddenFor(kind),i=h.indexOf(key);if(kind==='brief'&&i<0&&arrFor(kind).filter(x=>!h.includes(x)).length<=1)return notify('At least one brief step must remain visible','error');i>=0?h.splice(i,1):h.push(key);renderV9();return}
   });
@@ -543,6 +691,9 @@
   $('#lead-save-open')?.addEventListener('click',()=>saveLead(false));
   $('#lead-start-discovery')?.addEventListener('click',startDiscovery);
   $('#lead-log-contact')?.addEventListener('click',logLeadContact);
+  $('#save-diagnosis')?.addEventListener('click',saveDiagnosis);
+  $('#add-root-cause')?.addEventListener('click',addRootCause);
+  $('#add-solution-task')?.addEventListener('click',addSolutionTask);
   $('#lead-refresh-timeline')?.addEventListener('click',()=>state.currentLead&&loadLeadTimeline(state.currentLead.id));
   $('#lead-status')?.addEventListener('change',updateLeadWorkspaceState);
   $('#lead-next-action')?.addEventListener('change',updateLeadWorkspaceState);
@@ -550,6 +701,8 @@
   $('#lead-create-proposal')?.addEventListener('click',async()=>{
     const id=state.currentLead?.id,status=$('#lead-status').value;
     if(!id||!['qualified','proposal_sent','negotiation'].includes(status))return notify('Qualify the lead before creating a proposal','error');
+    const existingCommercial=['proposal_sent','negotiation'].includes(status);
+    if(!existingCommercial&&!diagnosisGateState().ready)return notify('Complete the Diagnosis Gate before creating a proposal','error');
     if(!await saveLead(false))return;
     $('#lead-dialog').close();await loadProposals(true);
     const existing=state.proposals.find(p=>p.lead_id===id&&!['declined','expired'].includes(p.status));
@@ -579,7 +732,7 @@
     if(state.loaded.payments)renderPayments();
     if(state.loaded.v9)renderV9();
     if(state.currentLead){
-      renderLeadTimeline();
+      renderLeadTimeline();renderLeadDiagnosis();
       $('#lead-workspace-received').textContent=(window.ATS_I18N?.t?.('Received')||'Received')+' '+fmt(state.currentLead.created_at);
       $('#lead-last-contact').textContent=state.currentLead.last_contacted_at?((window.ATS_I18N?.t?.('Last contact')||'Last contact')+' '+fmt(state.currentLead.last_contacted_at)):(window.ATS_I18N?.t?.('No contact logged')||'No contact logged');
     }
