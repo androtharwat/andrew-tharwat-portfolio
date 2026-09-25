@@ -26,7 +26,7 @@
   function applyOfficialBrandAssets(){
     const logo=$('.site-header .brand img');
     if(logo){
-      logo.src='/assets/ats-logo-compact.webp';
+      logo.src='/assets/ats-logo-compact.webp?v=3';
       logo.alt='ATS';
       logo.classList.add('ats-logo-compact');
       logo.decoding='async';
