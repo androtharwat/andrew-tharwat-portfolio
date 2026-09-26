@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="/v9/v9-phase4.css?v=1" />
   <link rel="stylesheet" href="/v9/v9-phase5.css?v=1" />
   <link rel="stylesheet" href="/v9/v9-polish.css?v=1" />
-  <link rel="stylesheet" href="/v9/v9-concierge.css?v=2" />
+  <link rel="stylesheet" href="/v9/v9-concierge.css?v=3" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
 </head>
 <body data-lang="en">
@@ -121,14 +121,15 @@
               <h3 data-en="What are you trying to do — or what isn’t working the way you want?" data-ar="إيه اللي بتحاول تعمله، أو إيه اللي مش ماشي بالشكل اللي أنت عايزه؟">What are you trying to do — or what isn’t working the way you want?</h3>
               <p data-en="You don’t need to know the service, solution, budget or technical terms. Tell us the situation as you would explain it to a person." data-ar="مش لازم تعرف اسم الخدمة أو الحل أو الميزانية أو المصطلحات الفنية. احكي الموقف زي ما هتحكيه لشخص قدامك.">You don’t need to know the service, solution, budget or technical terms. Tell us the situation as you would explain it to a person.</p>
             </div>
-            <div class="concierge-mode-row" role="group" aria-label="Conversation style">
-              <button type="button" class="concierge-mode active" data-mode="quick"><b data-en="QUICK" data-ar="سريع">QUICK</b><span data-en="Ask me as little as possible." data-ar="اسألني أقل عدد ممكن.">Ask me as little as possible.</span></button>
-              <button type="button" class="concierge-mode" data-mode="guided"><b data-en="GUIDED" data-ar="موجّه">GUIDED</b><span data-en="Help me think it through." data-ar="ساعدني أرتب الفكرة.">Help me think it through.</span></button>
-              <button type="button" class="concierge-mode" data-mode="unsure"><b data-en="I’M NOT SURE" data-ar="مش عارف أبدأ">I’M NOT SURE</b><span data-en="I have something in mind, but it’s not clear yet." data-ar="عندي حاجة في دماغي بس لسه مش واضحة.">I have something in mind, but it’s not clear yet.</span></button>
+            <div class="concierge-starters" aria-label="Easy ways to start">
+              <button type="button" class="concierge-starter" data-starter-en="Something is not working the way I expected." data-starter-ar="عندي حاجة مش شغالة بالشكل اللي كنت متوقعه."><span>01</span><b data-en="SOMETHING ISN'T WORKING" data-ar="في حاجة مش شغالة">SOMETHING ISN'T WORKING</b></button>
+              <button type="button" class="concierge-starter" data-starter-en="I have an idea, but I am not sure how to turn it into something real." data-starter-ar="عندي فكرة، بس مش عارف أحولها لحاجة حقيقية ومنظمة."><span>02</span><b data-en="I HAVE AN IDEA" data-ar="عندي فكرة">I HAVE AN IDEA</b></button>
+              <button type="button" class="concierge-starter" data-starter-en="Something already exists, but I want to improve it." data-starter-ar="عندي حاجة موجودة بالفعل وعايز أحسنها."><span>03</span><b data-en="I WANT TO IMPROVE SOMETHING" data-ar="عايز أحسن حاجة موجودة">I WANT TO IMPROVE SOMETHING</b></button>
             </div>
             <div class="concierge-input-card">
-              <label for="concierge-problem" data-en="TELL ATS WHAT’S HAPPENING" data-ar="احكي لـ ATS إيه اللي حاصل">TELL ATS WHAT’S HAPPENING</label>
-              <textarea id="concierge-problem" rows="7" maxlength="4500" data-en-placeholder="Example: I have an idea for a product, but I’m not sure how to turn it into something people can understand, buy and use..." data-ar-placeholder="مثال: عندي فكرة منتج، بس مش عارف أحولها لحاجة الناس تفهمها وتشتريها وتستخدمها..."></textarea>
+              <label for="concierge-problem" data-en="START WITH WHAT YOU KNOW" data-ar="ابدأ باللي تعرفه">START WITH WHAT YOU KNOW</label>
+              <textarea id="concierge-problem" rows="7" maxlength="4500" data-en-placeholder="Tell us what you are seeing, what feels wrong, or what you are trying to make happen. It does not need to be organized." data-ar-placeholder="احكي اللي شايفه، أو إيه اللي مضايقك، أو إيه اللي بتحاول توصله. مش لازم الكلام يكون مرتب."></textarea>
+              <p class="concierge-honesty-note" data-en="If you are guessing or not sure about something, say that. It helps ATS separate facts from assumptions." data-ar="لو في حاجة مجرد توقع أو مش متأكد منها، قول ده عادي. ده بيساعد ATS يفرق بين الحقيقة والافتراض.">If you are guessing or not sure about something, say that. It helps ATS separate facts from assumptions.</p>
               <div class="concierge-input-tools">
                 <button id="concierge-voice" type="button" class="concierge-tool"><span>◉</span><b data-en="VOICE" data-ar="صوت">VOICE</b></button>
                 <button id="concierge-context-toggle" type="button" class="concierge-tool"><span>＋</span><b data-en="ADD CONTEXT / FILES" data-ar="أضف معلومات أو ملفات">ADD CONTEXT / FILES</b></button>
@@ -151,7 +152,7 @@
               </div>
             </div>
             <div id="concierge-tell-error" class="concierge-message hidden" role="alert"></div>
-            <div class="concierge-actions"><button id="concierge-understand" class="btn primary" type="button" data-en="LET ATS UNDERSTAND →" data-ar="خلّي ATS يفهم ←">LET ATS UNDERSTAND →</button></div>
+            <div class="concierge-actions"><button id="concierge-understand" class="btn primary" type="button" data-en="HELP ATS UNDERSTAND →" data-ar="ساعد ATS يفهم ←">HELP ATS UNDERSTAND →</button></div>
           </section>
 
           <section class="concierge-stage" data-concierge-stage="understand">
@@ -227,7 +228,7 @@
   <script src="/v9/v9-brief-recovery.js?v=1"></script>
   <script src="/v9/v9-phase2.js?v=4"></script>
   <script src="/v9/v9-lead-submit.js?v=4"></script>
-  <script src="/v9/v9-concierge.js?v=2"></script>
+  <script src="/v9/v9-concierge.js?v=3"></script>
   <script src="/v9/v9-polish.js?v=13"></script>
 </body>
 </html>

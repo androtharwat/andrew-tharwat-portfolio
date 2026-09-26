@@ -9,8 +9,8 @@
   <link rel="icon" href="/assets/ats-favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/client-access/access.css?v=5" />
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/client-access/access.css?v=7" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
 </head>
 <body>
@@ -21,73 +21,105 @@
     </header>
 
     <section id="auth-card" class="auth-card">
-      <p class="eyebrow">SECURE CLIENT ACCESS</p>
-      <h1>Follow your request.<br><span>Review your proposal.</span></h1>
-      <p class="lede">Use the same email you used when you submitted your project request, then enter the 6-digit ATS Access Code shared with you by the Studio.</p>
-      <div class="preview-access-note"><b>PREVIEW ACCESS</b><span>No login email is sent during testing. Your code is issued directly by ATS and expires automatically.</span></div>
+      <p class="eyebrow">YOUR ATS SPACE</p>
+      <h1>Pick up where<br><span>we left off.</span></h1>
+      <p class="lede">Use the same email you used for your request and the 6-digit ATS Access Code shared with you. Once inside, we will only show you the one thing that needs your attention.</p>
+      <div class="preview-access-note"><b>PRIVATE ACCESS</b><span>Your code is temporary and belongs only to this request.</span></div>
       <label><span>EMAIL ADDRESS</span><input id="access-email" type="email" autocomplete="email" placeholder="name@company.com" /></label>
       <div id="otp-wrap" class="otp-wrap">
         <label><span>ATS ACCESS CODE</span><input id="access-otp" inputmode="numeric" autocomplete="one-time-code" /></label>
-        <button id="verify-code" class="primary" type="button">OPEN CLIENT ACCESS →</button>
+        <button id="verify-code" class="primary" type="button">CONTINUE →</button>
       </div>
-      <div id="auth-state" role="status" aria-live="polite" class="state">Only an active code issued by ATS for this email can continue.</div>
+      <div id="auth-state" role="status" aria-live="polite" class="state">Use the active code issued by ATS for this email.</div>
     </section>
 
     <section id="access-app" class="access-app hidden">
       <div class="app-top">
-        <div><p class="eyebrow">CLIENT JOURNEY</p><h1 id="welcome-title">Welcome.</h1><p id="welcome-subtitle">Your Studio request and commercial status in one place.</p></div>
+        <div>
+          <p class="eyebrow">YOUR ATS SPACE</p>
+          <h1 id="welcome-title">Welcome.</h1>
+          <p id="welcome-subtitle">One clear next step at a time.</p>
+        </div>
         <div class="top-actions"><button id="refresh-access" type="button">REFRESH</button><button id="sign-out" type="button">SIGN OUT</button></div>
       </div>
 
-      <section class="status-strip"><span></span><div><b id="journey-status">REQUEST RECEIVED</b><p id="journey-copy">Your request is inside Studio OS.</p></div></section>
-
-      <div class="grid">
-        <section class="panel">
-          <p class="eyebrow">PROJECT REQUEST</p>
-          <h2 id="lead-code">—</h2>
-          <div id="lead-details" class="details"></div>
-        </section>
-        <section class="panel action-panel">
-          <p class="eyebrow">CURRENT ACTION</p>
-          <h2 id="current-action">No action required</h2>
-          <p id="current-action-copy">The Studio is reviewing your request.</p>
-        </section>
-      </div>
-
-      <section id="discovery-panel" class="panel discovery-panel">
-        <div class="panel-head">
-          <div><p class="eyebrow">PROBLEM DISCOVERY</p><h2>Find the real problem before we design the solution.</h2></div>
-          <span id="discovery-score" class="status-badge">0%</span>
+      <section class="client-focus">
+        <div class="focus-status">
+          <div><span class="focus-dot"></span><b id="journey-status">UNDERSTANDING</b></div>
+          <p id="journey-copy">ATS is building a clear picture before choosing a solution.</p>
         </div>
-        <p class="discovery-intro">We do not ask you to fill a long questionnaire. ATS asks one useful question at a time, only when the answer can materially improve the diagnosis.</p>
-        <div class="discovery-progress"><i id="discovery-progress-bar"></i></div>
-        <div id="discovery-known" class="discovery-known"></div>
-        <div class="discovery-evidence">
-          <div class="discovery-evidence-head">
-            <div><span>PROJECT EVIDENCE · ملفات المشروع</span><b>Share anything that helps ATS understand the real situation.</b><small>Reports, screenshots, PDFs, Word, Excel, PowerPoint, ZIP, data exports, text, images, audio or short video files. ATS analyzes the content automatically.</small></div>
-            <div class="discovery-file-upload">
-              <button id="discovery-file-picker" class="discovery-file-picker" type="button">
-                <strong>+ ADD FILES</strong><span>Max 25 MB per file</span>
-              </button>
-              <input id="discovery-files" class="discovery-file-input" type="file" multiple accept=".pdf,.txt,.csv,.json,.xml,.md,.html,.rtf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg" />
-              <small id="discovery-upload-state" class="discovery-upload-state" aria-live="polite"></small>
+
+        <div class="focus-body">
+          <span class="focus-kicker">YOUR NEXT STEP · خطوتك دلوقتي</span>
+          <h2 id="current-action">Nothing needed right now.</h2>
+          <p id="current-action-copy">ATS is reviewing what you already shared.</p>
+
+          <section id="discovery-panel" class="focus-discovery">
+            <span id="discovery-score" class="hidden" aria-hidden="true">0%</span>
+            <div class="discovery-progress hidden" aria-hidden="true"><i id="discovery-progress-bar"></i></div>
+
+            <div id="discovery-question-card" class="discovery-question-card hidden">
+              <span class="question-label">ONE QUESTION ONLY · سؤال واحد بس</span>
+              <h3 id="discovery-question"></h3>
+              <p id="discovery-question-alt" class="discovery-question-alt"></p>
+              <div class="question-why"><b>WHY WE'RE ASKING · ليه بنسأل؟</b><small id="discovery-why"></small></div>
+              <textarea id="discovery-answer" maxlength="5000" placeholder="Answer naturally. If you are not sure, say that — it is useful information."></textarea>
+              <p class="answer-reassurance">You do not need a perfect answer. Facts, estimates and “I’m not sure” are all useful when they are honest.</p>
+              <button id="submit-discovery" class="primary" type="button">SEND THIS ANSWER →</button>
             </div>
-          </div>
+
+            <div id="discovery-waiting" class="discovery-waiting hidden"></div>
+
+            <div id="evidence-nudge" class="evidence-nudge">
+              <div>
+                <span>SUPPORTING MATERIAL · اختياري</span>
+                <b id="evidence-request-title">Have something that shows what is happening?</b>
+                <small id="evidence-request-copy">A screenshot, report, example, voice note or data file can help ATS verify the situation. Only share what is relevant.</small>
+              </div>
+              <div class="discovery-file-upload">
+                <button id="discovery-file-picker" class="discovery-file-picker" type="button"><strong>+ ADD A FILE</strong><span>Up to 25 MB</span></button>
+                <input id="discovery-files" class="discovery-file-input" type="file" multiple accept=".pdf,.txt,.csv,.json,.xml,.md,.html,.rtf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg" />
+                <small id="discovery-upload-state" class="discovery-upload-state" aria-live="polite"></small>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="simple-journey" aria-label="Your ATS journey">
+        <div class="done"><b>1</b><span>Tell us</span><small>What is happening</small></div>
+        <div id="step-diagnosis"><b>2</b><span>Understand</span><small>Questions + evidence</small></div>
+        <div id="step-proposal"><b>3</b><span>Direction</span><small>What we recommend</small></div>
+        <div id="step-deposit"><b>4</b><span>Start</span><small>Activate the work</small></div>
+        <div id="step-project" class="hidden"><b>5</b><span>Project</span><small>Delivery workspace</small></div>
+      </section>
+
+      <section class="details-toggle-wrap">
+        <button id="details-toggle" class="details-toggle" type="button" aria-expanded="false">SEE WHAT ATS UNDERSTANDS SO FAR ↓</button>
+      </section>
+
+      <section id="details-body" class="details-body hidden">
+        <div class="details-grid">
+          <section class="panel request-panel">
+            <p class="eyebrow">YOUR REQUEST</p>
+            <h2 id="lead-code">—</h2>
+            <div id="lead-details" class="details"></div>
+          </section>
+          <section class="panel understanding-panel">
+            <p class="eyebrow">WHAT ATS UNDERSTANDS</p>
+            <div id="discovery-known" class="discovery-known"></div>
+          </section>
+        </div>
+
+        <section class="panel evidence-library">
+          <div class="panel-head"><div><p class="eyebrow">SHARED MATERIAL</p><h2>Evidence already received</h2></div></div>
           <div id="discovery-file-list" class="discovery-file-list"><div class="discovery-file-empty">No project files shared yet.</div></div>
-        </div>
-        <div id="discovery-question-card" class="discovery-question-card hidden">
-          <span>ONE QUESTION AT A TIME</span>
-          <h3 id="discovery-question"></h3>
-          <p id="discovery-question-alt" class="discovery-question-alt"></p>
-          <small id="discovery-why"></small>
-          <textarea id="discovery-answer" maxlength="5000" placeholder="Answer naturally — a short, specific answer is enough."></textarea>
-          <button id="submit-discovery" class="primary" type="button">SEND ANSWER →</button>
-        </div>
-        <div id="discovery-waiting" class="discovery-waiting hidden"></div>
+        </section>
       </section>
 
       <section id="proposal-panel" class="panel proposal-panel hidden">
-        <div class="panel-head"><div><p class="eyebrow">COMMERCIAL PROPOSAL</p><h2 id="proposal-title">Proposal</h2></div><span id="proposal-status" class="status-badge">SENT</span></div>
+        <div class="panel-head"><div><p class="eyebrow">OUR RECOMMENDED DIRECTION</p><h2 id="proposal-title">Proposal</h2></div><span id="proposal-status" class="status-badge">SENT</span></div>
+        <p class="section-help">This appears only after ATS has enough understanding to define a meaningful scope.</p>
         <div id="proposal-meta" class="proposal-meta"></div>
         <div class="proposal-section"><span>SCOPE</span><p id="proposal-scope"></p></div>
         <div class="proposal-section"><span>DELIVERABLES</span><ul id="proposal-deliverables"></ul></div>
@@ -96,14 +128,9 @@
       </section>
 
       <section id="deposit-panel" class="panel deposit-panel hidden">
-        <div class="panel-head"><div><p class="eyebrow">PROJECT DEPOSIT</p><h2>Activation Payment</h2></div><span id="deposit-status" class="status-badge">PENDING</span></div>
+        <div class="panel-head"><div><p class="eyebrow">START THE WORK</p><h2>Activation Payment</h2></div><span id="deposit-status" class="status-badge">PENDING</span></div>
         <div id="deposit-meta" class="proposal-meta"></div>
         <p id="deposit-copy" class="deposit-copy"></p>
-      </section>
-
-      <section class="journey panel">
-        <p class="eyebrow">WHAT HAPPENS NEXT</p>
-        <div class="journey-steps"><div class="done"><b>01</b><span>Project Request</span></div><div id="step-diagnosis"><b>02</b><span>Problem Diagnosis</span></div><div id="step-proposal"><b>03</b><span>Proposal</span></div><div id="step-deposit"><b>04</b><span>Deposit</span></div><div id="step-project"><b>05</b><span>Client Portal</span></div></div>
       </section>
     </section>
   </main>
@@ -114,6 +141,6 @@
   <script src="/auth-otp-config.js?v=3"></script>
   <script src="/auth-client.js?v=1"></script>
   <script src="/client-access/prefill.js?v=1"></script>
-  <script src="/client-access/access.js?v=10"></script>
+  <script src="/client-access/access.js?v=12"></script>
 </body>
 </html>

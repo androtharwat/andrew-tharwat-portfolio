@@ -475,11 +475,6 @@
     });
   }
 
-  $$('.concierge-mode',root).forEach(btn=>btn.addEventListener('click',()=>{
-    state.mode=btn.dataset.mode;
-    $$('.concierge-mode',root).forEach(x=>x.classList.toggle('active',x===btn));
-    persist();
-  }));
 
   $('#concierge-context-toggle')?.addEventListener('click',()=>{
     $('#concierge-context')?.classList.toggle('hidden');
@@ -675,10 +670,20 @@
     try{recognition.start()}catch(_){}
   });
 
+  $('.concierge-starter',root).forEach(button=>button.addEventListener('click',()=>{
+    const box=$('#concierge-problem');
+    if(!box)return;
+    const suggestion=lang()==='ar'?button.dataset.starterAr:button.dataset.starterEn;
+    if(!box.value.trim())box.value=suggestion||'';
+    state.problem=box.value.trim();
+    persist();
+    box.focus();
+    box.setSelectionRange(box.value.length,box.value.length);
+  }));
+
   restore();
   bindDraftInputs();
   $('#concierge-files')?.addEventListener('change',e=>pickFiles(e.currentTarget));
-  $('.concierge-mode',root).forEach(x=>x.classList.toggle('active',x.dataset.mode===state.mode));
   if(state.link||state.extra)$('#concierge-context')?.classList.remove('hidden');
   renderSelectedFiles();
   refreshLocale();
