@@ -420,6 +420,37 @@
     await syncDiagnosisPhase();renderLeadDiagnosis();notify('System diagnosis accepted as working diagnosis');
   }
 
+  function updateCaseCockpit(){
+    const c=state.discoveryCase||{}, run=state.diagnosticRun||{}, analysis=run.analysis||{}, lead=state.currentLead||{};
+    const filled=discoveryDimensions.filter(([key])=>String(c[key]||'').trim());
+    const missing=discoveryDimensions.filter(([key])=>!String(c[key]||'').trim());
+    const validated=state.rootCauses.filter(x=>x.status==='validated');
+    const working=String(c.root_problem||c.system_problem_statement||analysis?.problem_framing?.root_problem||analysis?.problem_framing?.problem_statement||'').trim();
+    const systemQ=c.system_next_question||analysis.next_best_question||{};
+    const q=String(systemQ.question||'').trim();
+
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+    set('#case-known-summary',filled.length?filled.slice(0,3).map(([,label])=>label).join(' · '):'Not enough confirmed context yet');
+    set('#case-known-detail',filled.length+' / '+discoveryDimensions.length+' core discovery areas contain usable information'+(validated.length?' · '+validated.length+' validated cause'+(validated.length===1?'':'s'):''));
+    set('#case-missing-summary',missing.length?missing.slice(0,2).map(([,label])=>label).join(' · '):'No core discovery gap');
+    set('#case-missing-detail',missing.length?(missing.length+' area'+(missing.length===1?'':'s')+' still need evidence or a clear client answer'):'The core discovery set is complete. Focus on validation, not more questions.');
+    set('#case-reading-summary',working||'No reliable working diagnosis yet');
+    set('#case-reading-detail',working?((Number(c.diagnosis_confidence||c.system_confidence||0))+'% working confidence · '+String(c.analysis_state||'not analyzed').replaceAll('_',' ')):'Do not scope a solution yet. Run or refresh ATS diagnosis after the next useful evidence.');
+
+    let next='Run ATS diagnosis',detail='Use the evidence already collected before requesting more from the client.';
+    if(q){next='Ask the client one question';detail=q}
+    else if(['never_analyzed','stale','error'].includes(String(c.analysis_state||''))){next='Refresh ATS diagnosis';detail='The case changed or has not been analyzed against the latest evidence.'}
+    else if(!working){next='Review the system problem framing';detail='Turn the current evidence into one clear working problem statement.'}
+    else if(!validated.length){next='Validate the strongest root-cause hypothesis';detail='Do not move to scope until at least one cause survives evidence review.'}
+    else {
+      const proposed=state.solutionTasks.find(x=>x.status==='proposed');
+      if(proposed){next='Review the next justified task';detail=proposed.title||'Approve only work that is supported by the diagnosis.'}
+      else if(lead.next_action){next=lead.next_action;detail='This is the current relationship follow-up saved for the case.'}
+      else {next='Prepare the client direction';detail='The case has enough structure to turn the diagnosis into a clear next step.'}
+    }
+    set('#case-next-summary',next);set('#case-next-detail',detail);
+  }
+
   function renderLeadDiagnosis(){
     const c=state.discoveryCase;
     if(!c){
@@ -482,6 +513,7 @@
       else if(x.status==='in_progress'||x.status==='blocked')actions='<button data-task-status="'+esc(x.id)+':done">DONE</button>'+(x.status==='blocked'?'<button data-task-status="'+esc(x.id)+':in_progress">UNBLOCK</button>':'');
       return '<article class="solution-task-row '+(ai?'ai-suggested':'')+'"><div class="task-row-head"><div><b>'+esc(x.title)+'</b><div class="task-meta">'+(ai?'<span class="ai-source">AI PROPOSED</span>':'<span>ATS</span>')+'<span>'+esc(x.task_type)+'</span><span>'+esc(x.owner_type)+'</span><span>'+esc(x.priority)+'</span><span>'+esc(x.status)+'</span></div></div></div>'+(x.rationale?'<p>'+esc(x.rationale)+'</p>':'')+(cause?'<p><strong>CAUSE:</strong> '+esc(cause.statement)+'</p>':'')+(x.expected_effect?'<p class="task-effect"><strong>EXPECTED EFFECT:</strong> '+esc(x.expected_effect)+'</p>':'')+(x.dependency_note?'<p><strong>DEPENDENCY:</strong> '+esc(x.dependency_note)+'</p>':'')+(x.acceptance_criteria?'<p><strong>DONE WHEN:</strong> '+esc(x.acceptance_criteria)+'</p>':'')+evidenceRefsHtml(x.evidence_refs)+'<div class="task-actions">'+actions+'</div></article>'
     }).join(''):'<div class="ops-empty">No task sequence yet. Run ATS diagnosis first.</div>';
+    updateCaseCockpit();
     updateLeadWorkspaceState();
   }
 
@@ -878,6 +910,24 @@
   $('#lead-log-contact')?.addEventListener('click',logLeadContact);
   $('#issue-client-access-code')?.addEventListener('click',issueClientAccessCode);
   $('#copy-client-access-code')?.addEventListener('click',copyClientAccessCode);
+  $('#case-go-next')?.addEventListener('click',()=>{
+    const c=state.discoveryCase||{}, q=c.system_next_question||state.diagnosticRun?.analysis?.next_best_question||{};
+    if(String(q?.question||'').trim()){
+      const select=$('#lead-next-action');if(select)select.value='Request information / assets';
+      $('.lead-next-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+      $('#lead-next-action')?.focus();
+      return;
+    }
+    if(['never_analyzed','stale','error'].includes(String(c.analysis_state||''))){
+      $('#run-diagnostic-engine')?.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+    $('#fold-working-diagnosis')?.setAttribute('open','');
+    $('#fold-working-diagnosis')?.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  $('#case-open-evidence')?.addEventListener('click',()=>{
+    const fold=$('#fold-evidence');if(!fold)return;fold.setAttribute('open','');fold.scrollIntoView({behavior:'smooth',block:'start'});
+  });
   $('#run-diagnostic-engine')?.addEventListener('click',()=>runDiagnosticEngine(false));
   $('#accept-system-diagnosis')?.addEventListener('click',acceptSystemDiagnosis);
   $('#save-diagnosis')?.addEventListener('click',saveDiagnosis);
