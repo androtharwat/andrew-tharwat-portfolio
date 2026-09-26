@@ -7,7 +7,7 @@
 
   let frame=0,raf=0,portrait=null;
   let userImage=null,userResult=null,userSequence=[],userRaf=0;
-  let mode='mono',quality='quick';
+  let mode='mono',quality='share';
   const framing={zoom:1,panX:0,panY:0,rotation:0};
 
   function drawHeroThreads(){
@@ -26,6 +26,38 @@
     return (a,b)=>{const key=a<b?a+'-'+b:b+'-'+a;if(cache.has(key))return cache.get(key);const p0=pins[a],p1=pins[b],arr=new Uint32Array(56);
       for(let k=0;k<arr.length;k++){const t=k/(arr.length-1),x=Math.max(0,Math.min(size-1,Math.round(p0[0]+(p1[0]-p0[0])*t))),y=Math.max(0,Math.min(size-1,Math.round(p0[1]+(p1[1]-p0[1])*t)));arr[k]=y*size+x}
       cache.set(key,arr);return arr}
+  }
+
+  function lineSamplerAA(pins,size,maxCache=14000){
+    const cache=new Map(),fifo=[];
+    const put=(key,value)=>{
+      if(cache.size>=maxCache){
+        const n=Math.min(1600,fifo.length);
+        for(let i=0;i<n;i++)cache.delete(fifo.shift());
+      }
+      cache.set(key,value);fifo.push(key);return value;
+    };
+    return (a,b)=>{
+      const key=a<b?a+'-'+b:b+'-'+a;if(cache.has(key))return cache.get(key);
+      const p0=pins[a],p1=pins[b],dx=p1[0]-p0[0],dy=p1[1]-p0[1],steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))));
+      const idx=[],wt=[];
+      if(Math.abs(dx)>=Math.abs(dy)){
+        for(let s=0;s<=steps;s++){
+          const t=s/steps,x=p0[0]+dx*t,y=p0[1]+dy*t,xi=Math.round(x),y0=Math.floor(y),f=y-y0;
+          if(xi<0||xi>=size)continue;
+          if(y0>=0&&y0<size&&1-f>.002){idx.push(y0*size+xi);wt.push(1-f)}
+          if(y0+1>=0&&y0+1<size&&f>.002){idx.push((y0+1)*size+xi);wt.push(f)}
+        }
+      }else{
+        for(let s=0;s<=steps;s++){
+          const t=s/steps,x=p0[0]+dx*t,y=p0[1]+dy*t,yi=Math.round(y),x0=Math.floor(x),f=x-x0;
+          if(yi<0||yi>=size)continue;
+          if(x0>=0&&x0<size&&1-f>.002){idx.push(yi*size+x0);wt.push(1-f)}
+          if(x0+1>=0&&x0+1<size&&f>.002){idx.push(yi*size+x0+1);wt.push(f)}
+        }
+      }
+      return put(key,{idx:Uint32Array.from(idx),wt:Float32Array.from(wt)});
+    };
   }
 
   function buildSyntheticPortrait(){
@@ -63,8 +95,11 @@
     if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}
     const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
     const scale=Math.min(w,h)/data.size,ox=(w-data.size*scale)/2,oy=(h-data.size*scale)/2;ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
-    const density=data.lines.length>=3800?.55:data.lines.length>=2400?.70:data.lines.length>=1400?.84:1;ctx.globalAlpha=density;for(let i=0;i<Math.min(count,data.lines.length);i++){const line=data.lines[i],p0=data.pins[line.a],p1=data.pins[line.b];ctx.strokeStyle=strokeFor(line.color);ctx.lineWidth=data.lines.length>=3000?.34:.42;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke()}
-    ctx.globalAlpha=1;ctx.fillStyle=bg==='#07131b'?'rgba(222,190,118,.72)':'#a77320';data.pins.forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],.82,0,Math.PI*2);ctx.fill()});ctx.restore();
+    for(let i=0;i<Math.min(count,data.lines.length);i++){
+      const line=data.lines[i],p0=data.pins[line.a],p1=data.pins[line.b],a=line.alpha||data.meta?.alpha||.04;
+      ctx.strokeStyle='rgba(6,10,13,'+Math.min(.12,a*1.18)+')';ctx.lineWidth=.48;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
+    }
+    ctx.fillStyle='#a77320';data.pins.forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],.76,0,Math.PI*2);ctx.fill()});ctx.restore();
   }
 
   function paintDemo(count){paintPortrait($('#sa-thread-demo'),portrait,count,'#eee7d7');const line=$('#sa-line-count'),route=$('#sa-pin-route');if(line)line.textContent=String(Math.min(count,portrait.lines.length)).padStart(3,'0')+' / '+portrait.lines.length;const p=portrait.lines[Math.max(0,Math.min(count-1,portrait.lines.length-1))];if(route&&p)route.textContent='PIN '+String(p.a).padStart(2,'0')+' → '+String(p.b).padStart(2,'0')}
@@ -84,67 +119,89 @@
   function drawResultPlaceholder(){const c=$('#sa-user-result');if(!c)return;const ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.fillStyle='#0a1b24';ctx.fillRect(0,0,w,h);ctx.strokeStyle='rgba(215,173,89,.08)';for(let i=0;i<28;i++){ctx.beginPath();ctx.moveTo(0,(i/27)*h);ctx.lineTo(w,((i*11)%28)/27*h);ctx.stroke()}}
 
   function imageToTarget(img,size,contrast,gamma){
-    const off=document.createElement('canvas');off.width=off.height=size;const ctx=off.getContext('2d',{willReadFrequently:true});drawFramedImage(ctx,img,size);
-    const data=ctx.getImageData(0,0,size,size),mono=new Float32Array(size*size),lumMap=new Float32Array(size*size),edge=new Float32Array(size*size),rgb=new Uint8ClampedArray(data.data);
+    const off=document.createElement('canvas');off.width=off.height=size;
+    const ctx=off.getContext('2d',{willReadFrequently:true});drawFramedImage(ctx,img,size);
+    const pixels=ctx.getImageData(0,0,size,size),raw=new Float32Array(size*size),lum=new Float32Array(size*size),blur=new Float32Array(size*size),target=new Float32Array(size*size),edge=new Float32Array(size*size),importance=new Float32Array(size*size),detailWeight=new Float32Array(size*size);
+    const hist=new Uint32Array(256);let inside=0;
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-      const i=y*size+x,k=i*4,r=data.data[k],g=data.data[k+1],b=data.data[k+2];
-      let lum=(.2126*r+.7152*g+.0722*b)/255;lum=Math.pow(Math.max(0,Math.min(1,(lum-.5)*contrast+.5)),gamma);lumMap[i]=lum;
-      const dx=(x-size/2)/(size/2),dy=(y-size/2)/(size/2),rad=Math.sqrt(dx*dx+dy*dy),mask=Math.max(0,Math.min(1,(1.02-rad)/.16));
-      mono[i]=(1-lum)*mask;
+      const i=y*size+x,k=i*4,v=(.2126*pixels.data[k]+.7152*pixels.data[k+1]+.0722*pixels.data[k+2])/255;
+      raw[i]=v;
+      const dx=(x-size/2)/(size/2),dy=(y-size/2)/(size/2);
+      if(dx*dx+dy*dy<=1){hist[Math.max(0,Math.min(255,Math.round(v*255)))]++;inside++}
     }
-    let maxEdge=.0001;
+    const percentile=q=>{let sum=0,goal=inside*q;for(let i=0;i<256;i++){sum+=hist[i];if(sum>=goal)return i/255}return q};
+    const lo=percentile(.01),hi=Math.max(lo+.08,percentile(.992));
+    for(let i=0;i<raw.length;i++){
+      let v=Math.max(0,Math.min(1,(raw[i]-lo)/(hi-lo)));
+      v=Math.max(0,Math.min(1,(v-.5)*contrast+.5));
+      lum[i]=Math.pow(v,gamma);
+    }
     for(let y=1;y<size-1;y++)for(let x=1;x<size-1;x++){
-      const i=y*size+x;
-      const a=lumMap[(y-1)*size+x-1],b=lumMap[(y-1)*size+x],c=lumMap[(y-1)*size+x+1];
-      const d=lumMap[y*size+x-1],f=lumMap[y*size+x+1];
-      const g=lumMap[(y+1)*size+x-1],h=lumMap[(y+1)*size+x],j=lumMap[(y+1)*size+x+1];
-      const gx=-a+c-2*d+2*f-g+j,gy=-a-2*b-c+g+2*h+j,v=Math.sqrt(gx*gx+gy*gy);
-      edge[i]=v;if(v>maxEdge)maxEdge=v;
+      const i=y*size+x;let s=0;
+      for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)s+=lum[(y+yy)*size+x+xx];
+      blur[i]=s/9;
     }
-    for(let i=0;i<edge.length;i++)edge[i]=Math.min(1,edge[i]/maxEdge);
-    return{mono,rgb,edge,lumMap,canvas:off}
+    for(let x=0;x<size;x++){blur[x]=lum[x];blur[(size-1)*size+x]=lum[(size-1)*size+x]}
+    for(let y=0;y<size;y++){blur[y*size]=lum[y*size];blur[y*size+size-1]=lum[y*size+size-1]}
+    const sharp=new Float32Array(size*size);
+    for(let i=0;i<sharp.length;i++)sharp[i]=Math.max(0,Math.min(1,lum[i]+.68*(lum[i]-blur[i])));
+    let edgeMax=.0001;
+    for(let y=1;y<size-1;y++)for(let x=1;x<size-1;x++){
+      const i=y*size+x,a=sharp[(y-1)*size+x-1],b=sharp[(y-1)*size+x],c=sharp[(y-1)*size+x+1],d=sharp[y*size+x-1],f=sharp[y*size+x+1],g=sharp[(y+1)*size+x-1],h=sharp[(y+1)*size+x],j=sharp[(y+1)*size+x+1];
+      const gx=-a+c-2*d+2*f-g+j,gy=-a-2*b-c+g+2*h+j,v=Math.sqrt(gx*gx+gy*gy);edge[i]=v;if(v>edgeMax)edgeMax=v;
+    }
+    for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+      const i=y*size+x,dx=(x-size/2)/(size/2),dy=(y-size/2)/(size/2),rad=Math.sqrt(dx*dx+dy*dy),mask=Math.max(0,Math.min(1,(1.01-rad)/.055));
+      const e=Math.min(1,edge[i]/edgeMax),face=Math.exp(-(((dx/.58)**2)+((dy/.76)**2))*1.05);
+      target[i]=(1-sharp[i])*mask;
+      importance[i]=(1+1.15*e+.34*face)*mask+.0001;
+      detailWeight[i]=(1+2.55*e+.52*face)*mask+.0001;
+    }
+    return{target,importance,detailWeight,canvas:off}
   }
-  function detailResidual(prep,strength=1){
-    const out=new Float32Array(prep.mono.length);
-    for(let i=0;i<out.length;i++)out[i]=Math.min(1,prep.mono[i]*.42+prep.edge[i]*(.82*strength));
-    return out
+
+  function candidateSet(cur,count,total,step,minJump){
+    if(count>=total)return Array.from({length:total},(_,i)=>i).filter(j=>j!==cur&&Math.min((j-cur+total)%total,(cur-j+total)%total)>=minJump);
+    const out=[],seen=new Set();let seed=((step+1)*1664525+(cur+11)*1013904223)>>>0,guard=0;
+    while(out.length<count&&guard<count*8){
+      seed=(Math.imul(seed,1664525)+1013904223)>>>0;const j=seed%total;guard++;
+      if(j===cur||seen.has(j))continue;
+      const dist=Math.min((j-cur+total)%total,(cur-j+total)%total);if(dist<minJump)continue;
+      seen.add(j);out.push(j);
+    }
+    return out;
   }
-  function finishResidual(prep){
-    const out=new Float32Array(prep.mono.length);
-    for(let i=0;i<out.length;i++){const dark=Math.max(0,prep.mono[i]-.16);out[i]=Math.min(1,dark*.72+prep.edge[i]*.54)}
-    return out
-  }
-  function colorResiduals(rgb,size){
-    const palette=[['white',[242,235,216]],['yellow',[220,176,60]],['brown',[118,72,43]],['blue',[45,81,128]],['black',[20,23,26]]],layers={};palette.forEach(([n])=>layers[n]=new Float32Array(size*size));
-    for(let i=0;i<size*size;i++){const x=i%size,y=(i/size)|0,dx=(x-size/2)/(size/2),dy=(y-size/2)/(size/2),mask=Math.max(0,Math.min(1,(1.02-Math.sqrt(dx*dx+dy*dy))/.16)),k=i*4,r=rgb[k],g=rgb[k+1],b=rgb[k+2];const best=[];
-      for(const [name,p] of palette){const d=((r-p[0])**2+(g-p[1])**2+(b-p[2])**2);best.push([d,name])}best.sort((a,b)=>a[0]-b[0]);layers[best[0][1]][i]=Math.exp(-best[0][0]/5000)*mask;layers[best[1][1]][i]=.42*Math.exp(-best[1][0]/5000)*mask}
-    return layers
-  }
-  async function greedyAsync(residual,size,pinCount,total,color,subtract,onProgress,offset=0,whole=total,shared=null){
-    const pins=shared?.pins||makePins(size,pinCount),samples=lineSampler(pins,size),used=shared?.used||new Map(),lines=[],minJump=Math.max(5,Math.floor(pinCount*.038));
-    let cur=Number.isInteger(shared?.cur)?shared.cur:(7%pinCount);
-    for(let step=0;step<total;step++){
-      let best=-1e9,bp=-1;
-      for(let j=0;j<pinCount;j++){
-        if(j===cur)continue;const dist=Math.min((j-cur+pinCount)%pinCount,(cur-j+pinCount)%pinCount);if(dist<minJump)continue;
-        const key=cur<j?cur+'-'+j:j+'-'+cur,arr=samples(cur,j);let sum=0;
-        for(let k=0;k<arr.length;k++)sum+=residual[arr[k]];
-        const repeats=used.get(key)||0,score=sum/arr.length-.065*repeats;
-        if(score>best){best=score;bp=j}
+
+  async function binaryWeightedAsync(prep,profile,onProgress){
+    const {size,pins:pinCount,maxLines,alpha,candidates,repeatPenalty,minLines}=profile;
+    const pins=makePins(size,pinCount),sample=lineSamplerAA(pins,size),residual=new Float32Array(prep.target),used=new Map(),lines=[];
+    const minJump=Math.max(8,Math.floor(pinCount*.035));let cur=7%pinCount,lastGain=0;
+    for(let step=0;step<maxLines;step++){
+      const phase=step/maxLines,imp=phase>.68?prep.detailWeight:prep.importance,lineAlpha=alpha*(phase>.78?.82:1);
+      const choices=candidateSet(cur,candidates,pinCount,step,minJump);let best=0,bp=-1,bestPath=null;
+      for(let q=0;q<choices.length;q++){
+        const j=choices[q],path=sample(cur,j),idx=path.idx,wt=path.wt;let score=0;
+        for(let k=0;k<idx.length;k++){
+          const p=idx[k],l=lineAlpha*wt[k],r=residual[p];
+          score+=imp[p]*(2*r*l-l*l);
+        }
+        const key=cur<j?cur+'-'+j:j+'-'+cur;score-=repeatPenalty*(used.get(key)||0);
+        if(score>best){best=score;bp=j;bestPath=path}
       }
-      if(bp<0||best<.012)break;
-      const key=cur<bp?cur+'-'+bp:bp+'-'+cur,arr=samples(cur,bp);
-      for(let k=0;k<arr.length;k++)residual[arr[k]]=Math.max(-.25,residual[arr[k]]-subtract);
-      used.set(key,(used.get(key)||0)+1);lines.push({a:cur,b:bp,color});cur=bp;
-      if(step%16===0){onProgress?.(Math.round(((offset+step)/whole)*100));await wait()}
+      if(bp<0||(step>=minLines&&best<=0))break;
+      const idx=bestPath.idx,wt=bestPath.wt;
+      for(let k=0;k<idx.length;k++)residual[idx[k]]-=lineAlpha*wt[k];
+      const key=cur<bp?cur+'-'+bp:bp+'-'+cur;used.set(key,(used.get(key)||0)+1);
+      lines.push({a:cur,b:bp,color:'black',alpha:lineAlpha});cur=bp;lastGain=best;
+      if(step%12===0){onProgress?.(step,maxLines,phase,lastGain);await wait()}
     }
-    return{pins,lines,size,shared:{pins,used,cur}}
+    return{pins,lines,size,meta:{quality,mode:'mono',pins:pinCount,lines:lines.length,alpha,optimizer:'weighted-binary',gain:lastGain}}
   }
 
   const profileFor=()=>{
-    if(quality==='share')return{size:260,pins:280,lines:mode==='color'?4500:4200,subtract:.050,passes:[.56,.26,.18]};
-    if(quality==='enhanced')return{size:220,pins:220,lines:mode==='color'?2900:2600,subtract:.060,passes:[.60,.25,.15]};
-    return{size:175,pins:150,lines:mode==='color'?1400:1200,subtract:.078,passes:[.66,.22,.12]};
+    if(quality==='share')return{size:240,pins:360,maxLines:5000,alpha:.033,candidates:150,repeatPenalty:.014,minLines:2400};
+    if(quality==='enhanced')return{size:220,pins:300,maxLines:3600,alpha:.037,candidates:130,repeatPenalty:.013,minLines:1800};
+    return{size:180,pins:220,maxLines:2300,alpha:.044,candidates:105,repeatPenalty:.012,minLines:1100};
   };
   function setStatus(msg,pct){if($('#sa-lab-status'))$('#sa-lab-status').textContent=msg;if($('#sa-lab-progress'))$('#sa-lab-progress').textContent=pct+'%'}
   function seqText(lines,limit=14){return lines.slice(0,limit).map(x=>String(x.a).padStart(3,'0')+'→'+String(x.b).padStart(3,'0')).join(' · ')}
@@ -152,49 +209,23 @@
   async function generateUser(){
     if(!userImage)return;
     const btn=$('#sa-generate');btn.disabled=true;$('#sa-result-tools')?.classList.add('hidden');
-    const contrast=Number($('#sa-contrast')?.value||1.2),gamma=Number($('#sa-gamma')?.value||.9),p=profileFor(),prep=imageToTarget(userImage,p.size,contrast,gamma);
-    setStatus(AR()?'1/4 · بناء الكتلة العامة':'1/4 · BUILDING STRUCTURE',2);
-    let result,shared=null,all=[];
-
-    if(mode==='mono'){
-      const structure=Math.round(p.lines*p.passes[0]),details=Math.round(p.lines*p.passes[1]),finish=Math.max(0,p.lines-structure-details);
-      const pass1=await greedyAsync(new Float32Array(prep.mono),p.size,p.pins,structure,'black',p.subtract,x=>setStatus(AR()?'1/4 · بناء الكتلة العامة':'1/4 · BUILDING STRUCTURE',Math.min(56,x)),0,p.lines,shared);
-      all.push(...pass1.lines);shared=pass1.shared;
-      setStatus(AR()?'2/4 · تثبيت العينين والملامح':'2/4 · REFINING FEATURES',58);
-      const pass2=await greedyAsync(detailResidual(prep,1.08),p.size,p.pins,details,'black',p.subtract*.82,x=>setStatus(AR()?'2/4 · تثبيت العينين والملامح':'2/4 · REFINING FEATURES',Math.min(82,56+Math.round((x-56)*.9))),structure,p.lines,shared);
-      all.push(...pass2.lines);shared=pass2.shared;
-      setStatus(AR()?'3/4 · إضافة التفاصيل الدقيقة':'3/4 · DETAIL PASS',83);
-      const pass3=await greedyAsync(finishResidual(prep),p.size,p.pins,finish,'black',p.subtract*.70,x=>setStatus(AR()?'3/4 · إضافة التفاصيل الدقيقة':'3/4 · DETAIL PASS',Math.min(98,82+Math.round((x-82)*.9))),structure+details,p.lines,shared);
-      all.push(...pass3.lines);shared=pass3.shared;
-      result={pins:shared.pins,lines:all,size:p.size};
-    }else{
-      const baseBudget=Math.round(p.lines*.84),detailBudget=p.lines-baseBudget;
-      const layers=colorResiduals(prep.rgb,p.size),order=[['white',.19],['yellow',.23],['brown',.25],['blue',.18],['black',.15]];
-      let offset=0;
-      for(let idx=0;idx<order.length;idx++){
-        const [name,share]=order[idx],budget=idx===order.length-1?baseBudget-offset:Math.round(baseBudget*share);
-        const label=idx<2?(AR()?'1/4 · بناء اللون':'1/4 · COLOR FOUNDATION'):(idx<4?(AR()?'2/4 · بناء العمق':'2/4 · BUILDING DEPTH'):(AR()?'3/4 · الكونتراست':'3/4 · FINAL CONTRAST'));
-        const part=await greedyAsync(layers[name],p.size,p.pins,budget,name,p.subtract*.92,x=>setStatus(label,Math.min(84,Math.round(x*.84))),offset,p.lines,shared);
-        all.push(...part.lines);shared=part.shared;offset+=budget;
-      }
-      setStatus(AR()?'4/4 · تثبيت الملامح':'4/4 · FEATURE REFINEMENT',86);
-      const finalPass=await greedyAsync(detailResidual(prep,1.14),p.size,p.pins,detailBudget,'black',p.subtract*.68,x=>setStatus(AR()?'4/4 · تثبيت الملامح':'4/4 · FEATURE REFINEMENT',Math.min(99,86+Math.round((x-84)*.88))),baseBudget,p.lines,shared);
-      all.push(...finalPass.lines);shared=finalPass.shared;
-      result={pins:shared.pins,lines:all,size:p.size};
-    }
-
-    result.meta={quality,mode,pins:p.pins,lines:result.lines.length};
-    userResult=result;userSequence=result.lines;window.__saUserBg=mode==='color'?'#07131b':'#eee7d7';
-    setStatus(AR()?'4/4 · اللمسة النهائية':'4/4 · FINAL RENDER',99);animateUser(result);
-    $('#sa-user-sequence').textContent=seqText(result.lines);$('#sa-result-tools')?.classList.remove('hidden');
-    setStatus(AR()?('اكتملت اللوحة · '+result.lines.length+' خط'):('PORTRAIT COMPLETE · '+result.lines.length+' LINES'),100);btn.disabled=false
+    const contrast=Number($('#sa-contrast')?.value||1.2),gamma=Number($('#sa-gamma')?.value||.9),profile=profileFor(),prep=imageToTarget(userImage,profile.size,contrast,gamma);
+    setStatus(AR()?'تحليل الضوء والملامح…':'ANALYZING LIGHT + FEATURES…',2);
+    const result=await binaryWeightedAsync(prep,profile,(step,maxLines,phase)=>{
+      const pct=Math.min(98,4+Math.round(step/maxLines*94));
+      const label=phase<.35?(AR()?'بناء الشكل العام…':'BUILDING STRUCTURE…'):phase<.68?(AR()?'مطابقة الظلال…':'MATCHING TONE…'):phase<.86?(AR()?'تثبيت العينين والملامح…':'REFINING FEATURES…'):(AR()?'التفاصيل النهائية…':'FINAL DETAIL PASS…');
+      setStatus(label,pct);
+    });
+    userResult=result;userSequence=result.lines;window.__saUserBg='#f2efe8';
+    animateUser(result);$('#sa-user-sequence').textContent=seqText(result.lines);$('#sa-result-tools')?.classList.remove('hidden');
+    setStatus(AR()?('اكتمل · '+result.lines.length+' خط · '+result.meta.pins+' مسمار'):('COMPLETE · '+result.lines.length+' LINES · '+result.meta.pins+' NAILS'),100);btn.disabled=false;
   }
   function animateUser(data){cancelAnimationFrame(userRaf);let n=0;paintPortrait($('#sa-user-result'),data,0,window.__saUserBg);if(matchMedia('(prefers-reduced-motion: reduce)').matches){paintPortrait($('#sa-user-result'),data,data.lines.length,window.__saUserBg);return}const tick=()=>{n=Math.min(data.lines.length,n+Math.max(6,Math.ceil(data.lines.length/165)));paintPortrait($('#sa-user-result'),data,n,window.__saUserBg);if(n<data.lines.length)userRaf=requestAnimationFrame(tick)};userRaf=requestAnimationFrame(tick)}
 
   function drawExport(data,count,canvas,{size=1800,footer=150}={}){
-    canvas.width=size;canvas.height=size+footer;const ctx=canvas.getContext('2d'),bg=window.__saUserBg||'#eee7d7';ctx.fillStyle=bg;ctx.fillRect(0,0,size,size);
+    canvas.width=size;canvas.height=size+footer;const ctx=canvas.getContext('2d'),bg=window.__saUserBg||'#f2efe8';ctx.fillStyle=bg;ctx.fillRect(0,0,size,size);
     const scale=size/data.size;ctx.save();ctx.scale(scale,scale);
-    for(let i=0;i<Math.min(count,data.lines.length);i++){const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];ctx.strokeStyle=strokeFor(l.color,true);ctx.lineWidth=.34;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke()}
+    for(let i=0;i<Math.min(count,data.lines.length);i++){const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b],a=l.alpha||data.meta?.alpha||.04;ctx.strokeStyle='rgba(6,10,13,'+Math.min(.12,a*1.18)+')';ctx.lineWidth=.42;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke()}
     ctx.fillStyle=bg==='#07131b'?'rgba(230,194,115,.82)':'#9a6a16';data.pins.forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],.72,0,Math.PI*2);ctx.fill()});ctx.restore();
     const grad=ctx.createLinearGradient(0,size,0,size+footer);grad.addColorStop(0,'#071723');grad.addColorStop(1,'#031018');ctx.fillStyle=grad;ctx.fillRect(0,size,size,footer);
     ctx.fillStyle='#d7ad59';ctx.font=`900 ${Math.round(size*.037)}px Montserrat,Arial`;ctx.fillText('ATS',Math.round(size*.045),size+Math.round(footer*.55));

@@ -217,3 +217,7 @@
   .string-art-project .sa-frame-buttons{grid-template-columns:repeat(3,1fr)}
   .string-art-project .sa-source-figure figcaption small{display:none}
 }
+
+/* V4 portrait-realism engine */
+.string-art-project .sa-mono-only{grid-template-columns:1fr}
+.string-art-project .sa-mono-only button{border-color:rgba(215,173,89,.42);background:rgba(215,173,89,.09);color:#ecd69f}
