@@ -96,8 +96,8 @@
     const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
     const scale=Math.min(w,h)/data.size,ox=(w-data.size*scale)/2,oy=(h-data.size*scale)/2;ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
     for(let i=0;i<Math.min(count,data.lines.length);i++){
-      const line=data.lines[i],p0=data.pins[line.a],p1=data.pins[line.b],a=line.alpha||data.meta?.alpha||.04;
-      ctx.strokeStyle='rgba(6,10,13,'+Math.min(.12,a*1.18)+')';ctx.lineWidth=.48;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
+      const line=data.lines[i],p0=data.pins[line.a],p1=data.pins[line.b],a=line.alpha||data.meta?.alpha||.04,opacity=line.opacity||Math.min(.12,a*1.18);
+      ctx.strokeStyle='rgba(6,10,13,'+opacity+')';ctx.lineWidth=.48;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
     }
     ctx.fillStyle='#a77320';data.pins.forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],.76,0,Math.PI*2);ctx.fill()});ctx.restore();
   }
@@ -121,7 +121,7 @@
   function imageToTarget(img,size,contrast,gamma){
     const off=document.createElement('canvas');off.width=off.height=size;
     const ctx=off.getContext('2d',{willReadFrequently:true});drawFramedImage(ctx,img,size);
-    const pixels=ctx.getImageData(0,0,size,size),raw=new Float32Array(size*size),lum=new Float32Array(size*size),blur=new Float32Array(size*size),target=new Float32Array(size*size),edge=new Float32Array(size*size),importance=new Float32Array(size*size),detailWeight=new Float32Array(size*size);
+    const pixels=ctx.getImageData(0,0,size,size),raw=new Float32Array(size*size),lum=new Float32Array(size*size);
     const hist=new Uint32Array(256);let inside=0;
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
       const i=y*size+x,k=i*4,v=(.2126*pixels.data[k]+.7152*pixels.data[k+1]+.0722*pixels.data[k+2])/255;
@@ -136,28 +136,64 @@
       v=Math.max(0,Math.min(1,(v-.5)*contrast+.5));
       lum[i]=Math.pow(v,gamma);
     }
-    for(let y=1;y<size-1;y++)for(let x=1;x<size-1;x++){
-      const i=y*size+x;let s=0;
-      for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)s+=lum[(y+yy)*size+x+xx];
-      blur[i]=s/9;
-    }
-    for(let x=0;x<size;x++){blur[x]=lum[x];blur[(size-1)*size+x]=lum[(size-1)*size+x]}
-    for(let y=0;y<size;y++){blur[y*size]=lum[y*size];blur[y*size+size-1]=lum[y*size+size-1]}
-    const sharp=new Float32Array(size*size);
-    for(let i=0;i<sharp.length;i++)sharp[i]=Math.max(0,Math.min(1,lum[i]+.68*(lum[i]-blur[i])));
+
+    const boxBlur=(input,radius)=>{
+      if(radius<=0)return new Float32Array(input);
+      const tmp=new Float32Array(input.length),out=new Float32Array(input.length),win=radius*2+1;
+      for(let y=0;y<size;y++){
+        let sum=0;
+        for(let x=-radius;x<=radius;x++)sum+=input[y*size+Math.max(0,Math.min(size-1,x))];
+        for(let x=0;x<size;x++){
+          tmp[y*size+x]=sum/win;
+          const drop=Math.max(0,Math.min(size-1,x-radius)),add=Math.max(0,Math.min(size-1,x+radius+1));
+          sum+=input[y*size+add]-input[y*size+drop];
+        }
+      }
+      for(let x=0;x<size;x++){
+        let sum=0;
+        for(let y=-radius;y<=radius;y++)sum+=tmp[Math.max(0,Math.min(size-1,y))*size+x];
+        for(let y=0;y<size;y++){
+          out[y*size+x]=sum/win;
+          const drop=Math.max(0,Math.min(size-1,y-radius)),add=Math.max(0,Math.min(size-1,y+radius+1));
+          sum+=tmp[add*size+x]-tmp[drop*size+x];
+        }
+      }
+      return out;
+    };
+
+    const blurFine=boxBlur(lum,1),blurMid=boxBlur(lum,Math.max(2,Math.round(size*.018))),blurCoarse=boxBlur(lum,Math.max(5,Math.round(size*.045)));
+    const sharp=new Float32Array(size*size),edge=new Float32Array(size*size),target=new Float32Array(size*size),midTarget=new Float32Array(size*size),coarseTarget=new Float32Array(size*size);
+    const importance=new Float32Array(size*size),detailWeight=new Float32Array(size*size),coarseWeight=new Float32Array(size*size),featurePrior=new Float32Array(size*size);
+    for(let i=0;i<sharp.length;i++)sharp[i]=Math.max(0,Math.min(1,lum[i]+.62*(lum[i]-blurFine[i])));
+
     let edgeMax=.0001;
     for(let y=1;y<size-1;y++)for(let x=1;x<size-1;x++){
       const i=y*size+x,a=sharp[(y-1)*size+x-1],b=sharp[(y-1)*size+x],c=sharp[(y-1)*size+x+1],d=sharp[y*size+x-1],f=sharp[y*size+x+1],g=sharp[(y+1)*size+x-1],h=sharp[(y+1)*size+x],j=sharp[(y+1)*size+x+1];
       const gx=-a+c-2*d+2*f-g+j,gy=-a-2*b-c+g+2*h+j,v=Math.sqrt(gx*gx+gy*gy);edge[i]=v;if(v>edgeMax)edgeMax=v;
     }
+
+    const gauss=(dx,dy,cx,cy,sx,sy)=>Math.exp(-.5*(((dx-cx)/sx)**2+((dy-cy)/sy)**2));
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
       const i=y*size+x,dx=(x-size/2)/(size/2),dy=(y-size/2)/(size/2),rad=Math.sqrt(dx*dx+dy*dy),mask=Math.max(0,Math.min(1,(1.01-rad)/.055));
-      const e=Math.min(1,edge[i]/edgeMax),face=Math.exp(-(((dx/.58)**2)+((dy/.76)**2))*1.05);
-      target[i]=(1-sharp[i])*mask;
-      importance[i]=(1+1.15*e+.34*face)*mask+.0001;
-      detailWeight[i]=(1+2.55*e+.52*face)*mask+.0001;
+      const e=Math.min(1,edge[i]/edgeMax),face=Math.exp(-(((dx/.57)**2)+((dy/.76)**2))*1.08);
+      const leftEye=gauss(dx,dy,-.21,-.16,.13,.065),rightEye=gauss(dx,dy,.21,-.16,.13,.065);
+      const leftBrow=gauss(dx,dy,-.21,-.285,.17,.055),rightBrow=gauss(dx,dy,.21,-.285,.17,.055);
+      const nose=gauss(dx,dy,0,.035,.105,.23),mouth=gauss(dx,dy,0,.285,.22,.075);
+      const chin=gauss(dx,dy,0,.49,.25,.10),cheeks=gauss(dx,dy,-.30,.09,.16,.20)+gauss(dx,dy,.30,.09,.16,.20);
+      const oval=Math.exp(-Math.pow(Math.sqrt((dx/.52)**2+(dy/.70)**2)-1,2)/.018);
+      const feature=Math.min(1.65,.92*(leftEye+rightEye)+.58*(leftBrow+rightBrow)+.38*nose+.72*mouth+.22*chin+.14*cheeks+.20*oval);
+      featurePrior[i]=feature*mask;
+
+      const fineDark=(1-sharp[i])*mask,midDark=(1-(.58*blurMid[i]+.42*sharp[i]))*mask,coarseDark=(1-blurCoarse[i])*mask;
+      target[i]=fineDark;
+      midTarget[i]=Math.max(0,Math.min(1,.78*midDark+.22*fineDark));
+      coarseTarget[i]=Math.max(0,Math.min(1,.82*coarseDark+.18*midDark));
+
+      coarseWeight[i]=(1+.34*face+.22*e+.12*feature)*mask+.0001;
+      importance[i]=(1+.94*e+.32*face+1.10*feature)*mask+.0001;
+      detailWeight[i]=(1+2.45*e+.45*face+2.75*feature)*mask+.0001;
     }
-    return{target,importance,detailWeight,canvas:off}
+    return{target,midTarget,coarseTarget,importance,detailWeight,coarseWeight,featurePrior,canvas:off}
   }
 
   function candidateSet(cur,count,total,step,minJump){
@@ -172,36 +208,143 @@
     return out;
   }
 
+  function routeKey(a,b){return a<b?a+'-'+b:b+'-'+a}
+  function pinDistance(a,b,total){return Math.min((b-a+total)%total,(a-b+total)%total)}
+  function applyThreadPath(rendered,path,opacity,remove=false){
+    const idx=path.idx,wt=path.wt;
+    if(remove){
+      for(let k=idx.length-1;k>=0;k--){
+        const p=idx[k],a=Math.min(.999,opacity*Math.min(1,wt[k]));
+        rendered[p]=Math.max(0,Math.min(1,1-(1-rendered[p])/Math.max(.0001,1-a)));
+      }
+    }else{
+      for(let k=0;k<idx.length;k++){
+        const p=idx[k],a=opacity*Math.min(1,wt[k]);
+        rendered[p]+= (1-rendered[p])*a;
+      }
+    }
+  }
+  function routeGainFromBase(rendered,pathA,opacityA,pathB,opacityB,target,weight){
+    const touched=new Map();
+    const layer=(path,opacity)=>{
+      const idx=path.idx,wt=path.wt;
+      for(let k=0;k<idx.length;k++){
+        const p=idx[k],before=touched.has(p)?touched.get(p):rendered[p],a=opacity*Math.min(1,wt[k]);
+        touched.set(p,before+(1-before)*a);
+      }
+    };
+    layer(pathA,opacityA);layer(pathB,opacityB);
+    let gain=0;
+    touched.forEach((after,p)=>{
+      const before=rendered[p],e0=target[p]-before,e1=target[p]-after;
+      gain+=weight[p]*(e0*e0-e1*e1);
+    });
+    return gain
+  }
+  async function repairSequenceAsync(lines,pins,sample,rendered,prep,used,profile,onProgress){
+    const total=pins.length,maxWindows=profile.repairWindows||0,candidateCount=profile.repairCandidates||0;
+    if(lines.length<3||maxWindows<1||candidateCount<1)return{accepted:0,lastGain:0};
+    const minJump=Math.max(8,Math.floor(total*.035)),start=Math.max(0,Math.floor(lines.length*.46)),ranked=[];
+    for(let i=start;i<lines.length-1;i+=2){
+      const l1=lines[i],l2=lines[i+1];if(l1.b!==l2.a)continue;
+      const p1=sample(l1.a,l1.b),p2=sample(l2.a,l2.b);let s=0,n=0;
+      for(const path of [p1,p2])for(let k=0;k<path.idx.length;k+=4){
+        const p=path.idx[k],d=Math.abs(prep.target[p]-rendered[p]);
+        s+=(prep.featurePrior[p]*2.2+prep.detailWeight[p]*.10)*(.15+d);n++;
+      }
+      ranked.push([s/Math.max(1,n),i]);
+    }
+    ranked.sort((a,b)=>b[0]-a[0]);
+    const picks=[],seen=new Set();
+    const addPick=i=>{if(i>=0&&i<lines.length-1&&!seen.has(i)){seen.add(i);picks.push(i)}};
+    for(let k=0;k<Math.min(Math.round(maxWindows*.72),ranked.length);k++)addPick(ranked[k][1]);
+    const even=Math.max(1,maxWindows-picks.length),span=Math.max(1,lines.length-start-2);
+    for(let k=0;k<even;k++)addPick(start+Math.floor((k+.5)/even*span));
+    picks.sort((a,b)=>a-b);
+
+    let accepted=0,lastGain=0;
+    for(let w=0;w<picks.length&&w<maxWindows;w++){
+      const i=picks[w],l1=lines[i],l2=lines[i+1];
+      if(!l1||!l2||l1.b!==l2.a)continue;
+      const A=l1.a,B=l1.b,C=l2.b,oldP1=sample(A,B),oldP2=sample(B,C),o1=l1.opacity||Math.min(.12,(l1.alpha||profile.alpha)*1.18),o2=l2.opacity||Math.min(.12,(l2.alpha||profile.alpha)*1.18);
+
+      applyThreadPath(rendered,oldP2,o2,true);applyThreadPath(rendered,oldP1,o1,true);
+      const oldGain=routeGainFromBase(rendered,oldP1,o1,oldP2,o2,prep.target,prep.detailWeight);
+      let bestGain=oldGain,bestX=B,bestP1=oldP1,bestP2=oldP2;
+
+      const choices=candidateSet(B,candidateCount,total,i+7919,minJump);
+      for(let q=0;q<choices.length;q++){
+        const X=choices[q];if(X===A||X===C)continue;
+        if(pinDistance(A,X,total)<minJump||pinDistance(X,C,total)<minJump)continue;
+        const p1=sample(A,X),p2=sample(X,C);
+        let gain=routeGainFromBase(rendered,p1,o1,p2,o2,prep.target,prep.detailWeight);
+        gain-=profile.repeatPenalty*((used.get(routeKey(A,X))||0)+(used.get(routeKey(X,C))||0))*.45;
+        if(gain>bestGain){bestGain=gain;bestX=X;bestP1=p1;bestP2=p2}
+      }
+
+      const threshold=Math.max(.000004,Math.abs(oldGain)*.008);
+      if(bestX!==B&&bestGain>oldGain+threshold){
+        const k1=routeKey(A,B),k2=routeKey(B,C),n1=routeKey(A,bestX),n2=routeKey(bestX,C);
+        used.set(k1,Math.max(0,(used.get(k1)||1)-1));used.set(k2,Math.max(0,(used.get(k2)||1)-1));
+        used.set(n1,(used.get(n1)||0)+1);used.set(n2,(used.get(n2)||0)+1);
+        lines[i]={...l1,a:A,b:bestX};lines[i+1]={...l2,a:bestX,b:C};
+        applyThreadPath(rendered,bestP1,o1,false);applyThreadPath(rendered,bestP2,o2,false);
+        accepted++;lastGain=bestGain-oldGain;
+      }else{
+        applyThreadPath(rendered,oldP1,o1,false);applyThreadPath(rendered,oldP2,o2,false);
+      }
+      if(w%6===0){onProgress?.(profile.maxLines-1,profile.maxLines,.97,lastGain);await wait()}
+    }
+    return{accepted,lastGain}
+  }
+
   async function binaryWeightedAsync(prep,profile,onProgress){
     const {size,pins:pinCount,maxLines,alpha,candidates,repeatPenalty,minLines}=profile;
-    const pins=makePins(size,pinCount),sample=lineSamplerAA(pins,size),residual=new Float32Array(prep.target),used=new Map(),lines=[];
+    const pins=makePins(size,pinCount),sample=lineSamplerAA(pins,size),rendered=new Float32Array(prep.target.length),used=new Map(),lines=[];
     const minJump=Math.max(8,Math.floor(pinCount*.035));let cur=7%pinCount,lastGain=0;
     for(let step=0;step<maxLines;step++){
-      const phase=step/maxLines,imp=phase>.68?prep.detailWeight:prep.importance,lineAlpha=alpha*(phase>.78?.82:1);
-      const choices=candidateSet(cur,candidates,pinCount,step,minJump);let best=0,bp=-1,bestPath=null;
+      const phase=step/maxLines;
+      const activeTarget=phase<.34?prep.coarseTarget:(phase<.70?prep.midTarget:prep.target);
+      const imp=phase<.34?prep.coarseWeight:(phase<.70?prep.importance:prep.detailWeight);
+      const lineAlpha=alpha*(phase>.78?.80:(phase<.34?1.06:1));
+      const threadOpacity=Math.min(.12,lineAlpha*1.18);
+      const candidateBudget=phase>.70?Math.min(pinCount-1,Math.round(candidates*1.35)):candidates;
+      const choices=candidateSet(cur,candidateBudget,pinCount,step,minJump);let best=0,bp=-1,bestPath=null;
       for(let q=0;q<choices.length;q++){
         const j=choices[q],path=sample(cur,j),idx=path.idx,wt=path.wt;let score=0;
         for(let k=0;k<idx.length;k++){
-          const p=idx[k],l=lineAlpha*wt[k],r=residual[p];
-          score+=imp[p]*(2*r*l-l*l);
+          const p=idx[k],coverage=Math.min(1,wt[k]),a=threadOpacity*coverage,before=rendered[p],after=before+(1-before)*a;
+          const e0=activeTarget[p]-before,e1=activeTarget[p]-after;
+          score+=imp[p]*(e0*e0-e1*e1);
         }
         const key=cur<j?cur+'-'+j:j+'-'+cur;score-=repeatPenalty*(used.get(key)||0);
         if(score>best){best=score;bp=j;bestPath=path}
       }
       if(bp<0||(step>=minLines&&best<=0))break;
       const idx=bestPath.idx,wt=bestPath.wt;
-      for(let k=0;k<idx.length;k++)residual[idx[k]]-=lineAlpha*wt[k];
+      for(let k=0;k<idx.length;k++){
+        const p=idx[k],coverage=Math.min(1,wt[k]),a=threadOpacity*coverage;
+        rendered[p]+= (1-rendered[p])*a;
+      }
       const key=cur<bp?cur+'-'+bp:bp+'-'+cur;used.set(key,(used.get(key)||0)+1);
-      lines.push({a:cur,b:bp,color:'black',alpha:lineAlpha});cur=bp;lastGain=best;
+      lines.push({a:cur,b:bp,color:'black',alpha:lineAlpha,opacity:threadOpacity});cur=bp;lastGain=best;
       if(step%12===0){onProgress?.(step,maxLines,phase,lastGain);await wait()}
     }
-    return{pins,lines,size,meta:{quality,mode:'mono',pins:pinCount,lines:lines.length,alpha,optimizer:'weighted-binary',gain:lastGain}}
+    const repair=await repairSequenceAsync(lines,pins,sample,rendered,prep,used,profile,onProgress);
+    if(repair.lastGain>0)lastGain=repair.lastGain;
+    let err=0,wSum=0,detailErr=0,detailWSum=0;
+    for(let i=0;i<rendered.length;i++){
+      const d=prep.target[i]-rendered[i],w=prep.importance[i],dw=prep.detailWeight[i];
+      err+=w*d*d;wSum+=w;detailErr+=dw*d*d;detailWSum+=dw;
+    }
+    const rmse=Math.sqrt(err/Math.max(.0001,wSum)),detailRmse=Math.sqrt(detailErr/Math.max(.0001,detailWSum));
+    return{pins,lines,size,meta:{quality,mode:'mono',pins:pinCount,lines:lines.length,alpha,optimizer:'portrait-multiscale-compositing-l2+route-repair',gain:lastGain,rmse,detailRmse,repairAccepted:repair.accepted}}
   }
 
   const profileFor=()=>{
-    if(quality==='share')return{size:240,pins:360,maxLines:5000,alpha:.033,candidates:150,repeatPenalty:.014,minLines:2400};
-    if(quality==='enhanced')return{size:220,pins:300,maxLines:3600,alpha:.037,candidates:130,repeatPenalty:.013,minLines:1800};
-    return{size:180,pins:220,maxLines:2300,alpha:.044,candidates:105,repeatPenalty:.012,minLines:1100};
+    if(quality==='share')return{size:240,pins:360,maxLines:5000,alpha:.033,candidates:165,repeatPenalty:.014,minLines:2400,repairWindows:96,repairCandidates:64};
+    if(quality==='enhanced')return{size:220,pins:300,maxLines:3600,alpha:.037,candidates:145,repeatPenalty:.013,minLines:1800,repairWindows:68,repairCandidates:52};
+    return{size:180,pins:220,maxLines:2300,alpha:.044,candidates:105,repeatPenalty:.012,minLines:1100,repairWindows:30,repairCandidates:36};
   };
   function setStatus(msg,pct){if($('#sa-lab-status'))$('#sa-lab-status').textContent=msg;if($('#sa-lab-progress'))$('#sa-lab-progress').textContent=pct+'%'}
   function seqText(lines,limit=14){return lines.slice(0,limit).map(x=>String(x.a).padStart(3,'0')+'→'+String(x.b).padStart(3,'0')).join(' · ')}
@@ -225,7 +368,7 @@
   function drawExport(data,count,canvas,{size=1800,footer=150}={}){
     canvas.width=size;canvas.height=size+footer;const ctx=canvas.getContext('2d'),bg=window.__saUserBg||'#f2efe8';ctx.fillStyle=bg;ctx.fillRect(0,0,size,size);
     const scale=size/data.size;ctx.save();ctx.scale(scale,scale);
-    for(let i=0;i<Math.min(count,data.lines.length);i++){const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b],a=l.alpha||data.meta?.alpha||.04;ctx.strokeStyle='rgba(6,10,13,'+Math.min(.12,a*1.18)+')';ctx.lineWidth=.42;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke()}
+    for(let i=0;i<Math.min(count,data.lines.length);i++){const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b],a=l.alpha||data.meta?.alpha||.04,opacity=l.opacity||Math.min(.12,a*1.18);ctx.strokeStyle='rgba(6,10,13,'+opacity+')';ctx.lineWidth=.42;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke()}
     ctx.fillStyle=bg==='#07131b'?'rgba(230,194,115,.82)':'#9a6a16';data.pins.forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],.72,0,Math.PI*2);ctx.fill()});ctx.restore();
     const grad=ctx.createLinearGradient(0,size,0,size+footer);grad.addColorStop(0,'#071723');grad.addColorStop(1,'#031018');ctx.fillStyle=grad;ctx.fillRect(0,size,size,footer);
     ctx.fillStyle='#d7ad59';ctx.font=`900 ${Math.round(size*.037)}px Montserrat,Arial`;ctx.fillText('ATS',Math.round(size*.045),size+Math.round(footer*.55));
