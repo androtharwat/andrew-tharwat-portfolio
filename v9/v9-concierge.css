@@ -560,3 +560,15 @@ body[data-lang=ar] .concierge-smart-question textarea{text-align:right}
   .concierge-smart-question-actions{flex-direction:column}
   .concierge-smart-question-actions button{width:100%}
 }
+
+
+/* Client Journey V2 — calm, guided entry */
+.concierge-starters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:18px 0 12px}
+.concierge-starter{min-height:76px;padding:13px 14px;border:1px solid rgba(153,205,226,.10);border-radius:13px;background:rgba(255,255,255,.012);color:#dbe7eb;text-align:left;cursor:pointer;transition:.18s ease}
+.concierge-starter:hover,.concierge-starter:focus-visible{border-color:rgba(239,35,60,.30);background:rgba(239,35,60,.045);transform:translateY(-1px);outline:none}
+.concierge-starter span{display:block;margin-bottom:9px;color:#ef233c;font:800 7px/1 Montserrat,sans-serif;letter-spacing:.12em}
+.concierge-starter b{display:block;font-size:8px;line-height:1.45;letter-spacing:.045em}
+.concierge-honesty-note{margin:9px 0 0!important;padding:9px 11px;border-left:2px solid rgba(34,211,167,.55);border-radius:0 8px 8px 0;background:rgba(34,211,167,.035);color:#78919b!important;font-size:7.5px!important;line-height:1.55!important}
+body[data-lang=ar] .concierge-starter{text-align:right}
+body[data-lang=ar] .concierge-honesty-note{border-left:0;border-right:2px solid rgba(34,211,167,.55);border-radius:8px 0 0 8px}
+@media(max-width:760px){.concierge-starters{grid-template-columns:1fr}.concierge-starter{min-height:60px}}
