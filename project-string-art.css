@@ -189,3 +189,31 @@
 @media(max-width:980px){.string-art-project .sa-lab-head{grid-template-columns:1fr}.string-art-project .sa-lab-shell{grid-template-columns:1fr}.string-art-project .sa-lab-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.string-art-project .sa-upload,.string-art-project .sa-generate,.string-art-project .sa-production-note{grid-column:1/-1}.string-art-project .sa-control-group,.string-art-project .sa-range{margin-top:0}}
 @media(max-width:680px){.string-art-project .sa-lab{padding:74px 0}.string-art-project .sa-lab-head h2{font-size:clamp(38px,11vw,56px)}.string-art-project .sa-lab-controls{display:block}.string-art-project .sa-control-group,.string-art-project .sa-range{margin-top:15px}.string-art-project .sa-preview-grid{grid-template-columns:1fr}.string-art-project .sa-result-tools{grid-template-columns:1fr}.string-art-project .sa-result-actions{justify-content:stretch}.string-art-project .sa-result-actions button{flex:1}}
 @media(prefers-reduced-motion:reduce){.string-art-project *{scroll-behavior:auto!important}.string-art-project .sa-step,.string-art-project .sa-actions a{transition:none!important}}
+
+/* STRING ART EXPERIENCE V3 — framing + share-quality exports */
+.string-art-project .sa-quality{grid-template-columns:repeat(3,1fr)}
+.string-art-project .sa-framing-controls{padding:12px;border:1px solid rgba(215,173,89,.12);border-radius:12px;background:rgba(215,173,89,.025)}
+.string-art-project .sa-framing-controls .sa-range{margin-top:0}
+.string-art-project .sa-frame-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px}
+.string-art-project .sa-frame-buttons button{min-height:34px;border:1px solid rgba(255,255,255,.09);border-radius:9px;background:#071d2a;color:#8ba0ab;font-size:7px;font-weight:900;cursor:pointer}
+.string-art-project .sa-frame-buttons button:hover{border-color:rgba(215,173,89,.34);color:#e7d2a2}
+.string-art-project .sa-tune-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.string-art-project .sa-tune-row .sa-range{margin-top:0}
+.string-art-project .sa-source-wrap{position:relative;overflow:hidden;border-radius:16px;touch-action:none;cursor:grab}
+.string-art-project .sa-source-wrap.dragging{cursor:grabbing}
+.string-art-project .sa-source-wrap canvas{border-radius:0}
+.string-art-project .sa-crop-ring{position:absolute;inset:5.5%;border:1px solid rgba(230,190,103,.72);border-radius:50%;box-shadow:0 0 0 999px rgba(2,11,17,.24),inset 0 0 36px rgba(215,173,89,.05);pointer-events:none}
+.string-art-project .sa-source-figure figcaption{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.string-art-project .sa-source-figure figcaption small{color:#536f7e;font-size:6px;letter-spacing:.08em}
+.string-art-project .sa-result-actions .primary-export{background:#d7ad59;color:#07141d;border-color:#d7ad59}
+.string-art-project .sa-result-actions button.busy{opacity:.55;pointer-events:none}
+.string-art-project .sa-production-note b{color:#a78e5c;font-weight:800}
+@media(max-width:980px){
+  .string-art-project .sa-framing-controls{grid-column:1/-1}
+  .string-art-project .sa-tune-row{grid-column:1/-1}
+}
+@media(max-width:680px){
+  .string-art-project .sa-tune-row{grid-template-columns:1fr}
+  .string-art-project .sa-frame-buttons{grid-template-columns:repeat(3,1fr)}
+  .string-art-project .sa-source-figure figcaption small{display:none}
+}

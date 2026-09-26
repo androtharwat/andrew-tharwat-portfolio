@@ -57,62 +57,62 @@ function stringArtMarkup(p,mediaItems){
     kicker:'حسابات × حرفة · تجربة بدأت في 2017',
     titleA:'الملامح لا تُرسم هنا.',
     titleB:'هي تظهر من بين الخيوط.',
-    lead:'الصورة تتحول إلى درجات ضوء وظل. الإطار يتحول إلى نقاط مرقمة. وكل وصلة بين مسمارين تُقاس: هل تقرّبنا من الملامح أم تزيد التشويش؟ بعد مئات القرارات، الخطوط المستقيمة تبدأ فجأة في تكوين إنسان.',
+    lead:'صورة. نقاط. أرقام. خيوط. وفجأة… ملامح.',
     watch:'شوف الملامح بتظهر ↓',works:'شوف الأعمال',
     paradoxK:'الخدعة البصرية',paradoxA:'من قريب: شبكة خيوط.',paradoxB:'من بعيد: شخص تعرفه.',
-    paradoxP:'إحنا مش بنرسم العين بخيط واحد. إحنا بنبني كثافة. كل تقاطع يضيف درجة، وكل منطقة يزيد فيها التراكب تتحول لظل، لحد ما عينك تجمع الشبكة وتقرأ ملامح كاملة.',
+    paradoxP:'كل تقاطع يضيف ظلًا. كل مسار يغيّر الصورة.',
     processK:'من الصورة إلى تسلسل أرقام',processH:'قبل ما الخيط يلمس المسمار، الصورة بتتحول لمسألة.',
-    processP:'الفكرة الحسابية: اختار الوصلة التالية التي تجعل النتيجة الحالية أقرب للصورة المستهدفة، ثم كرر القرار مرة بعد مرة.',
+    processP:'اختار أفضل وصلة. حدّث الفرق. كرر.',
     replay:'أعد بناء الوجه',live:'تجربة حية · الخطوط تتراكم أمامك',
     steps:[
-      ['01','اقرأ الضوء والظل','نحوّل الصورة إلى خريطة رمادية توضح أين نحتاج كثافة أكبر وأين نحتاج فراغًا.'],
-      ['02','رقّم الإطار','كل مسمار يصبح نقطة مرجعية برقم وموقع ثابت يمكن الرجوع إليه بدقة.'],
-      ['03','اختبر الوصلات','من المسمار الحالي، نقارن عددًا كبيرًا من الخطوط الممكنة إلى نقاط أخرى.'],
-      ['04','اختر الأكثر فائدة','نفاضل بين المسارات حسب مقدار ما تقلله من الفرق البصري، مع تجنب الإفراط في مناطق امتلأت بالفعل.'],
-      ['05','كرر حتى تظهر الملامح','مئات وآلاف الوصلات حسب التصميم تبني الكثافة تدريجيًا حتى يبدأ الوجه في الظهور.']
+      ['01','الضوء والظل','نقرأ الكثافة.'],
+      ['02','النقاط','كل مسمار له رقم.'],
+      ['03','المسارات','نختبر الوصلات الممكنة.'],
+      ['04','الاختيار','نأخذ المسار الأكثر فائدة.'],
+      ['05','الظهور','التكرار يصنع الملامح.']
     ],
-    equationK:'تبسيط للفكرة الحسابية',equationP:'أفضل وصلة هي التي تقلل الفرق البصري بأكبر قدر من غير ما تغرق منطقة تم بناؤها بالفعل.',
+    equationK:'تبسيط للفكرة الحسابية',equationP:'أقل فرق بصري. أقل تشبع زائد.',
     handK:'من الأرقام إلى اليد',handA:'الحسابات لا تمسك الخيط.',handB:'هي فقط تقول لليد أين تذهب بعد ذلك.',
-    handP:'الناتج مش صورة مطبوعة. هو ترتيب نقاط ومسارات. وبعدها يبدأ الجزء اللي لا يمكن اختصاره: شد الخيط، الحفاظ على الترتيب، توزيع اللون، تصحيح التوتر، والصبر على كل طبقة حتى تستقر الملامح.',
+    handP:'الأرقام تحدد الطريق. اليد تصنع القطعة.',
     distanceK:'المسافة جزء من العمل',distanceH:'السحر الحقيقي يحصل بين 2 سم و2 متر.',
-    distanceP:'قرب جدًا فهتشوف خيوطًا مستقيمة وعُقدًا وتقاطعات. ارجع للخلف، وفجأة تختفي الهندسة ويظهر الوجه.',
+    distanceP:'قريب: خطوط. بعيد: وجه.',
     close:'قريب · تشابك',far:'بعيد · ملامح',
     originK:'2017 · قبل موجة الـAI الحالية',originH:'السؤال كان: هل الحسابات تقدر توسّع قدرة اليد بدل ما تستبدلها؟',
-    originP:'بدأت التجربة كدمج بين التفكير الرقمي والتنفيذ الواقعي: الكمبيوتر يساعد في تحويل الصورة إلى منطق ومسارات، لكن القطعة النهائية تظل نتيجة يد وصبر وخامة حقيقية.',
+    originP:'بدأت كتجربة لدمج الحساب بالحرفة — لا لاستبدال اليد.',
     originStats:[['2017','بداية التجربة'],['150+','بورتريه مخصص'],['100%','تنفيذ مادي يدوي']],
     labK:'جرّب النظام على صورتك',labH:'ارفع صورتك… وشوف الملامح وهي بتتكوّن من الخيوط.',labP:'المعاينة دي بتشتغل على جهازك مباشرة. الصورة لا تُرفع للسيرفر. اختار أسود أو محاكاة الألوان الخمسة، واضبط التفاصيل، ثم شغّل الخوارزمية.',
-    labUpload:'اختر صورة بورتريه',labDrop:'اضغط أو اسحب الصورة هنا',labPrivacy:'تُعالج داخل المتصفح فقط · لا يتم رفعها تلقائيًا',labMode:'نمط الخيط',labMono:'أسود كلاسيك',labColor:'5 ألوان',labQuality:'دقة المعاينة',labFast:'سريع',labDetail:'أدق',labContrast:'التباين',labGamma:'تفاصيل الظل',labGenerate:'حوّل صورتي إلى خيوط',labReady:'جاهز للتجربة',labOriginal:'الصورة',labResult:'الخيوط',labProgress:'جارٍ تحليل الصورة واختيار المسارات…',labReplay:'أعد الرسم',labDownload:'احفظ المعاينة',labSpeak:'اسمع أول خطوات التنفيذ',labSequence:'أول جزء من تسلسل المسامير',labProd:'تنبيه: المعاينة أخف لتعمل بسرعة. التنفيذ الحقيقي يستخدم عادة 250–300 مسمار و3500–4500 خط حسب التصميم.',
-    finalK:'دلوقتي أنت عارف السر',finalH:'مستعد تشوف الخيط بدل الصورة؟',finalP:'انزل للأعمال، قرب من التفاصيل، وبعدين ارجع خطوة. كل وجه قدامك بدأ كنقاط وأرقام ومسارات لا تشبه الوجه إطلاقًا.'
+    labUpload:'اختر صورة',labDrop:'اضغط أو اسحب الصورة',labPrivacy:'محلي على جهازك',labMode:'الخيط',labMono:'أسود',labColor:'5 ألوان',labQuality:'الجودة',labFast:'سريع',labDetail:'محسن',labShare:'مشاركة',labFrame:'اضبط الكادر',labZoom:'تكبير',labFit:'ملاءمة',labCenter:'توسيط',labRotate:'تدوير',labContrast:'التباين',labGamma:'الظل',labGenerate:'ابدأ الرسم',labReady:'ارفع صورة وابدأ',labOriginal:'اضبط الصورة',labResult:'النتيجة',labProgress:'جارٍ الحساب…',labReplay:'إعادة',labDownload:'PNG عالي الجودة',labVideo:'فيديو البناء',labShareBtn:'مشاركة',labSpeak:'الأرقام صوتيًا',labSequence:'المسار',labProd:'المعاينة أسرع من التنفيذ الحقيقي: عادة 250–300 مسمار و3500–4500 خط.',labBrand:'كل ملف محفوظ يحمل علامة ATS.',
+    finalK:'دلوقتي أنت عارف السر',finalH:'مستعد تشوف الخيط بدل الصورة؟',finalP:'قرب. ابعد. شوف الخيط قبل ما تشوف الوجه.'
   }:{
     kicker:'COMPUTATION × CRAFT · EXPERIMENTING SINCE 2017',
     titleA:"THE FACE ISN'T DRAWN.",
     titleB:'IT EMERGES FROM THE THREAD.',
-    lead:'A photograph becomes light and shadow. The frame becomes numbered points. Every connection between two nails is judged: does it move us closer to the face, or add noise? After hundreds of decisions, straight lines suddenly begin to read as a human being.',
+    lead:'Image. Points. Numbers. Thread. Then suddenly — a face.',
     watch:'WATCH THE FACE EMERGE ↓',works:'SEE THE WORKS',
     paradoxK:'THE VISUAL ILLUSION',paradoxA:'UP CLOSE: A NETWORK OF THREAD.',paradoxB:'STEP BACK: SOMEONE YOU KNOW.',
-    paradoxP:'The eye is not traced by one piece of thread. Density creates it. Every overlap adds tone; every denser region becomes shadow, until your visual system stops seeing lines and starts reading a face.',
+    paradoxP:'Every crossing adds tone. Every route changes the image.',
     processK:'FROM PHOTOGRAPH TO NUMBER SEQUENCE',processH:'Before thread touches a nail, the portrait becomes a problem to solve.',
-    processP:'The computational idea is simple: choose the next connection that makes the current result more like the target image, then repeat that decision again and again.',
+    processP:'Choose the best line. Update the error. Repeat.',
     replay:'REBUILD THE FACE',live:'LIVE DEMO · WATCH DENSITY ACCUMULATE',
     steps:[
-      ['01','READ LIGHT & SHADOW','Convert the portrait into a grayscale density map: where more thread is needed and where space must remain.'],
-      ['02','NUMBER THE FRAME','Every nail becomes an indexed anchor with a fixed position that can be referenced precisely.'],
-      ['03','TEST POSSIBLE LINES','From the current nail, evaluate many possible chords to other anchor points.'],
-      ['04','CHOOSE THE MOST USEFUL','Prefer the path that reduces visual error the most while avoiding areas that are already overbuilt.'],
-      ['05','REPEAT UNTIL A FACE APPEARS','Hundreds or thousands of connections, depending on the piece, accumulate tone until the portrait begins to emerge.']
+      ['01','LIGHT / SHADOW','Read density.'],
+      ['02','POINTS','Every nail gets an index.'],
+      ['03','ROUTES','Test possible chords.'],
+      ['04','CHOOSE','Take the most useful route.'],
+      ['05','EMERGE','Repetition builds likeness.']
     ],
-    equationK:'A SIMPLIFIED VIEW OF THE SCORING LOGIC',equationP:'The best next line is the one that reduces the visual difference most without overfilling an area already built.',
+    equationK:'A SIMPLIFIED VIEW OF THE SCORING LOGIC',equationP:'Less visual error. Less overfill.',
     handK:'FROM NUMBERS TO HANDS',handA:"THE COMPUTER DOESN'T HOLD THE THREAD.",handB:'IT ONLY TELLS THE HAND WHERE TO GO NEXT.',
-    handP:'The output is not a printed image. It is a sequence of points and paths. Then the irreducibly physical work begins: tension, order, color, corrections and patience — layer after layer until the likeness settles.',
+    handP:'The numbers choose the route. The hand makes the object.',
     distanceK:'DISTANCE IS PART OF THE MEDIUM',distanceH:'THE MAGIC LIVES BETWEEN 2 CM AND 2 METERS.',
-    distanceP:'Get very close and you see straight thread, knots and crossings. Step back and the geometry disappears; the face arrives.',
+    distanceP:'Close: lines. Far: likeness.',
     close:'CLOSE · CONNECTIONS',far:'FAR · LIKENESS',
     originK:'2017 · BEFORE THE CURRENT GENERATIVE-AI WAVE',originH:'THE QUESTION WAS: CAN COMPUTATION EXTEND THE HAND INSTEAD OF REPLACING IT?',
-    originP:'The experiment began by merging digital thinking with physical making: computation helps translate an image into logic and routes, while the final object remains the product of hand, patience and real material.',
+    originP:'It began as an experiment in extending the hand with computation — not replacing it.',
     originStats:[['2017','EXPERIMENT STARTED'],['150+','CUSTOM PORTRAITS'],['100%','PHYSICAL HANDCRAFT']],
     labK:'TRY THE SYSTEM ON YOUR OWN FACE',labH:'UPLOAD A PHOTO. WATCH YOUR LIKENESS EMERGE FROM THREAD.',labP:'This preview runs locally on your device. Your photo is not uploaded to the server. Choose monochrome or the five-thread palette, tune the image, then let the algorithm build the routes.',
-    labUpload:'CHOOSE A PORTRAIT',labDrop:'CLICK OR DROP YOUR PHOTO HERE',labPrivacy:'PROCESSED IN YOUR BROWSER · NOT UPLOADED BY DEFAULT',labMode:'THREAD MODE',labMono:'CLASSIC BLACK',labColor:'5-COLOR',labQuality:'PREVIEW DENSITY',labFast:'FAST',labDetail:'DETAILED',labContrast:'CONTRAST',labGamma:'SHADOW DETAIL',labGenerate:'TURN MY PHOTO INTO THREAD',labReady:'READY TO TRY',labOriginal:'ORIGINAL',labResult:'THREAD RESULT',labProgress:'ANALYZING THE IMAGE AND CHOOSING ROUTES…',labReplay:'REPLAY BUILD',labDownload:'SAVE PREVIEW',labSpeak:'HEAR THE FIRST BUILD STEPS',labSequence:'FIRST PART OF THE PIN SEQUENCE',labProd:'Preview density is intentionally lighter for speed. Physical production typically uses 250–300 nails and 3,500–4,500 total lines depending on the portrait.',
-    finalK:'NOW YOU KNOW THE TRICK',finalH:'READY TO SEE THE THREAD INSTEAD OF THE PICTURE?',finalP:'Scroll into the work, move closer to the details, then step back. Every face below began as numbered points and routes that looked nothing like a face.'
+    labUpload:'CHOOSE A PHOTO',labDrop:'CLICK OR DROP PHOTO',labPrivacy:'LOCAL ON YOUR DEVICE',labMode:'THREAD',labMono:'BLACK',labColor:'5-COLOR',labQuality:'QUALITY',labFast:'QUICK',labDetail:'ENHANCED',labShare:'SHARE',labFrame:'FRAME',labZoom:'ZOOM',labFit:'FIT',labCenter:'CENTER',labRotate:'ROTATE',labContrast:'CONTRAST',labGamma:'SHADOW',labGenerate:'BUILD MY PORTRAIT',labReady:'UPLOAD + START',labOriginal:'FRAME PHOTO',labResult:'RESULT',labProgress:'COMPUTING…',labReplay:'REPLAY',labDownload:'HQ PNG',labVideo:'BUILD VIDEO',labShareBtn:'SHARE',labSpeak:'SPEAK PINS',labSequence:'ROUTE',labProd:'Preview is lighter than production: typically 250–300 nails and 3,500–4,500 lines.',labBrand:'Every saved file carries the ATS mark.',
+    finalK:'NOW YOU KNOW THE TRICK',finalH:'READY TO SEE THE THREAD INSTEAD OF THE PICTURE?',finalP:'Move close. Step back. See the thread before the face.'
   };
   const steps=copy.steps.map(([n,h,p])=>`<article class="sa-step"><span>${n}</span><div><h3>${esc(h)}</h3><p>${esc(p)}</p></div></article>`).join('');
   const stats=copy.originStats.map(([v,l])=>`<div><strong>${esc(v)}</strong><span>${esc(l)}</span></div>`).join('');
@@ -145,21 +145,33 @@ function stringArtMarkup(p,mediaItems){
               <span class="sa-upload-icon">+</span><b>${esc(copy.labDrop)}</b><small>${esc(copy.labPrivacy)}</small>
             </label>
             <div class="sa-control-group"><span>${esc(copy.labMode)}</span><div class="sa-segmented"><button type="button" class="active" data-sa-mode="mono">${esc(copy.labMono)}</button><button type="button" data-sa-mode="color">${esc(copy.labColor)}</button></div></div>
-            <div class="sa-control-group"><span>${esc(copy.labQuality)}</span><div class="sa-segmented"><button type="button" class="active" data-sa-quality="fast">${esc(copy.labFast)}</button><button type="button" data-sa-quality="detail">${esc(copy.labDetail)}</button></div></div>
-            <label class="sa-range"><span>${esc(copy.labContrast)} <b id="sa-contrast-value">1.20</b></span><input id="sa-contrast" type="range" min="0.80" max="1.80" step="0.05" value="1.20"></label>
-            <label class="sa-range"><span>${esc(copy.labGamma)} <b id="sa-gamma-value">0.90</b></span><input id="sa-gamma" type="range" min="0.60" max="1.40" step="0.05" value="0.90"></label>
+            <div class="sa-control-group"><span>${esc(copy.labQuality)}</span><div class="sa-segmented sa-quality"><button type="button" class="active" data-sa-quality="quick">${esc(copy.labFast)}</button><button type="button" data-sa-quality="enhanced">${esc(copy.labDetail)}</button><button type="button" data-sa-quality="share">${esc(copy.labShare)}</button></div></div>
+            <div class="sa-control-group sa-framing-controls"><span>${esc(copy.labFrame)}</span>
+              <label class="sa-range sa-zoom-range"><span>${esc(copy.labZoom)} <b id="sa-zoom-value">1.00×</b></span><input id="sa-zoom" type="range" min="1" max="3.2" step="0.02" value="1"></label>
+              <div class="sa-frame-buttons"><button id="sa-fit" type="button">${esc(copy.labFit)}</button><button id="sa-center" type="button">${esc(copy.labCenter)}</button><button id="sa-rotate" type="button">${esc(copy.labRotate)} ↻</button></div>
+            </div>
+            <div class="sa-tune-row">
+              <label class="sa-range"><span>${esc(copy.labContrast)} <b id="sa-contrast-value">1.20</b></span><input id="sa-contrast" type="range" min="0.80" max="1.90" step="0.05" value="1.20"></label>
+              <label class="sa-range"><span>${esc(copy.labGamma)} <b id="sa-gamma-value">0.90</b></span><input id="sa-gamma" type="range" min="0.55" max="1.45" step="0.05" value="0.90"></label>
+            </div>
             <button id="sa-generate" class="sa-generate" type="button" disabled>${esc(copy.labGenerate)}</button>
-            <p class="sa-production-note">${esc(copy.labProd)}</p>
+            <p class="sa-production-note">${esc(copy.labProd)}<br><b>${esc(copy.labBrand)}</b></p>
           </aside>
           <div class="sa-lab-stage">
             <div class="sa-preview-grid">
-              <figure><figcaption>${esc(copy.labOriginal)}</figcaption><canvas id="sa-user-source" width="560" height="560"></canvas></figure>
-              <figure><figcaption>${esc(copy.labResult)}</figcaption><canvas id="sa-user-result" width="560" height="560"></canvas></figure>
+              <figure class="sa-source-figure"><figcaption>${esc(copy.labOriginal)} <small>DRAG · WHEEL / ZOOM</small></figcaption><div class="sa-source-wrap"><canvas id="sa-user-source" width="720" height="720"></canvas><span class="sa-crop-ring" aria-hidden="true"></span></div></figure>
+              <figure><figcaption>${esc(copy.labResult)}</figcaption><canvas id="sa-user-result" width="720" height="720"></canvas></figure>
             </div>
             <div class="sa-lab-status"><span id="sa-lab-status">${esc(copy.labReady)}</span><b id="sa-lab-progress">0%</b></div>
             <div id="sa-result-tools" class="sa-result-tools hidden">
               <div class="sa-sequence-preview"><span>${esc(copy.labSequence)}</span><code id="sa-user-sequence">—</code></div>
-              <div class="sa-result-actions"><button id="sa-user-replay" type="button">${esc(copy.labReplay)} ↻</button><button id="sa-user-speak" type="button">${esc(copy.labSpeak)} ◉</button><button id="sa-user-download" type="button">${esc(copy.labDownload)} ↓</button></div>
+              <div class="sa-result-actions">
+                <button id="sa-user-replay" type="button">${esc(copy.labReplay)} ↻</button>
+                <button id="sa-user-speak" type="button">${esc(copy.labSpeak)} ◉</button>
+                <button id="sa-user-download" class="primary-export" type="button">${esc(copy.labDownload)} ↓</button>
+                <button id="sa-user-video" type="button">${esc(copy.labVideo)} ●</button>
+                <button id="sa-user-share" type="button">${esc(copy.labShareBtn)} ↗</button>
+              </div>
             </div>
           </div>
         </div>
