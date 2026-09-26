@@ -291,7 +291,15 @@ export function weightedRgbMse(targetRgb, renderedRgb, importance) {
   return err / Math.max(EPS, wsum);
 }
 
-function colorMoveGain(table, edge, colorOd, targetRgb, opticalDepth, importance, background, opacity) {
+function opponentError(tr, tg, tb, rr, rg, rb, chromaWeight = 1.6) {
+  const dr = tr - rr, dg = tg - rg, db = tb - rb;
+  const dy = 0.2126 * dr + 0.7152 * dg + 0.0722 * db;
+  const co = dr - db;
+  const cg = dg - 0.5 * (dr + db);
+  return dy * dy + chromaWeight * (0.5 * co * co + cg * cg);
+}
+
+function colorMoveGain(table, edge, colorOd, targetRgb, opticalDepth, importance, background, opacity, chromaWeight) {
   let gain = 0;
   const start = table.offsets[edge], end = table.offsets[edge + 1];
   for (let k = start; k < end; k++) {
@@ -299,14 +307,15 @@ function colorMoveGain(table, edge, colorOd, targetRgb, opticalDepth, importance
     const w = importance ? importance[p] : 1;
     if (w <= 0) continue;
     const cov = table.coverages[k] * opacity;
-    for (let c = 0; c < 3; c++) {
-      const od0 = opticalDepth[p * 3 + c];
-      const before = background[c] * Math.exp(-od0);
-      const after = background[c] * Math.exp(-(od0 + colorOd[c] * cov));
-      const e0 = targetRgb[p * 3 + c] - before;
-      const e1 = targetRgb[p * 3 + c] - after;
-      gain += w * (e0 * e0 - e1 * e1);
-    }
+    const base = p * 3;
+    const br = background[0] * Math.exp(-opticalDepth[base]);
+    const bg = background[1] * Math.exp(-opticalDepth[base + 1]);
+    const bb = background[2] * Math.exp(-opticalDepth[base + 2]);
+    const ar = background[0] * Math.exp(-(opticalDepth[base] + colorOd[0] * cov));
+    const ag = background[1] * Math.exp(-(opticalDepth[base + 1] + colorOd[1] * cov));
+    const ab = background[2] * Math.exp(-(opticalDepth[base + 2] + colorOd[2] * cov));
+    const tr = targetRgb[base], tg = targetRgb[base + 1], tb = targetRgb[base + 2];
+    gain += w * (opponentError(tr, tg, tb, br, bg, bb, chromaWeight) - opponentError(tr, tg, tb, ar, ag, ab, chromaWeight));
   }
   return gain;
 }
@@ -330,6 +339,7 @@ export function solveColorOptical({
   candidateLimit = 0,
   minColorRun = 2,
   switchPenalty = 0,
+  chromaWeight = 1.6,
   background = [1, 1, 1],
   seed = 54321,
   onProgress,
@@ -356,7 +366,7 @@ export function solveColorOptical({
           : null;
       }
       const scan = (e) => {
-        let g = colorMoveGain(table, e, ods[ci], targetRgb, opticalDepth, importance, background, opacity);
+        let g = colorMoveGain(table, e, ods[ci], targetRgb, opticalDepth, importance, background, opacity, chromaWeight);
         if (lastColor >= 0 && ci !== lastColor) g -= switchPenalty;
         if (g <= bestGain) return;
         const a = table.a[e], b = table.b[e];
