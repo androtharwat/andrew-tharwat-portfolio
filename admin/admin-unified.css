@@ -167,3 +167,19 @@
 .system-action-plan-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}.system-action-plan-head span{display:block;color:#ff5f72;font-size:7px;font-weight:900;letter-spacing:1px}.system-action-plan-head b{display:block;margin-top:4px;color:#eef4f6;font-size:10px}.system-action-plan-head small{color:#718b98;font-size:7px}
 .system-action-plan-items{display:grid;gap:6px;margin-top:9px}.system-action-plan-items article{display:grid;grid-template-columns:28px minmax(0,1fr);gap:9px;padding:9px;border:1px solid rgba(255,255,255,.065);border-radius:9px;background:#071c29}.system-action-plan-items article>i{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:rgba(239,35,60,.10);color:#ff7080;font-style:normal;font-size:8px;font-weight:900}.system-action-plan-items article b{display:block;margin-top:4px;color:#f0f5f7;font-size:9px;line-height:1.45}.system-action-plan-items article p{margin:4px 0 0;color:#829aa7;font-size:7.5px;line-height:1.5}.system-action-meta{display:flex;gap:4px;flex-wrap:wrap}.system-action-meta span{padding:2px 5px;border-radius:999px;background:#0b2a3a;color:#7895a4;font-size:5.8px;letter-spacing:.45px}
 @media(max-width:720px){.system-action-plan-head{align-items:flex-start;flex-direction:column}.system-action-plan-head small{display:none}}
+
+
+/* ATS Admin V2 — case cockpit */
+.case-cockpit{border-color:rgba(239,35,60,.20)!important;background:
+radial-gradient(circle at 92% 0%,rgba(239,35,60,.075),transparent 30%),
+linear-gradient(145deg,#081f2d,#061923)!important}
+.case-cockpit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.case-cockpit-grid article{min-height:112px;padding:13px;border:1px solid rgba(255,255,255,.075);border-radius:12px;background:rgba(255,255,255,.018)}
+.case-cockpit-grid article>span{display:block;color:#7797a7;font-size:6.7px;font-weight:900;letter-spacing:1px}
+.case-cockpit-grid article>b{display:block;margin-top:7px;color:#f0f6f8;font-size:11px;line-height:1.5}
+.case-cockpit-grid article>small{display:block;margin-top:5px;color:#7f98a5;font-size:7.5px;line-height:1.55;white-space:pre-wrap}
+.case-cockpit-grid .case-next{border-color:rgba(239,35,60,.24);background:rgba(239,35,60,.035)}
+.case-cockpit-grid .case-next>span{color:#ff6576}
+.case-cockpit-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:10px}
+.case-cockpit-actions button{min-height:38px;padding:0 13px}
+@media(max-width:760px){.case-cockpit-grid{grid-template-columns:1fr}.case-cockpit-grid article{min-height:auto}.case-cockpit-actions{align-items:stretch;flex-direction:column}.case-cockpit-actions button{width:100%}}
