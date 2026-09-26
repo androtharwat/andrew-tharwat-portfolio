@@ -80,6 +80,8 @@ function stringArtMarkup(p,mediaItems){
     originK:'2017 · قبل موجة الـAI الحالية',originH:'السؤال كان: هل الحسابات تقدر توسّع قدرة اليد بدل ما تستبدلها؟',
     originP:'بدأت التجربة كدمج بين التفكير الرقمي والتنفيذ الواقعي: الكمبيوتر يساعد في تحويل الصورة إلى منطق ومسارات، لكن القطعة النهائية تظل نتيجة يد وصبر وخامة حقيقية.',
     originStats:[['2017','بداية التجربة'],['150+','بورتريه مخصص'],['100%','تنفيذ مادي يدوي']],
+    labK:'جرّب النظام على صورتك',labH:'ارفع صورتك… وشوف الملامح وهي بتتكوّن من الخيوط.',labP:'المعاينة دي بتشتغل على جهازك مباشرة. الصورة لا تُرفع للسيرفر. اختار أسود أو محاكاة الألوان الخمسة، واضبط التفاصيل، ثم شغّل الخوارزمية.',
+    labUpload:'اختر صورة بورتريه',labDrop:'اضغط أو اسحب الصورة هنا',labPrivacy:'تُعالج داخل المتصفح فقط · لا يتم رفعها تلقائيًا',labMode:'نمط الخيط',labMono:'أسود كلاسيك',labColor:'5 ألوان',labQuality:'دقة المعاينة',labFast:'سريع',labDetail:'أدق',labContrast:'التباين',labGamma:'تفاصيل الظل',labGenerate:'حوّل صورتي إلى خيوط',labReady:'جاهز للتجربة',labOriginal:'الصورة',labResult:'الخيوط',labProgress:'جارٍ تحليل الصورة واختيار المسارات…',labReplay:'أعد الرسم',labDownload:'احفظ المعاينة',labSpeak:'اسمع أول خطوات التنفيذ',labSequence:'أول جزء من تسلسل المسامير',labProd:'تنبيه: المعاينة أخف لتعمل بسرعة. التنفيذ الحقيقي يستخدم عادة 250–300 مسمار و3500–4500 خط حسب التصميم.',
     finalK:'دلوقتي أنت عارف السر',finalH:'مستعد تشوف الخيط بدل الصورة؟',finalP:'انزل للأعمال، قرب من التفاصيل، وبعدين ارجع خطوة. كل وجه قدامك بدأ كنقاط وأرقام ومسارات لا تشبه الوجه إطلاقًا.'
   }:{
     kicker:'COMPUTATION × CRAFT · EXPERIMENTING SINCE 2017',
@@ -108,6 +110,8 @@ function stringArtMarkup(p,mediaItems){
     originK:'2017 · BEFORE THE CURRENT GENERATIVE-AI WAVE',originH:'THE QUESTION WAS: CAN COMPUTATION EXTEND THE HAND INSTEAD OF REPLACING IT?',
     originP:'The experiment began by merging digital thinking with physical making: computation helps translate an image into logic and routes, while the final object remains the product of hand, patience and real material.',
     originStats:[['2017','EXPERIMENT STARTED'],['150+','CUSTOM PORTRAITS'],['100%','PHYSICAL HANDCRAFT']],
+    labK:'TRY THE SYSTEM ON YOUR OWN FACE',labH:'UPLOAD A PHOTO. WATCH YOUR LIKENESS EMERGE FROM THREAD.',labP:'This preview runs locally on your device. Your photo is not uploaded to the server. Choose monochrome or the five-thread palette, tune the image, then let the algorithm build the routes.',
+    labUpload:'CHOOSE A PORTRAIT',labDrop:'CLICK OR DROP YOUR PHOTO HERE',labPrivacy:'PROCESSED IN YOUR BROWSER · NOT UPLOADED BY DEFAULT',labMode:'THREAD MODE',labMono:'CLASSIC BLACK',labColor:'5-COLOR',labQuality:'PREVIEW DENSITY',labFast:'FAST',labDetail:'DETAILED',labContrast:'CONTRAST',labGamma:'SHADOW DETAIL',labGenerate:'TURN MY PHOTO INTO THREAD',labReady:'READY TO TRY',labOriginal:'ORIGINAL',labResult:'THREAD RESULT',labProgress:'ANALYZING THE IMAGE AND CHOOSING ROUTES…',labReplay:'REPLAY BUILD',labDownload:'SAVE PREVIEW',labSpeak:'HEAR THE FIRST BUILD STEPS',labSequence:'FIRST PART OF THE PIN SEQUENCE',labProd:'Preview density is intentionally lighter for speed. Physical production typically uses 250–300 nails and 3,500–4,500 total lines depending on the portrait.',
     finalK:'NOW YOU KNOW THE TRICK',finalH:'READY TO SEE THE THREAD INSTEAD OF THE PICTURE?',finalP:'Scroll into the work, move closer to the details, then step back. Every face below began as numbered points and routes that looked nothing like a face.'
   };
   const steps=copy.steps.map(([n,h,p])=>`<article class="sa-step"><span>${n}</span><div><h3>${esc(h)}</h3><p>${esc(p)}</p></div></article>`).join('');
@@ -129,6 +133,37 @@ function stringArtMarkup(p,mediaItems){
       </div>
     </section>
     <main class="sa-story" data-i18n-skip="1">
+      <section id="sa-lab" class="sa-lab">
+        <div class="container sa-lab-head">
+          <div><p class="sa-kicker">${esc(copy.labK)}</p><h2>${esc(copy.labH)}</h2></div>
+          <p>${esc(copy.labP)}</p>
+        </div>
+        <div class="container sa-lab-shell">
+          <aside class="sa-lab-controls">
+            <label class="sa-upload" id="sa-upload-zone">
+              <input id="sa-user-file" type="file" accept="image/jpeg,image/png,image/webp" />
+              <span class="sa-upload-icon">+</span><b>${esc(copy.labDrop)}</b><small>${esc(copy.labPrivacy)}</small>
+            </label>
+            <div class="sa-control-group"><span>${esc(copy.labMode)}</span><div class="sa-segmented"><button type="button" class="active" data-sa-mode="mono">${esc(copy.labMono)}</button><button type="button" data-sa-mode="color">${esc(copy.labColor)}</button></div></div>
+            <div class="sa-control-group"><span>${esc(copy.labQuality)}</span><div class="sa-segmented"><button type="button" class="active" data-sa-quality="fast">${esc(copy.labFast)}</button><button type="button" data-sa-quality="detail">${esc(copy.labDetail)}</button></div></div>
+            <label class="sa-range"><span>${esc(copy.labContrast)} <b id="sa-contrast-value">1.20</b></span><input id="sa-contrast" type="range" min="0.80" max="1.80" step="0.05" value="1.20"></label>
+            <label class="sa-range"><span>${esc(copy.labGamma)} <b id="sa-gamma-value">0.90</b></span><input id="sa-gamma" type="range" min="0.60" max="1.40" step="0.05" value="0.90"></label>
+            <button id="sa-generate" class="sa-generate" type="button" disabled>${esc(copy.labGenerate)}</button>
+            <p class="sa-production-note">${esc(copy.labProd)}</p>
+          </aside>
+          <div class="sa-lab-stage">
+            <div class="sa-preview-grid">
+              <figure><figcaption>${esc(copy.labOriginal)}</figcaption><canvas id="sa-user-source" width="560" height="560"></canvas></figure>
+              <figure><figcaption>${esc(copy.labResult)}</figcaption><canvas id="sa-user-result" width="560" height="560"></canvas></figure>
+            </div>
+            <div class="sa-lab-status"><span id="sa-lab-status">${esc(copy.labReady)}</span><b id="sa-lab-progress">0%</b></div>
+            <div id="sa-result-tools" class="sa-result-tools hidden">
+              <div class="sa-sequence-preview"><span>${esc(copy.labSequence)}</span><code id="sa-user-sequence">—</code></div>
+              <div class="sa-result-actions"><button id="sa-user-replay" type="button">${esc(copy.labReplay)} ↻</button><button id="sa-user-speak" type="button">${esc(copy.labSpeak)} ◉</button><button id="sa-user-download" type="button">${esc(copy.labDownload)} ↓</button></div>
+            </div>
+          </div>
+        </div>
+      </section>
       <section class="sa-paradox"><div class="container"><p class="sa-kicker">${esc(copy.paradoxK)}</p><h2>${esc(copy.paradoxA)}<br><span>${esc(copy.paradoxB)}</span></h2><p>${esc(copy.paradoxP)}</p></div></section>
       <section id="sa-process" class="sa-process">
         <div class="container sa-process-head"><div><p class="sa-kicker">${esc(copy.processK)}</p><h2>${esc(copy.processH)}</h2></div><p>${esc(copy.processP)}</p></div>
