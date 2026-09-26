@@ -118,9 +118,70 @@
   }
   function drawResultPlaceholder(){const c=$('#sa-user-result');if(!c)return;const ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.fillStyle='#0a1b24';ctx.fillRect(0,0,w,h);ctx.strokeStyle='rgba(215,173,89,.08)';for(let i=0;i<28;i++){ctx.beginPath();ctx.moveTo(0,(i/27)*h);ctx.lineTo(w,((i*11)%28)/27*h);ctx.stroke()}}
 
-  function imageToTarget(img,size,contrast,gamma){
+  let faceLandmarkerPromise=null;
+  async function getFaceLandmarker(){
+    if(faceLandmarkerPromise)return faceLandmarkerPromise;
+    faceLandmarkerPromise=(async()=>{
+      try{
+        const visionModule=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs');
+        const vision=await visionModule.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm');
+        const options={
+          baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task',delegate:'GPU'},
+          runningMode:'IMAGE',numFaces:1,minFaceDetectionConfidence:.48,minFacePresenceConfidence:.48,minTrackingConfidence:.48,
+          outputFaceBlendshapes:false,outputFacialTransformationMatrixes:false
+        };
+        try{return await visionModule.FaceLandmarker.createFromOptions(vision,options)}
+        catch(gpuError){
+          options.baseOptions={modelAssetPath:options.baseOptions.modelAssetPath,delegate:'CPU'};
+          return await visionModule.FaceLandmarker.createFromOptions(vision,options)
+        }
+      }catch(error){
+        console.warn('[ATS String Art] Face landmarks unavailable; using heuristic guide.',error);
+        return null
+      }
+    })();
+    return faceLandmarkerPromise
+  }
+  const landmarkMean=(lm,ids)=>{
+    let x=0,y=0,n=0;
+    for(const id of ids){const p=lm[id];if(!p)continue;x+=p.x;y+=p.y;n++}
+    return n?{x:x/n,y:y/n}:null
+  };
+  const landmarkDist=(a,b)=>a&&b?Math.hypot(a.x-b.x,a.y-b.y):0;
+  async function detectPortraitGuide(canvas){
+    const detector=await getFaceLandmarker();if(!detector)return null;
+    try{
+      const result=detector.detect(canvas),lm=result?.faceLandmarks?.[0];
+      if(!lm?.length)return null;
+      const leftEye=landmarkMean(lm,[33,133,159,145]),rightEye=landmarkMean(lm,[362,263,386,374]);
+      const leftBrow=landmarkMean(lm,[70,63,105,66,107]),rightBrow=landmarkMean(lm,[300,293,334,296,336]);
+      const mouth=landmarkMean(lm,[61,291,13,14,78,308]),nose=landmarkMean(lm,[1,2,98,327]);
+      const forehead=landmarkMean(lm,[10]),chin=landmarkMean(lm,[152]),leftCheek=landmarkMean(lm,[234]),rightCheek=landmarkMean(lm,[454]);
+      const eyeMid=leftEye&&rightEye?{x:(leftEye.x+rightEye.x)/2,y:(leftEye.y+rightEye.y)/2}:null;
+      const eyeDistance=landmarkDist(leftEye,rightEye),faceWidth=landmarkDist(leftCheek,rightCheek),faceHeight=landmarkDist(forehead,chin);
+      if(!leftEye||!rightEye||!mouth||!nose||eyeDistance<.06||faceWidth<.16||faceHeight<.20)return null;
+      const center={x:(leftCheek.x+rightCheek.x+forehead.x+chin.x)/4,y:(leftCheek.y+rightCheek.y+forehead.y+chin.y)/4};
+      const angle=Math.atan2(rightEye.y-leftEye.y,rightEye.x-leftEye.x);
+      return{leftEye,rightEye,leftBrow,rightBrow,mouth,nose,forehead,chin,leftCheek,rightCheek,eyeMid,eyeDistance,faceWidth,faceHeight,center,angle,landmarkCount:lm.length}
+    }catch(error){
+      console.warn('[ATS String Art] Face detection failed; using heuristic guide.',error);
+      return null
+    }
+  }
+  function portraitGaussian(x,y,p,sx,sy,angle=0){
+    if(!p)return 0;const dx=x-p.x,dy=y-p.y,c=Math.cos(angle),s=Math.sin(angle),rx=dx*c+dy*s,ry=-dx*s+dy*c;
+    return Math.exp(-.5*((rx/sx)**2+(ry/sy)**2))
+  }
+  function portraitEllipse(x,y,guide){
+    if(!guide)return 0;const dx=x-guide.center.x,dy=y-guide.center.y,c=Math.cos(guide.angle),s=Math.sin(guide.angle),rx=dx*c+dy*s,ry=-dx*s+dy*c;
+    const sx=Math.max(.08,guide.faceWidth*.53),sy=Math.max(.12,guide.faceHeight*.53),r=Math.sqrt((rx/sx)**2+(ry/sy)**2);
+    return{core:Math.exp(-.72*r*r),contour:Math.exp(-Math.pow(r-1,2)/.014),r}
+  }
+
+  async function imageToTarget(img,size,contrast,gamma){
     const off=document.createElement('canvas');off.width=off.height=size;
     const ctx=off.getContext('2d',{willReadFrequently:true});drawFramedImage(ctx,img,size);
+    const portraitGuide=await detectPortraitGuide(off);
     const pixels=ctx.getImageData(0,0,size,size),raw=new Float32Array(size*size),lum=new Float32Array(size*size);
     const hist=new Uint32Array(256);let inside=0;
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
@@ -162,7 +223,7 @@
     };
 
     const blurFine=boxBlur(lum,1),blurMid=boxBlur(lum,Math.max(2,Math.round(size*.018))),blurCoarse=boxBlur(lum,Math.max(5,Math.round(size*.045)));
-    const sharp=new Float32Array(size*size),edge=new Float32Array(size*size),target=new Float32Array(size*size),midTarget=new Float32Array(size*size),coarseTarget=new Float32Array(size*size);
+    const sharp=new Float32Array(size*size),edge=new Float32Array(size*size),target=new Float32Array(size*size),faceLockTarget=new Float32Array(size*size),midTarget=new Float32Array(size*size),coarseTarget=new Float32Array(size*size);
     const importance=new Float32Array(size*size),detailWeight=new Float32Array(size*size),coarseWeight=new Float32Array(size*size),featurePrior=new Float32Array(size*size),faceLockWeight=new Float32Array(size*size);
     const eyeWeight=new Float32Array(size*size),browWeight=new Float32Array(size*size),noseWeight=new Float32Array(size*size),mouthWeight=new Float32Array(size*size),contourWeight=new Float32Array(size*size),identityWeight=new Float32Array(size*size);
     for(let i=0;i<sharp.length;i++)sharp[i]=Math.max(0,Math.min(1,lum[i]+.62*(lum[i]-blurFine[i])));
@@ -176,30 +237,44 @@
     const gauss=(dx,dy,cx,cy,sx,sy)=>Math.exp(-.5*(((dx-cx)/sx)**2+((dy-cy)/sy)**2));
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
       const i=y*size+x,dx=(x-size/2)/(size/2),dy=(y-size/2)/(size/2),rad=Math.sqrt(dx*dx+dy*dy),mask=Math.max(0,Math.min(1,(1.01-rad)/.055));
-      const e=Math.min(1,edge[i]/edgeMax),face=Math.exp(-(((dx/.57)**2)+((dy/.76)**2))*1.08);
-      const leftEye=gauss(dx,dy,-.21,-.16,.13,.065),rightEye=gauss(dx,dy,.21,-.16,.13,.065),eyes=Math.min(1,leftEye+rightEye);
-      const leftBrow=gauss(dx,dy,-.21,-.285,.17,.055),rightBrow=gauss(dx,dy,.21,-.285,.17,.055),brows=Math.min(1,leftBrow+rightBrow);
-      const nose=gauss(dx,dy,0,.035,.105,.23),mouth=gauss(dx,dy,0,.285,.22,.075);
-      const chin=gauss(dx,dy,0,.49,.25,.10),cheeks=gauss(dx,dy,-.30,.09,.16,.20)+gauss(dx,dy,.30,.09,.16,.20);
-      const oval=Math.exp(-Math.pow(Math.sqrt((dx/.52)**2+(dy/.70)**2)-1,2)/.018);
-      const contour=Math.min(1,oval+.32*chin),feature=Math.min(1.65,.92*eyes+.58*brows+.38*nose+.72*mouth+.22*chin+.14*cheeks+.20*oval);
+      const e=Math.min(1,edge[i]/edgeMax),nx=(x+.5)/size,ny=(y+.5)/size;
+      let face,eyes,brows,nose,mouth,contour,feature;
+      if(portraitGuide){
+        const ellipse=portraitEllipse(nx,ny,portraitGuide),fw=portraitGuide.faceWidth,fh=portraitGuide.faceHeight,ang=portraitGuide.angle;
+        face=ellipse.core;
+        eyes=Math.min(1,portraitGaussian(nx,ny,portraitGuide.leftEye,fw*.13,fh*.045,ang)+portraitGaussian(nx,ny,portraitGuide.rightEye,fw*.13,fh*.045,ang));
+        brows=Math.min(1,portraitGaussian(nx,ny,portraitGuide.leftBrow,fw*.16,fh*.040,ang)+portraitGaussian(nx,ny,portraitGuide.rightBrow,fw*.16,fh*.040,ang));
+        nose=portraitGaussian(nx,ny,portraitGuide.nose,fw*.11,fh*.19,ang);
+        mouth=portraitGaussian(nx,ny,portraitGuide.mouth,fw*.25,fh*.060,ang);
+        contour=ellipse.contour;
+        feature=Math.min(1.8,1.05*eyes+.70*brows+.48*nose+.92*mouth+.24*contour);
+      }else{
+        face=Math.exp(-(((dx/.57)**2)+((dy/.76)**2))*1.08);
+        const leftEye=gauss(dx,dy,-.21,-.16,.13,.065),rightEye=gauss(dx,dy,.21,-.16,.13,.065);eyes=Math.min(1,leftEye+rightEye);
+        const leftBrow=gauss(dx,dy,-.21,-.285,.17,.055),rightBrow=gauss(dx,dy,.21,-.285,.17,.055);brows=Math.min(1,leftBrow+rightBrow);
+        nose=gauss(dx,dy,0,.035,.105,.23);mouth=gauss(dx,dy,0,.285,.22,.075);
+        contour=Math.exp(-Math.pow(Math.sqrt((dx/.52)**2+(dy/.70)**2)-1,2)/.018);
+        feature=Math.min(1.65,.92*eyes+.58*brows+.38*nose+.72*mouth+.20*contour);
+      }
 
       eyeWeight[i]=eyes*mask;browWeight[i]=brows*mask;noseWeight[i]=nose*mask;mouthWeight[i]=mouth*mask;contourWeight[i]=contour*mask;
-      const identity=Math.min(4.4,3.5*eyes+3.0*brows+2.5*nose+3.0*mouth+2.0*contour);
+      const identity=Math.min(5.2,4.20*eyes+3.35*brows+2.75*nose+3.65*mouth+1.90*contour);
       identityWeight[i]=identity*mask;featurePrior[i]=feature*mask;
 
       const fineDark=(1-sharp[i])*mask,midDark=(1-(.58*blurMid[i]+.42*sharp[i]))*mask,coarseDark=(1-blurCoarse[i])*mask;
+      const identityEdge=Math.min(1,e*(1.00*eyes+.72*brows+.48*nose+.92*mouth+.18*contour));
       target[i]=fineDark;
+      faceLockTarget[i]=Math.max(0,Math.min(1,fineDark+.34*identityEdge*(.45+.55*face)));
       midTarget[i]=Math.max(0,Math.min(1,.78*midDark+.22*fineDark));
       coarseTarget[i]=Math.max(0,Math.min(1,.82*coarseDark+.18*midDark));
 
-      const backgroundScale=.42+.58*Math.min(1,face*1.35+.22*contour);
-      coarseWeight[i]=(backgroundScale+.34*face+.22*e+.12*feature)*mask+.0001;
-      importance[i]=(backgroundScale+.94*e+.32*face+1.05*feature+.36*identity)*mask+.0001;
-      detailWeight[i]=(backgroundScale+2.45*e+.45*face+2.35*feature+.78*identity)*mask+.0001;
-      faceLockWeight[i]=(backgroundScale+1.55*e+.58*face+1.85*feature+1.48*identity)*mask+.0001;
+      const backgroundScale=.20+.80*Math.min(1,face*1.22+.16*contour);
+      coarseWeight[i]=(backgroundScale+.30*face+.20*e+.10*feature)*mask+.0001;
+      importance[i]=(backgroundScale+.88*e+.34*face+1.12*feature+.40*identity)*mask+.0001;
+      detailWeight[i]=(backgroundScale+2.20*e+.50*face+2.55*feature+.92*identity)*mask+.0001;
+      faceLockWeight[i]=(backgroundScale+1.35*e+.62*face+2.10*feature+1.92*identity)*mask+.0001;
     }
-    return{target,midTarget,coarseTarget,importance,detailWeight,coarseWeight,featurePrior,faceLockWeight,identityWeight,eyeWeight,browWeight,noseWeight,mouthWeight,contourWeight,canvas:off}
+    return{target,faceLockTarget,midTarget,coarseTarget,importance,detailWeight,coarseWeight,featurePrior,faceLockWeight,identityWeight,eyeWeight,browWeight,noseWeight,mouthWeight,contourWeight,canvas:off,faceGuideMode:portraitGuide?'mediapipe':'heuristic',landmarkCount:portraitGuide?.landmarkCount||0}
   }
 
   function candidateSet(cur,count,total,step,minJump){
@@ -275,7 +350,7 @@
       const A=l1.a,B=l1.b,C=l2.b,oldP1=sample(A,B),oldP2=sample(B,C),o1=l1.opacity||Math.min(.12,(l1.alpha||profile.alpha)*1.18),o2=l2.opacity||Math.min(.12,(l2.alpha||profile.alpha)*1.18);
 
       applyThreadPath(rendered,oldP2,o2,true);applyThreadPath(rendered,oldP1,o1,true);
-      const oldGain=routeGainFromBase(rendered,oldP1,o1,oldP2,o2,prep.target,prep.detailWeight);
+      const oldGain=routeGainFromBase(rendered,oldP1,o1,oldP2,o2,prep.faceLockTarget||prep.target,prep.faceLockWeight||prep.detailWeight);
       let bestGain=oldGain,bestX=B,bestP1=oldP1,bestP2=oldP2;
 
       const choices=candidateSet(B,candidateCount,total,i+7919,minJump);
@@ -283,7 +358,7 @@
         const X=choices[q];if(X===A||X===C)continue;
         if(pinDistance(A,X,total)<minJump||pinDistance(X,C,total)<minJump)continue;
         const p1=sample(A,X),p2=sample(X,C);
-        let gain=routeGainFromBase(rendered,p1,o1,p2,o2,prep.target,prep.detailWeight);
+        let gain=routeGainFromBase(rendered,p1,o1,p2,o2,prep.faceLockTarget||prep.target,prep.faceLockWeight||prep.detailWeight);
         gain-=profile.repeatPenalty*((used.get(routeKey(A,X))||0)+(used.get(routeKey(X,C))||0))*.45;
         if(gain>bestGain){bestGain=gain;bestX=X;bestP1=p1;bestP2=p2}
       }
@@ -327,7 +402,7 @@
     for(let step=0;step<maxLines;step++){
       const phase=step/maxLines;
       if(step%48===0||step===0)identityNeed=identityPressure(prep,rendered);
-      const activeTarget=phase<.30?prep.coarseTarget:(phase<.66?prep.midTarget:prep.target);
+      const activeTarget=phase<.30?prep.coarseTarget:(phase<.66?prep.midTarget:(phase<.80?prep.target:prep.faceLockTarget));
       const imp=phase<.30?prep.coarseWeight:(phase<.60?prep.importance:(phase<.82?prep.detailWeight:prep.faceLockWeight));
       const lineAlpha=alpha*(phase>.80?.78:(phase<.30?1.06:1)),threadOpacity=Math.min(.12,lineAlpha*1.18);
       const phaseBoost=phase>.82?1.42:(phase>.62?1.18:1),needBoost=1+Math.min(.60,identityNeed*.44);
@@ -341,7 +416,7 @@
           score+=imp[p]*gain;
           if(phase>.58)identityGain+=prep.identityWeight[p]*gain;
         }
-        if(phase>.58)score+=identityGain*(.10+.16*identityNeed);
+        if(phase>.56)score+=identityGain*(.18+.28*identityNeed);
         const key=routeKey(cur,j),routeRepeats=used.get(key)||0,pinLoad=(pinUse[cur]+pinUse[j])/Math.max(1,step+1);
         score-=repeatPenalty*routeRepeats;
         if(phase>.64)score-=profile.pinReusePenalty*pinLoad;
@@ -366,7 +441,7 @@
       quality,mode:'mono',pins:pinCount,lines:lines.length,alpha,optimizer:'portrait-face-lock-adaptive-nails-v2',gain:lastGain,
       rmse:overall.rmse,detailRmse:detail.rmse,identityRmse:identity.rmse,identityQuality:identity.quality,
       eyeRmse:eyes.rmse,mouthRmse:mouth.rmse,noseRmse:nose.rmse,contourRmse:contour.rmse,
-      repairAccepted:repair.accepted,activePins,maxPinUse,identityPressure:finalIdentityPressure
+      repairAccepted:repair.accepted,activePins,maxPinUse,identityPressure:finalIdentityPressure,faceGuideMode:prep.faceGuideMode,landmarkCount:prep.landmarkCount
     }}
   }
 
@@ -381,8 +456,10 @@
   async function generateUser(){
     if(!userImage)return;
     const btn=$('#sa-generate');btn.disabled=true;$('#sa-result-tools')?.classList.add('hidden');
-    const contrast=Number($('#sa-contrast')?.value||1.2),gamma=Number($('#sa-gamma')?.value||.9),profile=profileFor(),prep=imageToTarget(userImage,profile.size,contrast,gamma);
-    setStatus(AR()?'تحليل الضوء والملامح…':'ANALYZING LIGHT + FEATURES…',2);
+    const contrast=Number($('#sa-contrast')?.value||1.2),gamma=Number($('#sa-gamma')?.value||.9),profile=profileFor();
+    setStatus(AR()?'تحديد ملامح الوجه محليًا…':'MAPPING FACE LANDMARKS LOCALLY…',1);
+    const prep=await imageToTarget(userImage,profile.size,contrast,gamma);
+    setStatus(prep.faceGuideMode==='mediapipe'?(AR()?'تم تثبيت ملامح الوجه…':'FACE LANDMARKS LOCKED…'):(AR()?'تعذر كشف الوجه — استخدام التوجيه الاحتياطي…':'FACE DETECTION FALLBACK…'),3);
     const result=await binaryWeightedAsync(prep,profile,(step,maxLines,phase)=>{
       const pct=Math.min(98,4+Math.round(step/maxLines*94));
       const label=phase<.35?(AR()?'بناء الشكل العام…':'BUILDING STRUCTURE…'):phase<.68?(AR()?'مطابقة الظلال…':'MATCHING TONE…'):phase<.86?(AR()?'تثبيت العينين والملامح…':'REFINING FEATURES…'):(AR()?'التفاصيل النهائية…':'FINAL DETAIL PASS…');
@@ -390,7 +467,8 @@
     });
     userResult=result;userSequence=result.lines;window.__saUserBg='#f2efe8';window.__saLastMetrics={...result.meta};
     animateUser(result);$('#sa-user-sequence').textContent=seqText(result.lines);$('#sa-result-tools')?.classList.remove('hidden');
-    setStatus(AR()?('اكتمل · '+result.lines.length+' خط · '+result.meta.pins+' مسمار'):('COMPLETE · '+result.lines.length+' LINES · '+result.meta.pins+' NAILS'),100);btn.disabled=false;
+    const guideTag=result.meta.faceGuideMode==='mediapipe'?(AR()?' · FACE LOCK':' · FACE LOCK'):(AR()?' · FALLBACK':' · FALLBACK');
+    setStatus(AR()?('اكتمل · '+result.lines.length+' خط · '+result.meta.pins+' مسمار'+guideTag):('COMPLETE · '+result.lines.length+' LINES · '+result.meta.pins+' NAILS'+guideTag),100);btn.disabled=false;
   }
   function animateUser(data){cancelAnimationFrame(userRaf);let n=0;paintPortrait($('#sa-user-result'),data,0,window.__saUserBg);if(matchMedia('(prefers-reduced-motion: reduce)').matches){paintPortrait($('#sa-user-result'),data,data.lines.length,window.__saUserBg);return}const tick=()=>{n=Math.min(data.lines.length,n+Math.max(6,Math.ceil(data.lines.length/165)));paintPortrait($('#sa-user-result'),data,n,window.__saUserBg);if(n<data.lines.length)userRaf=requestAnimationFrame(tick)};userRaf=requestAnimationFrame(tick)}
 
