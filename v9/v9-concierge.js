@@ -675,6 +675,17 @@
     try{recognition.start()}catch(_){}
   });
 
+  $('.concierge-starter',root).forEach(button=>button.addEventListener('click',()=>{
+    const box=$('#concierge-problem');
+    if(!box)return;
+    const suggestion=lang()==='ar'?button.dataset.starterAr:button.dataset.starterEn;
+    if(!box.value.trim())box.value=suggestion||'';
+    state.problem=box.value.trim();
+    persist();
+    box.focus();
+    box.setSelectionRange(box.value.length,box.value.length);
+  }));
+
   restore();
   bindDraftInputs();
   $('#concierge-files')?.addEventListener('change',e=>pickFiles(e.currentTarget));
