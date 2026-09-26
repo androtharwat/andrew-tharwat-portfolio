@@ -109,7 +109,7 @@
       window.ATS_AUTH_CLIENT.logError('access-code',error);
       authState('This access code is invalid, expired, or has already been used. Ask ATS for a new 6-digit code.',true);
     }finally{
-      $('#access-email').disabled=false;$('#access-otp').disabled=false;busy(b,false,'OPEN CLIENT ACCESS →');
+      $('#access-email').disabled=false;$('#access-otp').disabled=false;busy(b,false,'CONTINUE →');
     }
   }
 
@@ -139,31 +139,53 @@
     return ar>en?'ar':'en';
   }
 
+  function evidencePrompt(key,l='en'){
+    const ar={
+      current_state:['لو عندك حاجة بتوضح الوضع الحالي، هتفيدنا.','صورة، Screenshot، لينك أو ملف بسيط ممكن يساعدنا نشوف نفس اللي أنت شايفه.'],
+      impact:['لو التأثير له رقم أو مثال، ده أقوى من الوصف لوحده.','مبيعات، وقت ضايع، تكلفة، شكوى، Incident أو أي رقم تقريبي مفيد — ولو مش متأكد قول إنه تقريبي.'],
+      evidence:['هنا الدليل مهم أكتر من الكلام.','ابعت أقرب حاجة تثبت اللي بيحصل: Screenshot، Report، Data، صورة، فويس نوت أو مثال حقيقي.'],
+      process_point:['لو تقدر تورينا مكان المشكلة، هنفهم أسرع.','Screenshot للخطوة، Workflow، فيديو قصير أو صورة من المكان/الشاشة هتساعدنا نحدد نقطة التعطل.'],
+      prior_attempts:['لو عندك نسخة من محاولة سابقة، ابعتها.','تصميم قديم، حملة، تقرير، إجراء سابق أو أي نتيجة هتساعدنا ما نكررّش نفس المحاولة.'],
+      affected_people:['أي مثال حقيقي من الشخص المتأثر مفيد.','شكوى عميل، Feedback، ملاحظة عامل أو رسالة مختصرة ممكن توضح التجربة الفعلية.'],
+      desired_outcome:['مش لازم ترفع ملف هنا.','لو عندك Target أو KPI مكتوب تقدر تضيفه، لكن وصفك للنتيجة المطلوبة كفاية.'],
+      constraints:['لو القيود موثقة، شاركها.','ميزانية، Timeline، Standard، Regulation، Specification أو Policy — فقط لو ليها علاقة بالقرار.']
+    };
+    const en={
+      current_state:['Show us the current situation if you can.','A screenshot, photo, link or short file can help ATS see what you are seeing.'],
+      impact:['A number or real example makes the impact clearer.','Sales, lost time, cost, complaints, incidents or an approximate figure are useful — just tell us if it is an estimate.'],
+      evidence:['Evidence is especially useful here.','Share the closest proof of what is happening: screenshot, report, data, photo, voice note or a real example.'],
+      process_point:['Show us where the problem appears if you can.','A screenshot, workflow, short video or site photo can help us isolate the failure point.'],
+      prior_attempts:['A previous attempt can save time.','An older design, campaign, report, procedure or result helps ATS avoid repeating what already failed.'],
+      affected_people:['A real example from the affected person can help.','Feedback, a complaint, a worker observation or a short message can reveal how the problem is actually experienced.'],
+      desired_outcome:['No file is needed here.','If you already have a target or KPI you can share it, but your description is enough.'],
+      constraints:['Share documented constraints only if relevant.','Budget, timeline, standards, regulations, specifications or policies can shape a realistic solution.']
+    };
+    return (l==='ar'?ar:en)[key]||(l==='ar'?['لو عندك حاجة مفيدة، شاركها فقط لو ليها علاقة بالمشكلة.','مش محتاج تجمع ملفات لمجرد الرفع. الجودة أهم من العدد.']:['Share something only if it helps explain the problem.','You do not need to upload files for the sake of it. Relevance matters more than volume.']);
+  }
+
   function renderDiscovery(discovery={},proposal=null,lead={}){
     const panel=$('#discovery-panel');if(!panel)return;
     panel.classList.toggle('hidden',!discovery?.id);
     if(!discovery?.id)return;
+    const l=preferredDiscoveryLang(lead);
     const score=Math.max(0,Math.min(100,Number(discovery.readiness_score||0)));
     $('#discovery-score').textContent=score+'%';
     $('#discovery-progress-bar').style.width=score+'%';
 
-    const known=[
-      ['Current situation',discovery.current_state],
-      ['Impact',discovery.impact],
-      ['People affected',discovery.affected_people],
-      ['Desired outcome',discovery.desired_outcome]
-    ].filter(([,v])=>String(v||'').trim());
-    $('#discovery-known').innerHTML=known.length?known.map(([k,v])=>'<article><span>'+esc(k.toUpperCase())+'</span><p>'+esc(v)+'</p></article>').join(''):'';
+    const labels=l==='ar'
+      ?[['الوضع الحالي',discovery.current_state],['التأثير',discovery.impact],['المتأثرون',discovery.affected_people],['النتيجة المطلوبة',discovery.desired_outcome]]
+      :[['Current situation',discovery.current_state],['Impact',discovery.impact],['People affected',discovery.affected_people],['Desired outcome',discovery.desired_outcome]];
+    const known=labels.filter(([,v])=>String(v||'').trim());
+    $('#discovery-known').innerHTML=known.length?known.map(([k,v])=>'<article><span>'+esc(k.toUpperCase())+'</span><p>'+esc(v)+'</p></article>').join(''):'<div class="discovery-file-empty">'+(l==='ar'?'لسه بنكوّن الصورة من كلامك.':'ATS is still building the picture from what you shared.')+'</div>';
 
     const q=discovery.next_question,locked=!!proposal;
     $('#discovery-file-picker')?.classList.toggle('hidden',locked);
-    const card=$('#discovery-question-card'),waiting=$('#discovery-waiting');
+    const card=$('#discovery-question-card'),waiting=$('#discovery-waiting'),nudge=$('#evidence-nudge');
     card.classList.toggle('hidden',!q||locked);
     waiting.classList.toggle('hidden',!!q&&!locked);
     $('#step-diagnosis').classList.remove('done','active');
 
     if(q&&!locked){
-      const l=preferredDiscoveryLang(lead);
       const systemQuestion=String(q.question||'').trim();
       const primary=systemQuestion||q[l]||q.en||q.ar||'';
       const secondary=systemQuestion?'':(q[l==='ar'?'en':'ar']||'');
@@ -173,17 +195,36 @@
       $('#discovery-question-alt').textContent=secondary;
       $('#discovery-why').textContent=why;
       $('#discovery-answer').value='';
+      $('#discovery-answer').placeholder=l==='ar'?'جاوب بطريقتك. لو مش متأكد، قول مش متأكد — دي معلومة مفيدة.':'Answer naturally. If you are not sure, say so — that is useful information.';
+      $('#submit-discovery').textContent=l==='ar'?'إرسال الإجابة ←':'SEND THIS ANSWER →';
       $('#step-diagnosis').classList.add('active');
-      $('#current-action').textContent=l==='ar'?'ساعدنا نفهم السبب الحقيقي':'Help us isolate the real problem';
-      $('#current-action-copy').textContent=primary;
+      $('#journey-status').textContent=l==='ar'?'بنفهم المشكلة':'UNDERSTANDING THE PROBLEM';
+      $('#journey-copy').textContent=l==='ar'?'بنطلب أقل معلومة ممكنة تساعدنا نفرق بين العرض والسبب الحقيقي.':'ATS is asking for the smallest useful piece of information before choosing a direction.';
+      $('#current-action').textContent=l==='ar'?'جاوب سؤال واحد بس':'One answer will move this forward';
+      $('#current-action-copy').textContent=l==='ar'?'مش محتاج تكتب بريف أو ترتب الكلام. جاوب زي ما هتشرح لشخص قدامك.':'No brief or technical language needed. Answer the way you would explain it to a person.';
+      const [evTitle,evCopy]=evidencePrompt(q.key,l);
+      $('#evidence-request-title').textContent=evTitle;
+      $('#evidence-request-copy').textContent=evCopy;
+      nudge?.classList.toggle('recommended',['current_state','impact','evidence','process_point','prior_attempts'].includes(q.key));
+      nudge?.classList.remove('hidden');
     }else if(discovery.diagnosis_ready||locked){
       $('#step-diagnosis').classList.add('done');
-      waiting.innerHTML='<b>DIAGNOSIS READY</b><p>'+(discovery.root_problem?esc(discovery.root_problem):'ATS has enough structured evidence to move from discovery into a solution plan.')+'</p>';
+      waiting.classList.remove('hidden');
+      waiting.innerHTML='<b>'+(l==='ar'?'عندنا معلومات كفاية نتحرك':'WE HAVE ENOUGH TO MOVE FORWARD')+'</b><p>'+(l==='ar'?'ATS بيراجع الصورة كاملة قبل ما يحولها لاتجاه حل واضح.':'ATS is reviewing the full picture before turning it into a clear solution direction.')+'</p>';
+      $('#journey-status').textContent=l==='ar'?'مراجعة ATS':'ATS REVIEW';
+      $('#journey-copy').textContent=l==='ar'?'مش مطلوب منك حاجة دلوقتي إلا لو طلبنا معلومة محددة.':'Nothing else is needed from you unless ATS asks for one specific item.';
+      $('#current-action').textContent=l==='ar'?'مفيش حاجة مطلوبة منك دلوقتي':'Nothing needed from you right now';
+      $('#current-action-copy').textContent=l==='ar'?'إحنا بنراجع الأدلة والافتراضات قبل ما نحدد الاتجاه.':'ATS is checking the evidence and assumptions before defining the direction.';
+      nudge?.classList.toggle('hidden',locked);
     }else{
       $('#step-diagnosis').classList.add('active');
-      waiting.innerHTML='<b>ATS IS VALIDATING THE ROOT CAUSE</b><p>Your discovery answers are complete enough for analysis. No extra question is required from you right now.</p>';
-      $('#current-action').textContent='No action required';
-      $('#current-action-copy').textContent='ATS is validating the root cause before defining the solution.';
+      waiting.classList.remove('hidden');
+      waiting.innerHTML='<b>'+(l==='ar'?'ATS بيراجع اللي وصل':'ATS IS REVIEWING WHAT YOU SHARED')+'</b><p>'+(l==='ar'?'لو احتجنا معلومة تغيّر القرار فعلًا، هنطلبها كسؤال واحد واضح.':'If another piece of information can materially change the decision, it will appear here as one clear question.')+'</p>';
+      $('#journey-status').textContent=l==='ar'?'مراجعة المعلومات':'REVIEWING THE EVIDENCE';
+      $('#journey-copy').textContent=l==='ar'?'الخطوة الجاية هتظهر هنا فقط لما تكون مطلوبة.':'Your next step will appear here only when it is actually needed.';
+      $('#current-action').textContent=l==='ar'?'مفيش حاجة مطلوبة منك دلوقتي':'Nothing needed from you right now';
+      $('#current-action-copy').textContent=l==='ar'?'ATS بيحلل اللي أرسلته وبيحدد هل في معلومة ناقصة فعلًا.':'ATS is analyzing what you shared and checking whether anything important is actually missing.';
+      nudge?.classList.remove('recommended');
     }
   }
 
@@ -224,7 +265,7 @@
     $('#lead-code').textContent=lead.lead_code||'—';
     $('#lead-details').innerHTML=[['Service',lead.service],['Status',String(lead.status||'new').replaceAll('_',' ')],['Timeline',lead.timeline||'Not specified'],['Budget',lead.budget_range||'Not specified'],['Company',lead.company_name||'Individual'],['Submitted',fmt(lead.created_at)]].map(([a,b])=>`<div><span>${esc(a.toUpperCase())}</span><b>${esc(b||'—')}</b></div>`).join('');
 
-    const statusCopy={new:['REQUEST RECEIVED','Your brief is inside ATS and is waiting for review.'],contacted:['CONTACT STARTED','ATS has started the discovery conversation with you.'],discovery:['DISCOVERY IN PROGRESS','We are separating symptoms, evidence and root causes before defining the solution.'],reviewing:['UNDER REVIEW','ATS is reviewing the challenge, evidence and project fit.'],qualified:['DIAGNOSIS READY','The problem is sufficiently understood to shape the solution and commercial scope.'],proposal_sent:['PROPOSAL STAGE','Your proposal is ready or awaiting your decision.'],negotiation:['COMMERCIAL REVIEW','The proposal is under commercial review.'],won:['PROJECT ACTIVATED','Your request has been converted into an active project.'],lost:['REQUEST CLOSED','This request has been closed.']};
+    const statusCopy={new:['REQUEST RECEIVED','ATS has your starting point. We will only ask for what helps us understand it better.'],contacted:['UNDERSTANDING THE PROBLEM','We are building a clearer picture with you, one useful question at a time.'],discovery:['UNDERSTANDING THE PROBLEM','ATS is separating what is known, what is assumed and what still needs evidence.'],reviewing:['ATS REVIEW','We are reviewing the information before choosing a solution direction.'],qualified:['DIRECTION READY','ATS has enough validated context to shape the next step.'],proposal_sent:['YOUR DIRECTION IS READY','Review the recommended scope and decide whether to start.'],negotiation:['COMMERCIAL REVIEW','We are aligning the final scope and terms with you.'],won:['PROJECT ACTIVATED','Your request is now an active ATS project.'],lost:['REQUEST CLOSED','This request has been closed.']};
     const [status,copy]=statusCopy[lead.status]||['REQUEST STATUS',String(lead.status||'').toUpperCase()];
     $('#journey-status').textContent=status;$('#journey-copy').textContent=copy;
     $('#current-action').textContent='No action required';$('#current-action-copy').textContent='ATS will update this area whenever you need to take action.';
@@ -300,6 +341,12 @@
     if(otpLabel)otpLabel.textContent='ATS ACCESS CODE · ' + OTP_LENGTH + ' DIGITS';
   }
 
+  $('#details-toggle')?.addEventListener('click',()=>{
+    const body=$('#details-body'),button=$('#details-toggle');if(!body||!button)return;
+    const open=body.classList.contains('hidden');
+    body.classList.toggle('hidden',!open);button.setAttribute('aria-expanded',String(open));
+    button.textContent=open?'HIDE DETAILS ↑':'SEE WHAT ATS UNDERSTANDS SO FAR ↓';
+  });
   $('#verify-code')?.addEventListener('click',openWithAccessCode);$('#sign-out')?.addEventListener('click',signOut);$('#refresh-access')?.addEventListener('click',()=>loadContext().catch(e=>toast(e.message)));$('#submit-discovery')?.addEventListener('click',submitDiscoveryAnswer);
   $('#discovery-file-picker')?.addEventListener('click',()=>{
     uploadState('');
