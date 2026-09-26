@@ -163,7 +163,8 @@
 
     const blurFine=boxBlur(lum,1),blurMid=boxBlur(lum,Math.max(2,Math.round(size*.018))),blurCoarse=boxBlur(lum,Math.max(5,Math.round(size*.045)));
     const sharp=new Float32Array(size*size),edge=new Float32Array(size*size),target=new Float32Array(size*size),midTarget=new Float32Array(size*size),coarseTarget=new Float32Array(size*size);
-    const importance=new Float32Array(size*size),detailWeight=new Float32Array(size*size),coarseWeight=new Float32Array(size*size),featurePrior=new Float32Array(size*size);
+    const importance=new Float32Array(size*size),detailWeight=new Float32Array(size*size),coarseWeight=new Float32Array(size*size),featurePrior=new Float32Array(size*size),faceLockWeight=new Float32Array(size*size);
+    const eyeWeight=new Float32Array(size*size),browWeight=new Float32Array(size*size),noseWeight=new Float32Array(size*size),mouthWeight=new Float32Array(size*size),contourWeight=new Float32Array(size*size),identityWeight=new Float32Array(size*size);
     for(let i=0;i<sharp.length;i++)sharp[i]=Math.max(0,Math.min(1,lum[i]+.62*(lum[i]-blurFine[i])));
 
     let edgeMax=.0001;
@@ -176,24 +177,29 @@
     for(let y=0;y<size;y++)for(let x=0;x<size;x++){
       const i=y*size+x,dx=(x-size/2)/(size/2),dy=(y-size/2)/(size/2),rad=Math.sqrt(dx*dx+dy*dy),mask=Math.max(0,Math.min(1,(1.01-rad)/.055));
       const e=Math.min(1,edge[i]/edgeMax),face=Math.exp(-(((dx/.57)**2)+((dy/.76)**2))*1.08);
-      const leftEye=gauss(dx,dy,-.21,-.16,.13,.065),rightEye=gauss(dx,dy,.21,-.16,.13,.065);
-      const leftBrow=gauss(dx,dy,-.21,-.285,.17,.055),rightBrow=gauss(dx,dy,.21,-.285,.17,.055);
+      const leftEye=gauss(dx,dy,-.21,-.16,.13,.065),rightEye=gauss(dx,dy,.21,-.16,.13,.065),eyes=Math.min(1,leftEye+rightEye);
+      const leftBrow=gauss(dx,dy,-.21,-.285,.17,.055),rightBrow=gauss(dx,dy,.21,-.285,.17,.055),brows=Math.min(1,leftBrow+rightBrow);
       const nose=gauss(dx,dy,0,.035,.105,.23),mouth=gauss(dx,dy,0,.285,.22,.075);
       const chin=gauss(dx,dy,0,.49,.25,.10),cheeks=gauss(dx,dy,-.30,.09,.16,.20)+gauss(dx,dy,.30,.09,.16,.20);
       const oval=Math.exp(-Math.pow(Math.sqrt((dx/.52)**2+(dy/.70)**2)-1,2)/.018);
-      const feature=Math.min(1.65,.92*(leftEye+rightEye)+.58*(leftBrow+rightBrow)+.38*nose+.72*mouth+.22*chin+.14*cheeks+.20*oval);
-      featurePrior[i]=feature*mask;
+      const contour=Math.min(1,oval+.32*chin),feature=Math.min(1.65,.92*eyes+.58*brows+.38*nose+.72*mouth+.22*chin+.14*cheeks+.20*oval);
+
+      eyeWeight[i]=eyes*mask;browWeight[i]=brows*mask;noseWeight[i]=nose*mask;mouthWeight[i]=mouth*mask;contourWeight[i]=contour*mask;
+      const identity=Math.min(4.4,3.5*eyes+3.0*brows+2.5*nose+3.0*mouth+2.0*contour);
+      identityWeight[i]=identity*mask;featurePrior[i]=feature*mask;
 
       const fineDark=(1-sharp[i])*mask,midDark=(1-(.58*blurMid[i]+.42*sharp[i]))*mask,coarseDark=(1-blurCoarse[i])*mask;
       target[i]=fineDark;
       midTarget[i]=Math.max(0,Math.min(1,.78*midDark+.22*fineDark));
       coarseTarget[i]=Math.max(0,Math.min(1,.82*coarseDark+.18*midDark));
 
-      coarseWeight[i]=(1+.34*face+.22*e+.12*feature)*mask+.0001;
-      importance[i]=(1+.94*e+.32*face+1.10*feature)*mask+.0001;
-      detailWeight[i]=(1+2.45*e+.45*face+2.75*feature)*mask+.0001;
+      const backgroundScale=.42+.58*Math.min(1,face*1.35+.22*contour);
+      coarseWeight[i]=(backgroundScale+.34*face+.22*e+.12*feature)*mask+.0001;
+      importance[i]=(backgroundScale+.94*e+.32*face+1.05*feature+.36*identity)*mask+.0001;
+      detailWeight[i]=(backgroundScale+2.45*e+.45*face+2.35*feature+.78*identity)*mask+.0001;
+      faceLockWeight[i]=(backgroundScale+1.55*e+.58*face+1.85*feature+1.48*identity)*mask+.0001;
     }
-    return{target,midTarget,coarseTarget,importance,detailWeight,coarseWeight,featurePrior,canvas:off}
+    return{target,midTarget,coarseTarget,importance,detailWeight,coarseWeight,featurePrior,faceLockWeight,identityWeight,eyeWeight,browWeight,noseWeight,mouthWeight,contourWeight,canvas:off}
   }
 
   function candidateSet(cur,count,total,step,minJump){
@@ -298,53 +304,76 @@
     return{accepted,lastGain}
   }
 
+  function weightedErrorStats(target,rendered,weight){
+    let err=0,wSum=0,blank=0;
+    for(let i=0;i<target.length;i++){
+      const w=weight[i];if(w<=.0001)continue;
+      const d=target[i]-rendered[i];err+=w*d*d;blank+=w*target[i]*target[i];wSum+=w;
+    }
+    const rmse=Math.sqrt(err/Math.max(.0001,wSum)),blankRmse=Math.sqrt(blank/Math.max(.0001,wSum));
+    const quality=Math.max(0,Math.min(100,100*(1-rmse/Math.max(.0001,blankRmse))));
+    return{rmse,blankRmse,quality}
+  }
+  function identityPressure(prep,rendered){
+    const identity=weightedErrorStats(prep.target,rendered,prep.identityWeight),detail=weightedErrorStats(prep.target,rendered,prep.detailWeight);
+    const ratio=identity.rmse/Math.max(.0001,detail.rmse);
+    return Math.max(0,Math.min(1.25,(ratio-.78)*1.65))
+  }
+
   async function binaryWeightedAsync(prep,profile,onProgress){
     const {size,pins:pinCount,maxLines,alpha,candidates,repeatPenalty,minLines}=profile;
-    const pins=makePins(size,pinCount),sample=lineSamplerAA(pins,size),rendered=new Float32Array(prep.target.length),used=new Map(),lines=[];
-    const minJump=Math.max(8,Math.floor(pinCount*.035));let cur=7%pinCount,lastGain=0;
+    const pins=makePins(size,pinCount),sample=lineSamplerAA(pins,size),rendered=new Float32Array(prep.target.length),used=new Map(),pinUse=new Uint16Array(pinCount),lines=[];
+    const minJump=Math.max(8,Math.floor(pinCount*.035));let cur=7%pinCount,lastGain=0,identityNeed=0;
     for(let step=0;step<maxLines;step++){
       const phase=step/maxLines;
-      const activeTarget=phase<.34?prep.coarseTarget:(phase<.70?prep.midTarget:prep.target);
-      const imp=phase<.34?prep.coarseWeight:(phase<.70?prep.importance:prep.detailWeight);
-      const lineAlpha=alpha*(phase>.78?.80:(phase<.34?1.06:1));
-      const threadOpacity=Math.min(.12,lineAlpha*1.18);
-      const candidateBudget=phase>.70?Math.min(pinCount-1,Math.round(candidates*1.35)):candidates;
+      if(step%48===0||step===0)identityNeed=identityPressure(prep,rendered);
+      const activeTarget=phase<.30?prep.coarseTarget:(phase<.66?prep.midTarget:prep.target);
+      const imp=phase<.30?prep.coarseWeight:(phase<.60?prep.importance:(phase<.82?prep.detailWeight:prep.faceLockWeight));
+      const lineAlpha=alpha*(phase>.80?.78:(phase<.30?1.06:1)),threadOpacity=Math.min(.12,lineAlpha*1.18);
+      const phaseBoost=phase>.82?1.42:(phase>.62?1.18:1),needBoost=1+Math.min(.60,identityNeed*.44);
+      const candidateBudget=Math.min(pinCount-1,Math.max(candidates,Math.round(candidates*phaseBoost*needBoost)));
       const choices=candidateSet(cur,candidateBudget,pinCount,step,minJump);let best=0,bp=-1,bestPath=null;
       for(let q=0;q<choices.length;q++){
-        const j=choices[q],path=sample(cur,j),idx=path.idx,wt=path.wt;let score=0;
+        const j=choices[q],path=sample(cur,j),idx=path.idx,wt=path.wt;let score=0,identityGain=0;
         for(let k=0;k<idx.length;k++){
           const p=idx[k],coverage=Math.min(1,wt[k]),a=threadOpacity*coverage,before=rendered[p],after=before+(1-before)*a;
-          const e0=activeTarget[p]-before,e1=activeTarget[p]-after;
-          score+=imp[p]*(e0*e0-e1*e1);
+          const e0=activeTarget[p]-before,e1=activeTarget[p]-after,gain=e0*e0-e1*e1;
+          score+=imp[p]*gain;
+          if(phase>.58)identityGain+=prep.identityWeight[p]*gain;
         }
-        const key=cur<j?cur+'-'+j:j+'-'+cur;score-=repeatPenalty*(used.get(key)||0);
+        if(phase>.58)score+=identityGain*(.10+.16*identityNeed);
+        const key=routeKey(cur,j),routeRepeats=used.get(key)||0,pinLoad=(pinUse[cur]+pinUse[j])/Math.max(1,step+1);
+        score-=repeatPenalty*routeRepeats;
+        if(phase>.64)score-=profile.pinReusePenalty*pinLoad;
         if(score>best){best=score;bp=j;bestPath=path}
       }
       if(bp<0||(step>=minLines&&best<=0))break;
-      const idx=bestPath.idx,wt=bestPath.wt;
-      for(let k=0;k<idx.length;k++){
-        const p=idx[k],coverage=Math.min(1,wt[k]),a=threadOpacity*coverage;
-        rendered[p]+= (1-rendered[p])*a;
-      }
-      const key=cur<bp?cur+'-'+bp:bp+'-'+cur;used.set(key,(used.get(key)||0)+1);
+      applyThreadPath(rendered,bestPath,threadOpacity,false);
+      const key=routeKey(cur,bp);used.set(key,(used.get(key)||0)+1);pinUse[cur]++;pinUse[bp]++;
       lines.push({a:cur,b:bp,color:'black',alpha:lineAlpha,opacity:threadOpacity});cur=bp;lastGain=best;
       if(step%12===0){onProgress?.(step,maxLines,phase,lastGain);await wait()}
     }
     const repair=await repairSequenceAsync(lines,pins,sample,rendered,prep,used,profile,onProgress);
     if(repair.lastGain>0)lastGain=repair.lastGain;
-    let err=0,wSum=0,detailErr=0,detailWSum=0;
-    for(let i=0;i<rendered.length;i++){
-      const d=prep.target[i]-rendered[i],w=prep.importance[i],dw=prep.detailWeight[i];
-      err+=w*d*d;wSum+=w;detailErr+=dw*d*d;detailWSum+=dw;
-    }
-    const rmse=Math.sqrt(err/Math.max(.0001,wSum)),detailRmse=Math.sqrt(detailErr/Math.max(.0001,detailWSum));
-    return{pins,lines,size,meta:{quality,mode:'mono',pins:pinCount,lines:lines.length,alpha,optimizer:'portrait-multiscale-compositing-l2+route-repair',gain:lastGain,rmse,detailRmse,repairAccepted:repair.accepted}}
+
+    const overall=weightedErrorStats(prep.target,rendered,prep.importance),detail=weightedErrorStats(prep.target,rendered,prep.detailWeight),identity=weightedErrorStats(prep.target,rendered,prep.identityWeight);
+    const eyes=weightedErrorStats(prep.target,rendered,prep.eyeWeight),mouth=weightedErrorStats(prep.target,rendered,prep.mouthWeight),nose=weightedErrorStats(prep.target,rendered,prep.noseWeight),contour=weightedErrorStats(prep.target,rendered,prep.contourWeight);
+    const finalPinUse=new Uint16Array(pinCount);
+    for(let i=0;i<lines.length;i++){finalPinUse[lines[i].a]++;finalPinUse[lines[i].b]++}
+    let activePins=0,maxPinUse=0;for(let i=0;i<finalPinUse.length;i++){if(finalPinUse[i])activePins++;if(finalPinUse[i]>maxPinUse)maxPinUse=finalPinUse[i]}
+    const finalIdentityPressure=identityPressure(prep,rendered);
+    return{pins,lines,size,meta:{
+      quality,mode:'mono',pins:pinCount,lines:lines.length,alpha,optimizer:'portrait-face-lock-adaptive-nails-v2',gain:lastGain,
+      rmse:overall.rmse,detailRmse:detail.rmse,identityRmse:identity.rmse,identityQuality:identity.quality,
+      eyeRmse:eyes.rmse,mouthRmse:mouth.rmse,noseRmse:nose.rmse,contourRmse:contour.rmse,
+      repairAccepted:repair.accepted,activePins,maxPinUse,identityPressure:finalIdentityPressure
+    }}
   }
 
   const profileFor=()=>{
-    if(quality==='share')return{size:240,pins:360,maxLines:5000,alpha:.033,candidates:165,repeatPenalty:.014,minLines:2400,repairWindows:96,repairCandidates:64};
-    if(quality==='enhanced')return{size:220,pins:300,maxLines:3600,alpha:.037,candidates:145,repeatPenalty:.013,minLines:1800,repairWindows:68,repairCandidates:52};
-    return{size:180,pins:220,maxLines:2300,alpha:.044,candidates:105,repeatPenalty:.012,minLines:1100,repairWindows:30,repairCandidates:36};
+    if(quality==='share')return{size:240,pins:360,maxLines:5000,alpha:.033,candidates:165,repeatPenalty:.014,minLines:2400,repairWindows:96,repairCandidates:64,pinReusePenalty:.0022};
+    if(quality==='enhanced')return{size:220,pins:300,maxLines:3600,alpha:.037,candidates:145,repeatPenalty:.013,minLines:1800,repairWindows:68,repairCandidates:52,pinReusePenalty:.0020};
+    return{size:180,pins:220,maxLines:2300,alpha:.044,candidates:105,repeatPenalty:.012,minLines:1100,repairWindows:30,repairCandidates:36,pinReusePenalty:.0018};
   };
   function setStatus(msg,pct){if($('#sa-lab-status'))$('#sa-lab-status').textContent=msg;if($('#sa-lab-progress'))$('#sa-lab-progress').textContent=pct+'%'}
   function seqText(lines,limit=14){return lines.slice(0,limit).map(x=>String(x.a).padStart(3,'0')+'→'+String(x.b).padStart(3,'0')).join(' · ')}
@@ -359,7 +388,7 @@
       const label=phase<.35?(AR()?'بناء الشكل العام…':'BUILDING STRUCTURE…'):phase<.68?(AR()?'مطابقة الظلال…':'MATCHING TONE…'):phase<.86?(AR()?'تثبيت العينين والملامح…':'REFINING FEATURES…'):(AR()?'التفاصيل النهائية…':'FINAL DETAIL PASS…');
       setStatus(label,pct);
     });
-    userResult=result;userSequence=result.lines;window.__saUserBg='#f2efe8';
+    userResult=result;userSequence=result.lines;window.__saUserBg='#f2efe8';window.__saLastMetrics={...result.meta};
     animateUser(result);$('#sa-user-sequence').textContent=seqText(result.lines);$('#sa-result-tools')?.classList.remove('hidden');
     setStatus(AR()?('اكتمل · '+result.lines.length+' خط · '+result.meta.pins+' مسمار'):('COMPLETE · '+result.lines.length+' LINES · '+result.meta.pins+' NAILS'),100);btn.disabled=false;
   }
