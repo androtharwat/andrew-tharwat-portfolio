@@ -12,6 +12,7 @@
 
   const state={
     mode:'quick',
+    starterChoice:'',
     problem:'',
     link:'',
     extra:'',
@@ -180,7 +181,7 @@
 
   function persist(){
     try{localStorage.setItem(STORAGE,JSON.stringify({
-      mode:state.mode,problem:state.problem,link:state.link,extra:state.extra,
+      mode:state.mode,starterChoice:state.starterChoice,problem:state.problem,link:state.link,extra:state.extra,
       followups:state.followups,skippedKeys:state.skippedKeys,
       name:state.name,email:state.email,phone:state.phone,company:state.company
     }))}catch(_){}
@@ -188,7 +189,7 @@
   function restore(){
     try{
       const raw=JSON.parse(localStorage.getItem(STORAGE)||'{}');
-      ['mode','problem','link','extra','name','email','phone','company'].forEach(k=>{if(typeof raw[k]==='string')state[k]=raw[k]});
+      ['mode','starterChoice','problem','link','extra','name','email','phone','company'].forEach(k=>{if(typeof raw[k]==='string')state[k]=raw[k]});
       if(Array.isArray(raw.followups))state.followups=raw.followups.slice(0,6);
       if(Array.isArray(raw.skippedKeys))state.skippedKeys=raw.skippedKeys.slice(0,8);
     }catch(_){}
@@ -445,11 +446,39 @@
     setTimeout(()=>{el.classList.remove('concierge-invalid');el.removeAttribute('aria-invalid')},2600);
   }
 
+  function starterPlaceholder(){
+    const l=lang();
+    const prompts={
+      problem:{en:'Tell us what is happening now, where it happens, and what you notice when it goes wrong.',ar:'احكي إيه اللي بيحصل دلوقتي، بيظهر فين، وإيه اللي بتلاحظه وقت ما المشكلة بتحصل.'},
+      idea:{en:'Tell us the idea in your own words: what you want to create, for whom, and what you want it to achieve.',ar:'احكي الفكرة بطريقتك: عايز تعمل إيه، لمين، وإيه النتيجة اللي عايز توصل لها.'},
+      improve:{en:'Tell us what already exists, what is not good enough today, and what you want to improve.',ar:'احكي إيه الموجود دلوقتي، إيه اللي مش عاجبك فيه، وإيه اللي عايز يتحسن.'}
+    };
+    return prompts[state.starterChoice]?.[l]||($('#concierge-problem')?.dataset[l+'Placeholder']||'');
+  }
+
+  function syncStarterUI(){
+    $$('.concierge-starter',root).forEach(button=>{
+      const active=button.dataset.starter===state.starterChoice;
+      button.classList.toggle('active',active);
+      button.setAttribute('aria-pressed',String(active));
+    });
+    const problem=$('#concierge-problem');
+    if(problem)problem.placeholder=starterPlaceholder();
+    const btn=$('#concierge-understand');
+    if(btn){
+      btn.disabled=!state.starterChoice;
+      btn.textContent=!state.starterChoice
+        ?(lang()==='ar'?'اختار نقطة البداية ↑':'CHOOSE A STARTING POINT ↑')
+        :(lang()==='ar'?'ساعد ATS يفهم ←':'HELP ATS UNDERSTAND →');
+    }
+  }
+
   function refreshLocale(){
     const l=lang();
     const problem=$('#concierge-problem');
     const extra=$('#concierge-extra');
     if(problem)problem.placeholder=problem.dataset[l+'Placeholder']||problem.dataset.enPlaceholder||'';
+    syncStarterUI();
     if(extra)extra.placeholder=extra.dataset[l+'Placeholder']||extra.dataset.enPlaceholder||'';
     if(state.stage==='understand'&&state.problem)renderUnderstanding();
     if(state.stage==='snapshot'&&state.analysis){
@@ -486,6 +515,11 @@
     state.link=$('#concierge-link').value.trim();
     state.extra=$('#concierge-extra').value.trim();
     persist();
+    if(!state.starterChoice){
+      showMessage('#concierge-tell-error',lang()==='ar'?'اختار واحدة من الثلاثة الأول علشان نبدأ من السياق الصح.':'Choose one of the three starting points first.');
+      $('.concierge-starters',root)?.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
     if(state.problem.length<20){
       showMessage('#concierge-tell-error',t().min);
       focusInvalid($('#concierge-problem'));
@@ -555,6 +589,7 @@
     const capabilityNames=caps.map(k=>labels[k]||k);
     const discovery={...(smart.discovery||{})};
     discovery.original_words=state.problem;
+    discovery.starting_point=state.starterChoice;
     discovery.extra_context=state.extra||'';
     discovery.context_link=state.link||'';
     discovery.conversation_mode=state.mode;
@@ -571,6 +606,8 @@
 
     let goal=[
       'ATS STUDIO CONCIERGE — SMART INTAKE',
+      '',
+      'STARTING POINT: '+state.starterChoice,
       '',
       'ORIGINAL CLIENT WORDS:',
       state.problem,
@@ -670,22 +707,20 @@
     try{recognition.start()}catch(_){}
   });
 
-  $('.concierge-starter',root).forEach(button=>button.addEventListener('click',()=>{
-    const box=$('#concierge-problem');
-    if(!box)return;
-    const suggestion=lang()==='ar'?button.dataset.starterAr:button.dataset.starterEn;
-    if(!box.value.trim())box.value=suggestion||'';
-    state.problem=box.value.trim();
+  $$('.concierge-starter',root).forEach(button=>button.addEventListener('click',()=>{
+    state.starterChoice=button.dataset.starter||'';
     persist();
-    box.focus();
-    box.setSelectionRange(box.value.length,box.value.length);
+    clearMessage('#concierge-tell-error');
+    syncStarterUI();
+    $('#concierge-problem')?.focus();
   }));
 
   restore();
   bindDraftInputs();
+  syncStarterUI();
   $('#concierge-files')?.addEventListener('change',e=>pickFiles(e.currentTarget));
   if(state.link||state.extra)$('#concierge-context')?.classList.remove('hidden');
   renderSelectedFiles();
   refreshLocale();
-  document.getElementById('lang-toggle')?.addEventListener('click',()=>setTimeout(refreshLocale,80));
+  document.getElementById('lang-toggle')?.addEventListener('click',()=>setTimeout(()=>{refreshLocale();syncStarterUI()},80));
 })();

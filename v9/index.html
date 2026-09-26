@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="/v9/v9-phase4.css?v=1" />
   <link rel="stylesheet" href="/v9/v9-phase5.css?v=1" />
   <link rel="stylesheet" href="/v9/v9-polish.css?v=1" />
-  <link rel="stylesheet" href="/v9/v9-concierge.css?v=3" />
+  <link rel="stylesheet" href="/v9/v9-concierge.css?v=4" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
 </head>
 <body data-lang="en">
@@ -119,12 +119,11 @@
             <div class="concierge-stage-copy">
               <small data-en="START IN YOUR OWN WORDS" data-ar="ابدأ بطريقتك">START IN YOUR OWN WORDS</small>
               <h3 data-en="What are you trying to do — or what isn’t working the way you want?" data-ar="إيه اللي بتحاول تعمله، أو إيه اللي مش ماشي بالشكل اللي أنت عايزه؟">What are you trying to do — or what isn’t working the way you want?</h3>
-              <p data-en="You don’t need to know the service, solution, budget or technical terms. Tell us the situation as you would explain it to a person." data-ar="مش لازم تعرف اسم الخدمة أو الحل أو الميزانية أو المصطلحات الفنية. احكي الموقف زي ما هتحكيه لشخص قدامك.">You don’t need to know the service, solution, budget or technical terms. Tell us the situation as you would explain it to a person.</p>
             </div>
             <div class="concierge-starters" aria-label="Easy ways to start">
-              <button type="button" class="concierge-starter" data-starter-en="Something is not working the way I expected." data-starter-ar="عندي حاجة مش شغالة بالشكل اللي كنت متوقعه."><span>01</span><b data-en="SOMETHING ISN'T WORKING" data-ar="في حاجة مش شغالة">SOMETHING ISN'T WORKING</b></button>
-              <button type="button" class="concierge-starter" data-starter-en="I have an idea, but I am not sure how to turn it into something real." data-starter-ar="عندي فكرة، بس مش عارف أحولها لحاجة حقيقية ومنظمة."><span>02</span><b data-en="I HAVE AN IDEA" data-ar="عندي فكرة">I HAVE AN IDEA</b></button>
-              <button type="button" class="concierge-starter" data-starter-en="Something already exists, but I want to improve it." data-starter-ar="عندي حاجة موجودة بالفعل وعايز أحسنها."><span>03</span><b data-en="I WANT TO IMPROVE SOMETHING" data-ar="عايز أحسن حاجة موجودة">I WANT TO IMPROVE SOMETHING</b></button>
+              <button type="button" class="concierge-starter" data-starter="problem" data-starter-en="Something is not working the way I expected." data-starter-ar="عندي حاجة مش شغالة بالشكل اللي كنت متوقعه." aria-pressed="false"><span>01</span><b data-en="SOMETHING ISN'T WORKING" data-ar="في حاجة مش شغالة">SOMETHING ISN'T WORKING</b></button>
+              <button type="button" class="concierge-starter" data-starter="idea" data-starter-en="I have an idea, but I am not sure how to turn it into something real." data-starter-ar="عندي فكرة، بس مش عارف أحولها لحاجة حقيقية ومنظمة." aria-pressed="false"><span>02</span><b data-en="I HAVE AN IDEA" data-ar="عندي فكرة">I HAVE AN IDEA</b></button>
+              <button type="button" class="concierge-starter" data-starter="improve" data-starter-en="Something already exists, but I want to improve it." data-starter-ar="عندي حاجة موجودة بالفعل وعايز أحسنها." aria-pressed="false"><span>03</span><b data-en="I WANT TO IMPROVE SOMETHING" data-ar="عايز أحسن حاجة موجودة">I WANT TO IMPROVE SOMETHING</b></button>
             </div>
             <div class="concierge-input-card">
               <label for="concierge-problem" data-en="START WITH WHAT YOU KNOW" data-ar="ابدأ باللي تعرفه">START WITH WHAT YOU KNOW</label>
@@ -152,7 +151,7 @@
               </div>
             </div>
             <div id="concierge-tell-error" class="concierge-message hidden" role="alert"></div>
-            <div class="concierge-actions"><button id="concierge-understand" class="btn primary" type="button" data-en="HELP ATS UNDERSTAND →" data-ar="ساعد ATS يفهم ←">HELP ATS UNDERSTAND →</button></div>
+            <div class="concierge-actions"><button id="concierge-understand" class="btn primary" type="button" disabled data-en="HELP ATS UNDERSTAND →" data-ar="ساعد ATS يفهم ←">CHOOSE A STARTING POINT ↑</button></div>
           </section>
 
           <section class="concierge-stage" data-concierge-stage="understand">
@@ -228,7 +227,7 @@
   <script src="/v9/v9-brief-recovery.js?v=1"></script>
   <script src="/v9/v9-phase2.js?v=4"></script>
   <script src="/v9/v9-lead-submit.js?v=4"></script>
-  <script src="/v9/v9-concierge.js?v=3"></script>
+  <script src="/v9/v9-concierge.js?v=4"></script>
   <script src="/v9/v9-polish.js?v=13"></script>
 </body>
 </html>
