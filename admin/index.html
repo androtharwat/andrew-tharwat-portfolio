@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin.css?v=5" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
-  <link rel="stylesheet" href="/admin/admin-unified.css?v=9" />
+  <link rel="stylesheet" href="/admin/admin-unified.css?v=10" />
   <link rel="stylesheet" href="/admin/admin-i18n.css?v=1" />
 </head>
 <body>
@@ -221,6 +221,20 @@
 
       <div class="lead-workspace-grid">
         <div class="lead-workspace-main">
+          <section class="lead-workspace-card case-cockpit">
+            <div class="workspace-section-head"><div><span>CASE AT A GLANCE</span><h3>What needs your attention now?</h3></div><small>Decision-first view</small></div>
+            <div class="case-cockpit-grid">
+              <article><span>WHAT WE KNOW</span><b id="case-known-summary">Loading…</b><small id="case-known-detail"></small></article>
+              <article><span>WHAT IS MISSING</span><b id="case-missing-summary">Loading…</b><small id="case-missing-detail"></small></article>
+              <article><span>WORKING READING</span><b id="case-reading-summary">Loading…</b><small id="case-reading-detail"></small></article>
+              <article class="case-next"><span>NEXT BEST MOVE</span><b id="case-next-summary">Loading…</b><small id="case-next-detail"></small></article>
+            </div>
+            <div class="case-cockpit-actions">
+              <button id="case-go-next" type="button" class="primary">GO TO NEXT MOVE ↓</button>
+              <button id="case-open-evidence" type="button" class="secondary">REVIEW EVIDENCE</button>
+            </div>
+          </section>
+
           <section class="lead-workspace-card">
             <div class="workspace-section-head"><div><span>CLIENT BRIEF</span><h3>What they told us</h3></div><small>Structured from the original intake</small></div>
             <div id="lead-brief-grid" class="lead-brief-grid"></div>
@@ -450,6 +464,6 @@
   <script src="/config.js"></script>
   <script src="/admin/admin-i18n.js?v=7"></script>
   <script src="/admin.js?v=10"></script>
-  <script src="/admin/admin-unified.js?v=11"></script>
+  <script src="/admin/admin-unified.js?v=12"></script>
 </body>
 </html>
