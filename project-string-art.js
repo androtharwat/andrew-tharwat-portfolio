@@ -224,7 +224,7 @@
 
     const blurFine=boxBlur(lum,1),blurMid=boxBlur(lum,Math.max(2,Math.round(size*.018))),blurCoarse=boxBlur(lum,Math.max(5,Math.round(size*.045)));
     const sharp=new Float32Array(size*size),edge=new Float32Array(size*size),target=new Float32Array(size*size),faceLockTarget=new Float32Array(size*size),midTarget=new Float32Array(size*size),coarseTarget=new Float32Array(size*size);
-    const importance=new Float32Array(size*size),detailWeight=new Float32Array(size*size),coarseWeight=new Float32Array(size*size),featurePrior=new Float32Array(size*size),faceLockWeight=new Float32Array(size*size);
+    const importance=new Float32Array(size*size),detailWeight=new Float32Array(size*size),coarseWeight=new Float32Array(size*size),featurePrior=new Float32Array(size*size),faceLockWeight=new Float32Array(size*size),faceRegion=new Float32Array(size*size);
     const eyeWeight=new Float32Array(size*size),browWeight=new Float32Array(size*size),noseWeight=new Float32Array(size*size),mouthWeight=new Float32Array(size*size),contourWeight=new Float32Array(size*size),identityWeight=new Float32Array(size*size);
     for(let i=0;i<sharp.length;i++)sharp[i]=Math.max(0,Math.min(1,lum[i]+.62*(lum[i]-blurFine[i])));
 
@@ -257,24 +257,25 @@
         feature=Math.min(1.65,.92*eyes+.58*brows+.38*nose+.72*mouth+.20*contour);
       }
 
-      eyeWeight[i]=eyes*mask;browWeight[i]=brows*mask;noseWeight[i]=nose*mask;mouthWeight[i]=mouth*mask;contourWeight[i]=contour*mask;
-      const identity=Math.min(5.2,4.20*eyes+3.35*brows+2.75*nose+3.65*mouth+1.90*contour);
+      eyeWeight[i]=eyes*mask;browWeight[i]=brows*mask;noseWeight[i]=nose*mask;mouthWeight[i]=mouth*mask;contourWeight[i]=contour*mask;faceRegion[i]=face*mask;
+      const identity=Math.min(5.8,4.60*eyes+3.55*brows+2.85*nose+4.05*mouth+1.75*contour);
       identityWeight[i]=identity*mask;featurePrior[i]=feature*mask;
 
       const fineDark=(1-sharp[i])*mask,midDark=(1-(.58*blurMid[i]+.42*sharp[i]))*mask,coarseDark=(1-blurCoarse[i])*mask;
-      const identityEdge=Math.min(1,e*(1.00*eyes+.72*brows+.48*nose+.92*mouth+.18*contour));
+      const identityEdge=Math.min(1,e*(1.12*eyes+.78*brows+.46*nose+1.04*mouth+.14*contour));
+      const localDark=Math.max(0,blurMid[i]-sharp[i]),featureDark=Math.min(1,1.28*eyes+.84*brows+.44*nose+1.10*mouth);
       target[i]=fineDark;
-      faceLockTarget[i]=Math.max(0,Math.min(1,fineDark+.34*identityEdge*(.45+.55*face)));
+      faceLockTarget[i]=Math.max(0,Math.min(1,fineDark+.72*localDark*featureDark+.38*identityEdge*(.34+.66*face)));
       midTarget[i]=Math.max(0,Math.min(1,.78*midDark+.22*fineDark));
       coarseTarget[i]=Math.max(0,Math.min(1,.82*coarseDark+.18*midDark));
 
-      const backgroundScale=.20+.80*Math.min(1,face*1.22+.16*contour);
-      coarseWeight[i]=(backgroundScale+.30*face+.20*e+.10*feature)*mask+.0001;
-      importance[i]=(backgroundScale+.88*e+.34*face+1.12*feature+.40*identity)*mask+.0001;
-      detailWeight[i]=(backgroundScale+2.20*e+.50*face+2.55*feature+.92*identity)*mask+.0001;
-      faceLockWeight[i]=(backgroundScale+1.35*e+.62*face+2.10*feature+1.92*identity)*mask+.0001;
+      const backgroundScale=.10+.90*Math.min(1,face*1.18+.12*contour);
+      coarseWeight[i]=(backgroundScale+.28*face+.18*e+.08*feature)*mask+.0001;
+      importance[i]=(backgroundScale+.82*e+.36*face+1.16*feature+.44*identity)*mask+.0001;
+      detailWeight[i]=(backgroundScale+2.08*e+.52*face+2.72*feature+1.04*identity)*mask+.0001;
+      faceLockWeight[i]=(backgroundScale+1.18*e+.66*face+2.38*feature+2.35*identity)*mask+.0001;
     }
-    return{target,faceLockTarget,midTarget,coarseTarget,importance,detailWeight,coarseWeight,featurePrior,faceLockWeight,identityWeight,eyeWeight,browWeight,noseWeight,mouthWeight,contourWeight,canvas:off,faceGuideMode:portraitGuide?'mediapipe':'heuristic',landmarkCount:portraitGuide?.landmarkCount||0}
+    return{target,faceLockTarget,midTarget,coarseTarget,importance,detailWeight,coarseWeight,featurePrior,faceLockWeight,faceRegion,identityWeight,eyeWeight,browWeight,noseWeight,mouthWeight,contourWeight,canvas:off,faceGuideMode:portraitGuide?'mediapipe':'heuristic',landmarkCount:portraitGuide?.landmarkCount||0}
   }
 
   function candidateSet(cur,count,total,step,minJump){
@@ -390,36 +391,65 @@
     return{rmse,blankRmse,quality}
   }
   function identityPressure(prep,rendered){
-    const identity=weightedErrorStats(prep.target,rendered,prep.identityWeight),detail=weightedErrorStats(prep.target,rendered,prep.detailWeight);
+    const identity=weightedErrorStats(prep.faceLockTarget||prep.target,rendered,prep.identityWeight),detail=weightedErrorStats(prep.target,rendered,prep.detailWeight);
     const ratio=identity.rmse/Math.max(.0001,detail.rmse);
-    return Math.max(0,Math.min(1.25,(ratio-.78)*1.65))
+    return Math.max(0,Math.min(1.35,(ratio-.72)*1.72))
+  }
+  function regionPressures(prep,rendered){
+    const target=prep.faceLockTarget||prep.target;
+    const quality=w=>weightedErrorStats(target,rendered,w).quality;
+    const deficit=q=>Math.max(.08,Math.min(1,1-q/100));
+    return{
+      eye:deficit(quality(prep.eyeWeight)),
+      brow:deficit(quality(prep.browWeight)),
+      nose:deficit(quality(prep.noseWeight)),
+      mouth:deficit(quality(prep.mouthWeight)),
+      contour:deficit(quality(prep.contourWeight))
+    }
   }
 
   async function binaryWeightedAsync(prep,profile,onProgress){
     const {size,pins:pinCount,maxLines,alpha,candidates,repeatPenalty,minLines}=profile;
     const pins=makePins(size,pinCount),sample=lineSamplerAA(pins,size),rendered=new Float32Array(prep.target.length),used=new Map(),pinUse=new Uint16Array(pinCount),lines=[];
-    const minJump=Math.max(8,Math.floor(pinCount*.035));let cur=7%pinCount,lastGain=0,identityNeed=0;
+    const minJump=Math.max(8,Math.floor(pinCount*.035));let cur=7%pinCount,lastGain=0,identityNeed=0,regions={eye:1,brow:1,nose:1,mouth:1,contour:1};
     for(let step=0;step<maxLines;step++){
       const phase=step/maxLines;
-      if(step%48===0||step===0)identityNeed=identityPressure(prep,rendered);
-      const activeTarget=phase<.30?prep.coarseTarget:(phase<.66?prep.midTarget:(phase<.80?prep.target:prep.faceLockTarget));
-      const imp=phase<.30?prep.coarseWeight:(phase<.60?prep.importance:(phase<.82?prep.detailWeight:prep.faceLockWeight));
-      const lineAlpha=alpha*(phase>.80?.78:(phase<.30?1.06:1)),threadOpacity=Math.min(.12,lineAlpha*1.18);
-      const phaseBoost=phase>.82?1.42:(phase>.62?1.18:1),needBoost=1+Math.min(.60,identityNeed*.44);
-      const candidateBudget=Math.min(pinCount-1,Math.max(candidates,Math.round(candidates*phaseBoost*needBoost)));
+      if(step%64===0||step===0){identityNeed=identityPressure(prep,rendered);regions=regionPressures(prep,rendered)}
+      const activeTarget=phase<.20?prep.coarseTarget:(phase<.48?prep.midTarget:(phase<.65?prep.target:prep.faceLockTarget));
+      const imp=phase<.20?prep.coarseWeight:(phase<.48?prep.importance:(phase<.65?prep.detailWeight:prep.faceLockWeight));
+      const lineAlpha=alpha*(phase>.72?.68:(phase<.20?1.04:1)),threadOpacity=Math.min(.12,lineAlpha*1.18);
+      const phaseBoost=phase>.76?1.72:(phase>.55?1.28:1),needBoost=1+Math.min(.72,identityNeed*.52);
+      const candidateBudget=phase>.82?pinCount-1:Math.min(pinCount-1,Math.max(candidates,Math.round(candidates*phaseBoost*needBoost)));
       const choices=candidateSet(cur,candidateBudget,pinCount,step,minJump);let best=0,bp=-1,bestPath=null;
       for(let q=0;q<choices.length;q++){
-        const j=choices[q],path=sample(cur,j),idx=path.idx,wt=path.wt;let score=0,identityGain=0;
+        const j=choices[q],path=sample(cur,j),idx=path.idx,wt=path.wt;
+        let score=0,identityGain=0,eyeGain=0,browGain=0,noseGain=0,mouthGain=0,contourGain=0,collateral=0;
         for(let k=0;k<idx.length;k++){
           const p=idx[k],coverage=Math.min(1,wt[k]),a=threadOpacity*coverage,before=rendered[p],after=before+(1-before)*a;
           const e0=activeTarget[p]-before,e1=activeTarget[p]-after,gain=e0*e0-e1*e1;
           score+=imp[p]*gain;
-          if(phase>.58)identityGain+=prep.identityWeight[p]*gain;
+          if(phase>.46){
+            identityGain+=prep.identityWeight[p]*gain;
+            eyeGain+=prep.eyeWeight[p]*gain;browGain+=prep.browWeight[p]*gain;noseGain+=prep.noseWeight[p]*gain;mouthGain+=prep.mouthWeight[p]*gain;contourGain+=prep.contourWeight[p]*gain;
+          }
+          if(phase>.68&&prep.faceRegion[p]<.18){
+            const ob=Math.max(0,before-activeTarget[p]),oa=Math.max(0,after-activeTarget[p]);
+            collateral+=(1-prep.faceRegion[p])*(oa*oa-ob*ob);
+          }
         }
-        if(phase>.56)score+=identityGain*(.18+.28*identityNeed);
+        if(phase>.46){
+          const regional=
+            eyeGain*(1.8+5.2*regions.eye)+
+            browGain*(.85+2.2*regions.brow)+
+            noseGain*(.70+1.8*regions.nose)+
+            mouthGain*(1.55+4.4*regions.mouth)+
+            contourGain*(.38+1.0*regions.contour);
+          score+=identityGain*(.30+.46*identityNeed)+regional;
+        }
+        if(phase>.68)score-=collateral*(.42+.26*identityNeed);
         const key=routeKey(cur,j),routeRepeats=used.get(key)||0,pinLoad=(pinUse[cur]+pinUse[j])/Math.max(1,step+1);
         score-=repeatPenalty*routeRepeats;
-        if(phase>.64)score-=profile.pinReusePenalty*pinLoad;
+        if(phase>.58)score-=profile.pinReusePenalty*pinLoad;
         if(score>best){best=score;bp=j;bestPath=path}
       }
       if(bp<0||(step>=minLines&&best<=0))break;
@@ -431,16 +461,17 @@
     const repair=await repairSequenceAsync(lines,pins,sample,rendered,prep,used,profile,onProgress);
     if(repair.lastGain>0)lastGain=repair.lastGain;
 
-    const overall=weightedErrorStats(prep.target,rendered,prep.importance),detail=weightedErrorStats(prep.target,rendered,prep.detailWeight),identity=weightedErrorStats(prep.target,rendered,prep.identityWeight);
-    const eyes=weightedErrorStats(prep.target,rendered,prep.eyeWeight),mouth=weightedErrorStats(prep.target,rendered,prep.mouthWeight),nose=weightedErrorStats(prep.target,rendered,prep.noseWeight),contour=weightedErrorStats(prep.target,rendered,prep.contourWeight);
+    const overall=weightedErrorStats(prep.target,rendered,prep.importance),detail=weightedErrorStats(prep.target,rendered,prep.detailWeight),identity=weightedErrorStats(prep.faceLockTarget||prep.target,rendered,prep.identityWeight);
+    const eyes=weightedErrorStats(prep.faceLockTarget||prep.target,rendered,prep.eyeWeight),mouth=weightedErrorStats(prep.faceLockTarget||prep.target,rendered,prep.mouthWeight),nose=weightedErrorStats(prep.faceLockTarget||prep.target,rendered,prep.noseWeight),contour=weightedErrorStats(prep.faceLockTarget||prep.target,rendered,prep.contourWeight);
     const finalPinUse=new Uint16Array(pinCount);
     for(let i=0;i<lines.length;i++){finalPinUse[lines[i].a]++;finalPinUse[lines[i].b]++}
     let activePins=0,maxPinUse=0;for(let i=0;i<finalPinUse.length;i++){if(finalPinUse[i])activePins++;if(finalPinUse[i]>maxPinUse)maxPinUse=finalPinUse[i]}
-    const finalIdentityPressure=identityPressure(prep,rendered);
+    const finalIdentityPressure=identityPressure(prep,rendered),finalRegions=regionPressures(prep,rendered);
     return{pins,lines,size,meta:{
-      quality,mode:'mono',pins:pinCount,lines:lines.length,alpha,optimizer:'portrait-face-lock-adaptive-nails-v2',gain:lastGain,
+      quality,mode:'mono',pins:pinCount,lines:lines.length,alpha,optimizer:'portrait-region-balanced-identity-v3',gain:lastGain,
       rmse:overall.rmse,detailRmse:detail.rmse,identityRmse:identity.rmse,identityQuality:identity.quality,
       eyeRmse:eyes.rmse,mouthRmse:mouth.rmse,noseRmse:nose.rmse,contourRmse:contour.rmse,
+      eyePressure:finalRegions.eye,mouthPressure:finalRegions.mouth,nosePressure:finalRegions.nose,
       repairAccepted:repair.accepted,activePins,maxPinUse,identityPressure:finalIdentityPressure,faceGuideMode:prep.faceGuideMode,landmarkCount:prep.landmarkCount
     }}
   }
@@ -467,8 +498,8 @@
     });
     userResult=result;userSequence=result.lines;window.__saUserBg='#f2efe8';window.__saLastMetrics={...result.meta};
     animateUser(result);$('#sa-user-sequence').textContent=seqText(result.lines);$('#sa-result-tools')?.classList.remove('hidden');
-    const guideTag=result.meta.faceGuideMode==='mediapipe'?(AR()?' · FACE LOCK':' · FACE LOCK'):(AR()?' · FALLBACK':' · FALLBACK');
-    setStatus(AR()?('اكتمل · '+result.lines.length+' خط · '+result.meta.pins+' مسمار'+guideTag):('COMPLETE · '+result.lines.length+' LINES · '+result.meta.pins+' NAILS'+guideTag),100);btn.disabled=false;
+    const guideTag=result.meta.faceGuideMode==='mediapipe'?' · FACE LOCK':' · FALLBACK',idTag=' · ID '+Math.round(result.meta.identityQuality||0)+'%';
+    setStatus(AR()?('اكتمل · '+result.lines.length+' خط · '+result.meta.pins+' مسمار'+guideTag+idTag):('COMPLETE · '+result.lines.length+' LINES · '+result.meta.pins+' NAILS'+guideTag+idTag),100);btn.disabled=false;
   }
   function animateUser(data){cancelAnimationFrame(userRaf);let n=0;paintPortrait($('#sa-user-result'),data,0,window.__saUserBg);if(matchMedia('(prefers-reduced-motion: reduce)').matches){paintPortrait($('#sa-user-result'),data,data.lines.length,window.__saUserBg);return}const tick=()=>{n=Math.min(data.lines.length,n+Math.max(6,Math.ceil(data.lines.length/165)));paintPortrait($('#sa-user-result'),data,n,window.__saUserBg);if(n<data.lines.length)userRaf=requestAnimationFrame(tick)};userRaf=requestAnimationFrame(tick)}
 
