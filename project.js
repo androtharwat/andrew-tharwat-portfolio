@@ -15,9 +15,9 @@
   function galleryMarkup(items,p){
     if(!items.length)return'';
     const ar=isAr(),stringArt=p.slug==='magic-of-string-art';
-    const title=stringArt?(ar?'أعمال مختارة':'SELECTED ARTWORKS.'):(ar?'معرض المشروع':'PROJECT GALLERY.');
-    const kicker=stringArt?(ar?'مجموعة يدوية':'HANDCRAFTED COLLECTION'):(ar?'الأرشيف البصري':'VISUAL ARCHIVE');
-    const note=stringArt?(ar?'اسحب على الموبايل أو استخدم الأسهم للتنقل بين الفيديو والأعمال. كل صورة تظهر بنسبتها الأصلية، وآخر سلايد مخصص لطلب بورتريه خاص بك.':'Swipe on mobile or use the arrows to move through the film and artworks. Every image keeps its original proportions, and the final slide lets you order your own portrait.'):(ar?'صور وفيديوهات من المشروع.':'Images and video from the project.');
+    const title=stringArt?(ar?'دلوقتي بص للأعمال من جديد':'NOW LOOK AGAIN.'):(ar?'معرض المشروع':'PROJECT GALLERY.');
+    const kicker=stringArt?(ar?'بورتريهات حقيقية · خيط حقيقي':'REAL PORTRAITS · REAL THREAD'):(ar?'الأرشيف البصري':'VISUAL ARCHIVE');
+    const note=stringArt?(ar?'بعد ما عرفت المنطق، قرب من الأعمال: شوف مناطق الكثافة، اتجاهات الخيط، وإزاي الشبكة تتحول لملامح لما تبعد خطوة.':'Now that you know the logic, look closer: notice density, thread direction, and how a network of straight lines becomes a face when you step back.'):(ar?'صور وفيديوهات من المشروع.':'Images and video from the project.');
 
     if(stringArt){
       const total=items.length+1;
@@ -29,7 +29,7 @@
         ? `<article class="gallery-slide gallery-slide-service" data-slide-index="${orderIndex}" data-i18n-skip="1"><div class="portrait-offer" dir="rtl"><div class="portrait-offer-glow"></div><div class="portrait-offer-content"><span class="portrait-offer-kicker">عرض لفترة محدودة</span><h3>اطلب بورتريه<br><b>String Art ملون</b></h3><div class="portrait-offer-price"><strong>$350</strong><del>$550</del><span>مقاس 60 سم</span></div><p class="portrait-offer-intro">قطعة فنية تُجهّز خصيصًا لك من صورتك، من معالجة الصورة وحتى مراجعة التصميم معك قبل بدء التنفيذ.</p><div class="portrait-offer-steps"><span><i>01</i> ترسل الصورة المناسبة للبورتريه</span><span><i>02</i> تتم معالجة الصورة وتجهيز التصميم ومراجعته معك</span><span><i>03</i> بعد اعتماد التصميم يتم دفع مبلغ تأمين لبدء التنفيذ</span><span><i>04</i> يتم تجهيز العمل ثم تنسيق الشحن والاستلام معك</span></div><div class="portrait-offer-contact"><a href="${waHref}" target="_blank" rel="noopener" class="portrait-whatsapp"><span>اطلب البورتريه الآن عبر واتساب</span><b>+20 150 541 4444</b></a><a class="portrait-facebook" href="https://www.facebook.com/AndewStringArt" target="_blank" rel="noopener"><span class="portrait-facebook-icon">f</span><span class="portrait-facebook-copy"><strong>شاهد المزيد من أعمال String Art</strong><b>Facebook · @AndewStringArt</b></span><span class="portrait-facebook-arrow">↗</span></a><small>بمجرد الضغط هتفتح لك رسالة طلب جاهزة على واتساب.</small></div></div></div><div class="slide-caption"><span>${orderNumber} / ${orderNumber}</span><strong>اطلب بورتريه خاص بك</strong></div></article>`
         : `<article class="gallery-slide gallery-slide-service" data-slide-index="${orderIndex}" data-i18n-skip="1"><div class="portrait-offer" dir="ltr"><div class="portrait-offer-glow"></div><div class="portrait-offer-content"><span class="portrait-offer-kicker">LIMITED-TIME OFFER</span><h3>ORDER YOUR OWN<br><b>COLORED STRING ART PORTRAIT</b></h3><div class="portrait-offer-price"><strong>$350</strong><del>$550</del><span>60 CM</span></div><p class="portrait-offer-intro">A one-of-a-kind portrait prepared especially from your photo, including image preparation and a design review with you before production begins.</p><div class="portrait-offer-steps"><span><i>01</i> Send the photo you want to use</span><span><i>02</i> We prepare the image and review the design with you</span><span><i>03</i> After approval, a deposit confirms production</span><span><i>04</i> The artwork is completed, then shipping and delivery are arranged</span></div><div class="portrait-offer-contact"><a href="${waHref}" target="_blank" rel="noopener" class="portrait-whatsapp"><span>ORDER NOW ON WHATSAPP</span><b>+20 150 541 4444</b></a><a class="portrait-facebook" href="https://www.facebook.com/AndewStringArt" target="_blank" rel="noopener"><span class="portrait-facebook-icon">f</span><span class="portrait-facebook-copy"><strong>See more String Art work</strong><b>Facebook · @AndewStringArt</b></span><span class="portrait-facebook-arrow">↗</span></a><small>Tap WhatsApp and a ready-made order message will open automatically.</small></div></div></div><div class="slide-caption"><span>${orderNumber} / ${orderNumber}</span><strong>ORDER YOUR PORTRAIT</strong></div></article>`;
       const dots=Array.from({length:total},(_,i)=>`<button type="button" class="gallery-dot${i===0?' active':''}" data-gallery-dot="${i}" aria-label="${ar?'الانتقال إلى السلايد':'Go to slide'} ${i+1}"></button>`).join('');
-      return `<section class="gallery art-gallery carousel-gallery" data-i18n-skip="1"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${ar?`${items.length} أعمال + طلب`:`${items.length} ARTWORK${items.length===1?'':'S'} + ORDER`}</span></div><div class="gallery-slider-shell"><button type="button" class="gallery-arrow gallery-prev" aria-label="${ar?'العمل السابق':'Previous artwork'}">←</button><div class="gallery-slider-track" tabindex="0">${slides+orderSlide}</div><button type="button" class="gallery-arrow gallery-next" aria-label="${ar?'العمل التالي':'Next artwork'}">→</button></div><div class="gallery-slider-footer"><div class="gallery-dots">${dots}</div><div class="gallery-progress"><strong id="gallery-current">01</strong><span>/ ${String(total).padStart(2,'0')}</span></div></div><div class="gallery-swipe-hint">${ar?'اسحب للمشاهدة • أو استخدم الأسهم':'SWIPE / DRAG • OR USE ARROWS'}</div></section>`;
+      return `<section id="sa-gallery" class="gallery art-gallery carousel-gallery" data-i18n-skip="1"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${ar?`${items.length} أعمال + طلب`:`${items.length} ARTWORK${items.length===1?'':'S'} + ORDER`}</span></div><div class="gallery-slider-shell"><button type="button" class="gallery-arrow gallery-prev" aria-label="${ar?'العمل السابق':'Previous artwork'}">←</button><div class="gallery-slider-track" tabindex="0">${slides+orderSlide}</div><button type="button" class="gallery-arrow gallery-next" aria-label="${ar?'العمل التالي':'Next artwork'}">→</button></div><div class="gallery-slider-footer"><div class="gallery-dots">${dots}</div><div class="gallery-progress"><strong id="gallery-current">01</strong><span>/ ${String(total).padStart(2,'0')}</span></div></div><div class="gallery-swipe-hint">${ar?'اسحب للمشاهدة • أو استخدم الأسهم':'SWIPE / DRAG • OR USE ARROWS'}</div></section>`;
     }
 
     const cards=items.map((m,i)=>{const url=esc(media(m.url)),alt=esc(m.alt_text||local(p,'title'));if(m.media_type==='video')return `<article class="media-item media-video" data-i18n-skip="1"><div class="media-frame"><video controls playsinline preload="metadata" src="${url}"></video><span class="media-type">${ar?'فيديو':'VIDEO'}</span></div></article>`;return `<figure class="media-item media-image" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" data-i18n-skip="1"><div class="media-frame"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="media-type">${ar?'عرض':'VIEW'}</span><span class="media-index">${String(i+1).padStart(2,'0')}</span></div></figure>`;}).join('');
@@ -48,9 +48,108 @@
     if(document.getElementById('project-lightbox'))return;const box=document.createElement('div');box.id='project-lightbox';box.className='project-lightbox';box.setAttribute('aria-hidden','true');box.innerHTML='<button class="lightbox-close" type="button" aria-label="Close">×</button><div class="lightbox-stage"><img alt="" /></div><div class="lightbox-hint">CLICK OUTSIDE OR PRESS ESC TO CLOSE</div>';document.body.appendChild(box);const img=box.querySelector('img');const close=()=>{box.classList.remove('open');box.setAttribute('aria-hidden','true');document.body.classList.remove('lightbox-open');setTimeout(()=>img.src='',220)};const open=(src,alt)=>{img.src=src;img.alt=alt||'';box.classList.add('open');box.setAttribute('aria-hidden','false');document.body.classList.add('lightbox-open')};document.addEventListener('click',e=>{const item=e.target.closest('[data-lightbox-src]');if(item&&!item.closest('.gallery-slider-track.dragging'))open(item.dataset.lightboxSrc,item.dataset.lightboxAlt)});document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});box.querySelector('.lightbox-close').addEventListener('click',close);box.addEventListener('click',e=>{if(e.target===box||e.target.classList.contains('lightbox-stage'))close()});
   }
 
+function stringArtMarkup(p,mediaItems){
+  const ar=isAr();
+  const cover=esc(media(p.cover_url));
+  const detailItem=mediaItems.find(m=>m.media_type!=='video');
+  const detail=esc(media(detailItem?.url||p.cover_url));
+  const copy=ar?{
+    kicker:'حسابات × حرفة · تجربة بدأت في 2017',
+    titleA:'الملامح لا تُرسم هنا.',
+    titleB:'هي تظهر من بين الخيوط.',
+    lead:'الصورة تتحول إلى درجات ضوء وظل. الإطار يتحول إلى نقاط مرقمة. وكل وصلة بين مسمارين تُقاس: هل تقرّبنا من الملامح أم تزيد التشويش؟ بعد مئات القرارات، الخطوط المستقيمة تبدأ فجأة في تكوين إنسان.',
+    watch:'شوف الملامح بتظهر ↓',works:'شوف الأعمال',
+    paradoxK:'الخدعة البصرية',paradoxA:'من قريب: شبكة خيوط.',paradoxB:'من بعيد: شخص تعرفه.',
+    paradoxP:'إحنا مش بنرسم العين بخيط واحد. إحنا بنبني كثافة. كل تقاطع يضيف درجة، وكل منطقة يزيد فيها التراكب تتحول لظل، لحد ما عينك تجمع الشبكة وتقرأ ملامح كاملة.',
+    processK:'من الصورة إلى تسلسل أرقام',processH:'قبل ما الخيط يلمس المسمار، الصورة بتتحول لمسألة.',
+    processP:'الفكرة الحسابية: اختار الوصلة التالية التي تجعل النتيجة الحالية أقرب للصورة المستهدفة، ثم كرر القرار مرة بعد مرة.',
+    replay:'أعد بناء الوجه',live:'تجربة حية · الخطوط تتراكم أمامك',
+    steps:[
+      ['01','اقرأ الضوء والظل','نحوّل الصورة إلى خريطة رمادية توضح أين نحتاج كثافة أكبر وأين نحتاج فراغًا.'],
+      ['02','رقّم الإطار','كل مسمار يصبح نقطة مرجعية برقم وموقع ثابت يمكن الرجوع إليه بدقة.'],
+      ['03','اختبر الوصلات','من المسمار الحالي، نقارن عددًا كبيرًا من الخطوط الممكنة إلى نقاط أخرى.'],
+      ['04','اختر الأكثر فائدة','نفاضل بين المسارات حسب مقدار ما تقلله من الفرق البصري، مع تجنب الإفراط في مناطق امتلأت بالفعل.'],
+      ['05','كرر حتى تظهر الملامح','مئات وآلاف الوصلات حسب التصميم تبني الكثافة تدريجيًا حتى يبدأ الوجه في الظهور.']
+    ],
+    equationK:'تبسيط للفكرة الحسابية',equationP:'أفضل وصلة هي التي تقلل الفرق البصري بأكبر قدر من غير ما تغرق منطقة تم بناؤها بالفعل.',
+    handK:'من الأرقام إلى اليد',handA:'الحسابات لا تمسك الخيط.',handB:'هي فقط تقول لليد أين تذهب بعد ذلك.',
+    handP:'الناتج مش صورة مطبوعة. هو ترتيب نقاط ومسارات. وبعدها يبدأ الجزء اللي لا يمكن اختصاره: شد الخيط، الحفاظ على الترتيب، توزيع اللون، تصحيح التوتر، والصبر على كل طبقة حتى تستقر الملامح.',
+    distanceK:'المسافة جزء من العمل',distanceH:'السحر الحقيقي يحصل بين 2 سم و2 متر.',
+    distanceP:'قرب جدًا فهتشوف خيوطًا مستقيمة وعُقدًا وتقاطعات. ارجع للخلف، وفجأة تختفي الهندسة ويظهر الوجه.',
+    close:'قريب · تشابك',far:'بعيد · ملامح',
+    originK:'2017 · قبل موجة الـAI الحالية',originH:'السؤال كان: هل الحسابات تقدر توسّع قدرة اليد بدل ما تستبدلها؟',
+    originP:'بدأت التجربة كدمج بين التفكير الرقمي والتنفيذ الواقعي: الكمبيوتر يساعد في تحويل الصورة إلى منطق ومسارات، لكن القطعة النهائية تظل نتيجة يد وصبر وخامة حقيقية.',
+    originStats:[['2017','بداية التجربة'],['150+','بورتريه مخصص'],['100%','تنفيذ مادي يدوي']],
+    finalK:'دلوقتي أنت عارف السر',finalH:'مستعد تشوف الخيط بدل الصورة؟',finalP:'انزل للأعمال، قرب من التفاصيل، وبعدين ارجع خطوة. كل وجه قدامك بدأ كنقاط وأرقام ومسارات لا تشبه الوجه إطلاقًا.'
+  }:{
+    kicker:'COMPUTATION × CRAFT · EXPERIMENTING SINCE 2017',
+    titleA:"THE FACE ISN'T DRAWN.",
+    titleB:'IT EMERGES FROM THE THREAD.',
+    lead:'A photograph becomes light and shadow. The frame becomes numbered points. Every connection between two nails is judged: does it move us closer to the face, or add noise? After hundreds of decisions, straight lines suddenly begin to read as a human being.',
+    watch:'WATCH THE FACE EMERGE ↓',works:'SEE THE WORKS',
+    paradoxK:'THE VISUAL ILLUSION',paradoxA:'UP CLOSE: A NETWORK OF THREAD.',paradoxB:'STEP BACK: SOMEONE YOU KNOW.',
+    paradoxP:'The eye is not traced by one piece of thread. Density creates it. Every overlap adds tone; every denser region becomes shadow, until your visual system stops seeing lines and starts reading a face.',
+    processK:'FROM PHOTOGRAPH TO NUMBER SEQUENCE',processH:'Before thread touches a nail, the portrait becomes a problem to solve.',
+    processP:'The computational idea is simple: choose the next connection that makes the current result more like the target image, then repeat that decision again and again.',
+    replay:'REBUILD THE FACE',live:'LIVE DEMO · WATCH DENSITY ACCUMULATE',
+    steps:[
+      ['01','READ LIGHT & SHADOW','Convert the portrait into a grayscale density map: where more thread is needed and where space must remain.'],
+      ['02','NUMBER THE FRAME','Every nail becomes an indexed anchor with a fixed position that can be referenced precisely.'],
+      ['03','TEST POSSIBLE LINES','From the current nail, evaluate many possible chords to other anchor points.'],
+      ['04','CHOOSE THE MOST USEFUL','Prefer the path that reduces visual error the most while avoiding areas that are already overbuilt.'],
+      ['05','REPEAT UNTIL A FACE APPEARS','Hundreds or thousands of connections, depending on the piece, accumulate tone until the portrait begins to emerge.']
+    ],
+    equationK:'A SIMPLIFIED VIEW OF THE SCORING LOGIC',equationP:'The best next line is the one that reduces the visual difference most without overfilling an area already built.',
+    handK:'FROM NUMBERS TO HANDS',handA:"THE COMPUTER DOESN'T HOLD THE THREAD.",handB:'IT ONLY TELLS THE HAND WHERE TO GO NEXT.',
+    handP:'The output is not a printed image. It is a sequence of points and paths. Then the irreducibly physical work begins: tension, order, color, corrections and patience — layer after layer until the likeness settles.',
+    distanceK:'DISTANCE IS PART OF THE MEDIUM',distanceH:'THE MAGIC LIVES BETWEEN 2 CM AND 2 METERS.',
+    distanceP:'Get very close and you see straight thread, knots and crossings. Step back and the geometry disappears; the face arrives.',
+    close:'CLOSE · CONNECTIONS',far:'FAR · LIKENESS',
+    originK:'2017 · BEFORE THE CURRENT GENERATIVE-AI WAVE',originH:'THE QUESTION WAS: CAN COMPUTATION EXTEND THE HAND INSTEAD OF REPLACING IT?',
+    originP:'The experiment began by merging digital thinking with physical making: computation helps translate an image into logic and routes, while the final object remains the product of hand, patience and real material.',
+    originStats:[['2017','EXPERIMENT STARTED'],['150+','CUSTOM PORTRAITS'],['100%','PHYSICAL HANDCRAFT']],
+    finalK:'NOW YOU KNOW THE TRICK',finalH:'READY TO SEE THE THREAD INSTEAD OF THE PICTURE?',finalP:'Scroll into the work, move closer to the details, then step back. Every face below began as numbered points and routes that looked nothing like a face.'
+  };
+  const steps=copy.steps.map(([n,h,p])=>`<article class="sa-step"><span>${n}</span><div><h3>${esc(h)}</h3><p>${esc(p)}</p></div></article>`).join('');
+  const stats=copy.originStats.map(([v,l])=>`<div><strong>${esc(v)}</strong><span>${esc(l)}</span></div>`).join('');
+  return `
+    <section class="sa-hero" data-i18n-skip="1">
+      <div class="container sa-hero-grid">
+        <div class="sa-hero-copy">
+          <p class="sa-kicker">${esc(copy.kicker)}</p>
+          <h1>${esc(copy.titleA)}<br><span>${esc(copy.titleB)}</span></h1>
+          <p class="sa-hero-lead">${esc(copy.lead)}</p>
+          <div class="sa-hero-tags"><span>${ar?'مسامير مرقمة':'NUMBERED NAILS'}</span><span>${ar?'مسارات محسوبة':'CALCULATED PATHS'}</span><span>${ar?'تنفيذ يدوي':'HAND-BUILT'}</span></div>
+          <div class="sa-actions"><a class="sa-primary" href="#sa-process">${esc(copy.watch)}</a><a class="sa-secondary" href="#sa-gallery">${esc(copy.works)}</a></div>
+        </div>
+        <figure class="sa-hero-visual">
+          <div class="sa-hero-frame"><img src="${cover}" alt="${esc(local(p,'title'))}" loading="eager" decoding="async"><canvas id="sa-hero-thread" width="900" height="620" aria-hidden="true"></canvas></div>
+          <figcaption><span>${ar?'قرب: هندسة':'UP CLOSE: GEOMETRY'}</span><i></i><span>${ar?'ابعد: ملامح':'STEP BACK: LIKENESS'}</span></figcaption>
+        </figure>
+      </div>
+    </section>
+    <main class="sa-story" data-i18n-skip="1">
+      <section class="sa-paradox"><div class="container"><p class="sa-kicker">${esc(copy.paradoxK)}</p><h2>${esc(copy.paradoxA)}<br><span>${esc(copy.paradoxB)}</span></h2><p>${esc(copy.paradoxP)}</p></div></section>
+      <section id="sa-process" class="sa-process">
+        <div class="container sa-process-head"><div><p class="sa-kicker">${esc(copy.processK)}</p><h2>${esc(copy.processH)}</h2></div><p>${esc(copy.processP)}</p></div>
+        <div class="container sa-process-grid">
+          <div class="sa-demo-card"><div class="sa-demo-top"><span>${esc(copy.live)}</span><b id="sa-line-count">000 / 360</b></div><canvas id="sa-thread-demo" width="600" height="600" aria-label="${ar?'محاكاة مبسطة لتكوّن بورتريه بالخيط':'Simplified simulation of a portrait emerging from thread'}"></canvas><div class="sa-demo-hud"><span id="sa-pin-route">PIN 07 → 42</span><button id="sa-replay" type="button">${esc(copy.replay)} ↻</button></div></div>
+          <div class="sa-steps">${steps}</div>
+        </div>
+        <div class="container sa-equation"><div><span>${esc(copy.equationK)}</span><code>next line = arg max ( Δ likeness − overlap penalty )</code></div><p>${esc(copy.equationP)}</p></div>
+      </section>
+      <section class="sa-handoff"><div class="container sa-handoff-grid"><div class="sa-handoff-copy"><p class="sa-kicker">${esc(copy.handK)}</p><h2>${esc(copy.handA)}<br><span>${esc(copy.handB)}</span></h2><p>${esc(copy.handP)}</p></div><div class="sa-sequence"><span>042</span><i>→</i><span>187</span><i>→</i><span>011</span><i>→</i><span>096</span><i>→</i><span>214</span><i>→</i><span>073</span><small>${ar?'ترتيب التنفيذ يتحول إلى إيقاع يدوي مستمر':'THE ROUTE BECOMES A PHYSICAL RHYTHM'}</small></div></div></section>
+      <section class="sa-distance"><div class="container"><div class="sa-distance-copy"><p class="sa-kicker">${esc(copy.distanceK)}</p><h2>${esc(copy.distanceH)}</h2><p>${esc(copy.distanceP)}</p></div><div class="sa-distance-grid"><figure class="sa-distance-close"><div><img src="${detail}" alt="" loading="lazy"></div><figcaption>${esc(copy.close)}</figcaption></figure><div class="sa-distance-arrow">→</div><figure class="sa-distance-far"><div><img src="${detail}" alt="${esc(local(p,'title'))}" loading="lazy"></div><figcaption>${esc(copy.far)}</figcaption></figure></div></div></section>
+      <section class="sa-origin"><div class="container sa-origin-grid"><div><p class="sa-kicker">${esc(copy.originK)}</p><h2>${esc(copy.originH)}</h2><p>${esc(copy.originP)}</p></div><div class="sa-origin-stats">${stats}</div></div></section>
+      <section class="sa-gallery-intro"><div class="container"><p class="sa-kicker">${esc(copy.finalK)}</p><h2>${esc(copy.finalH)}</h2><p>${esc(copy.finalP)}</p></div></section>
+      <section class="sa-gallery-host"><div class="container">${galleryMarkup(mediaItems,p)}</div></section>
+    </main>`;
+}
+
   function render(p){
     const ar=isAr(),title=local(p,'title'),excerpt=local(p,'excerpt')||local(p,'description'),description=local(p,'description')||excerpt,challenge=local(p,'challenge'),solution=local(p,'solution'),result=local(p,'result'),category=ar?(p.portfolio_categories?.name_ar||p.portfolio_categories?.name||'مشروع'):(p.portfolio_categories?.name||'Project'),tags=[...((ar&&p.tags_ar?.length)?p.tags_ar:p.tags||[]),...((ar&&p.tools_ar?.length)?p.tools_ar:p.tools||[])];
     document.title=`${title} — ATS`;const isStringArt=p.slug==='magic-of-string-art';document.body.classList.toggle('string-art-project',isStringArt);let mediaItems=(p.portfolio_project_media||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));if(isStringArt)mediaItems=mediaItems.sort((a,b)=>(a.media_type==='video'?0:1)-(b.media_type==='video'?0:1)||(a.sort_order||0)-(b.sort_order||0));
+    if(isStringArt){root.innerHTML=stringArtMarkup(p,mediaItems);installGallerySlider();if(mediaItems.some(m=>m.media_type!=='video'))installLightbox();document.dispatchEvent(new CustomEvent('ats:stringart:rendered'));return;}
     root.innerHTML=`<section class="project-hero"><div class="container project-hero-grid"><div class="project-hero-copy" data-i18n-skip="1"><div class="project-category">${esc(category)}</div><h1>${esc(title)}</h1><p class="project-lead">${esc(excerpt)}</p><div class="project-meta">${tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div><div class="project-links">${p.project_url?`<a class="btn btn-primary" target="_blank" rel="noopener" href="${esc(p.project_url)}">${ar?'عرض المشروع':'VIEW LIVE →'}</a>`:''}${p.video_url?`<a class="btn btn-ghost" target="_blank" rel="noopener" href="${esc(p.video_url)}">${ar?'شاهد الفيديو':'WATCH VIDEO →'}</a>`:''}${p.github_url?`<a class="btn btn-ghost" target="_blank" rel="noopener" href="${esc(p.github_url)}">GITHUB</a>`:''}</div></div><div class="project-cover"><img src="${esc(media(p.cover_url))}" alt="${esc(title)}" loading="eager" decoding="async" /></div></div></section><section class="project-body"><div class="container"><div class="project-copy" data-i18n-skip="1"><div><span class="copy-kicker">${ar?'دراسة حالة':'CASE STUDY'}</span><h2>${ar?'المشروع':'THE PROJECT.'}</h2></div><p>${esc(description)}</p></div><div class="case-grid" data-i18n-skip="1">${challenge?`<article class="case-block"><strong>${ar?'01 / التحدي':'01 / CHALLENGE'}</strong><h2>${ar?'التحدي':'THE CHALLENGE.'}</h2><p>${esc(challenge)}</p></article>`:''}${solution?`<article class="case-block"><strong>${ar?'02 / الحل':'02 / SOLUTION'}</strong><h2>${ar?'الحل':'THE SOLUTION.'}</h2><p>${esc(solution)}</p></article>`:''}${result?`<article class="case-block"><strong>${ar?'03 / النتيجة':'03 / RESULT'}</strong><h2>${ar?'الأثر':'THE IMPACT.'}</h2><p>${esc(result)}</p></article>`:''}</div>${galleryMarkup(mediaItems,p)}</div></section>`;
     if(isStringArt)installGallerySlider();if(mediaItems.some(m=>m.media_type!=='video'))installLightbox();
   }

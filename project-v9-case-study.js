@@ -8,6 +8,7 @@
   });
   const slug = decodeURIComponent(location.pathname.match(/\/projects\/([^/?#]+)/)?.[1] || new URLSearchParams(location.search).get('slug') || '');
   if (!slug) return;
+  if (slug === 'magic-of-string-art') return;
 
   const esc = (value = '') => String(value).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;' }[c]));
   const text = value => esc(value || '').replace(/\n/g, '<br>');
