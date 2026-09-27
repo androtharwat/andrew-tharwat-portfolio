@@ -444,8 +444,16 @@ export function chooseThreadPaletteSimulation(targetRgb, size, {
   if (choose < 0 || choose > candidates.length) throw new Error('not enough candidate thread colors');
 
   if (combos > maxCombinations) {
-    const greedy = chooseThreadPalette(targetRgb, { candidateHex, nColors, fixedHex, mask });
-    return { ...greedy, method: 'greedy-fallback', combinations: combos };
+    const simSize = Math.max(18, Math.min(size, Math.round(simulationSize)));
+    const targetSmall = resizeLinearRgbBilinear(targetRgb, size, simSize);
+    const maskSmall = resizeScalarBilinear(mask, size, simSize);
+    const greedy = chooseThreadPalette(targetSmall, {
+      candidateHex, nColors, fixedHex, mask: maskSmall, maxSamples: simSize * simSize,
+    });
+    const estimatedError = paletteDitherSimulationError(targetRgb, size, greedy.linearRgb, {
+      mask, simulationSize: simSize, blurSigma,
+    });
+    return { ...greedy, estimatedError, method: 'greedy-simulation-fallback', combinations: combos };
   }
 
   let best = null, bestError = Infinity;

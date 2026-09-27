@@ -207,6 +207,7 @@ export function solveMonoSparse({
   continuity = 'none',
   candidateLimit = 0,
   refreshEvery = 32,
+  rescueMultiplier = 3,
   seed = 12345,
   onProgress,
 }) {
@@ -222,7 +223,7 @@ export function solveMonoSparse({
     if (continuity === 'path') {
       candidates = incident[currentNail];
     } else {
-      const doFull = !candidateLimit || candidateLimit >= table.a.length || step % refreshEvery === 0;
+      const doFull = !candidateLimit || candidateLimit >= table.a.length || (refreshEvery > 0 && step > 0 && step % refreshEvery === 0);
       candidates = doFull ? null : deterministicSubset(table.a.length, candidateLimit, seed + step * 2654435761);
     }
     let bestGain = 0, bestEdge = -1, bestSign = 1;
@@ -238,6 +239,10 @@ export function solveMonoSparse({
     };
     if (candidates) for (let i = 0; i < candidates.length; i++) scan(candidates[i]);
     else for (let e = 0; e < table.a.length; e++) scan(e);
+    if ((bestEdge < 0 || bestGain <= 1e-8) && candidates && rescueMultiplier > 1) {
+      const wider = deterministicSubset(table.a.length, Math.min(table.a.length, candidateLimit * rescueMultiplier), seed ^ (step * 2246822519));
+      for (let i = 0; i < wider.length; i++) scan(wider[i]);
+    }
     if (bestEdge < 0 || bestGain <= 1e-8) break;
     applyMonoMove(table, bestEdge, rendered, bestSign, opacity);
     counts[bestEdge] += bestSign;
@@ -445,6 +450,9 @@ export function solveColorGlobalOptical({
   allowRemove = true,
   candidateLimit = 0,
   refreshEvery = 48,
+  removalEvery = 10,
+  removalLimit = 180,
+  rescueMultiplier = 3,
   chromaWeight = 1.8,
   background = [1, 1, 1],
   seed = 24681357,
@@ -471,26 +479,46 @@ export function solveColorGlobalOptical({
   };
 
   for (let step = 0; step < maxFibers; step++) {
-    const full = !candidateLimit || candidateLimit >= table.a.length || step % refreshEvery === 0;
+    const full = !candidateLimit || candidateLimit >= table.a.length || (refreshEvery > 0 && step > 0 && step % refreshEvery === 0);
     const candidates = full ? null : deterministicSubset(table.a.length, candidateLimit, seed + step * 2654435761);
     const best = { gain: 0, edge: -1, color: -1, sign: 1 };
 
-    if (candidates) {
-      for (let i = 0; i < candidates.length; i++) {
-        const e = candidates[i];
-        for (let ci = 0; ci < colors; ci++) scanPair(e, ci, 1, best);
+    const scanAdds = (list) => {
+      if (list) {
+        for (let i = 0; i < list.length; i++) {
+          const e = list[i];
+          for (let ci = 0; ci < colors; ci++) scanPair(e, ci, 1, best);
+        }
+      } else {
+        for (let e = 0; e < table.a.length; e++) for (let ci = 0; ci < colors; ci++) scanPair(e, ci, 1, best);
       }
-    } else {
-      for (let e = 0; e < table.a.length; e++) for (let ci = 0; ci < colors; ci++) scanPair(e, ci, 1, best);
-    }
-
-    if (allowRemove && active.size) {
-      for (const slot of active) {
-        const e = Math.floor(slot / colors), ci = slot % colors;
-        scanPair(e, ci, -1, best);
+    };
+    const scanRemovals = (force = false) => {
+      if (!allowRemove || !active.size) return;
+      if (!force && removalEvery > 0 && step % removalEvery !== 0) return;
+      const slots = Array.from(active);
+      if (removalLimit > 0 && slots.length > removalLimit) {
+        const ids = deterministicSubset(slots.length, removalLimit, seed ^ (step * 3266489917));
+        for (let i = 0; i < ids.length; i++) {
+          const slot = slots[ids[i]], e = Math.floor(slot / colors), ci = slot % colors;
+          scanPair(e, ci, -1, best);
+        }
+      } else {
+        for (const slot of slots) {
+          const e = Math.floor(slot / colors), ci = slot % colors;
+          scanPair(e, ci, -1, best);
+        }
       }
-    }
+    };
 
+    scanAdds(candidates);
+    scanRemovals(false);
+
+    if ((best.edge < 0 || best.gain <= minGain) && candidates && rescueMultiplier > 1) {
+      const wider = deterministicSubset(table.a.length, Math.min(table.a.length, candidateLimit * rescueMultiplier), seed ^ (step * 2246822519));
+      scanAdds(wider);
+    }
+    if (best.edge < 0 || best.gain <= minGain) scanRemovals(true);
     if (best.edge < 0 || best.gain <= minGain) break;
     const slot = best.edge * colors + best.color;
     applyColorMove(table, best.edge, ods[best.color], opticalDepth, opacity, best.sign);
@@ -506,7 +534,7 @@ export function solveColorGlobalOptical({
       gain: best.gain,
     });
     lastGain = best.gain;
-    if (onProgress && (step % 8 === 0 || step === maxFibers - 1)) onProgress(step + 1, maxFibers, best.gain, best.color, best.sign);
+    if (onProgress && (step % 16 === 0 || step === maxFibers - 1)) onProgress(step + 1, maxFibers, best.gain, best.color, best.sign);
   }
 
   const renderedRgb = renderRgbFromOpticalDepth(opticalDepth, background);

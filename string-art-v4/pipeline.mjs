@@ -96,13 +96,13 @@ export function solveImageV4({
       continuity: 'none',
       candidateLimit: solve.candidateLimit ?? 0,
       refreshEvery: solve.refreshEvery ?? 32,
+      rescueMultiplier: solve.rescueMultiplier ?? 3,
       seed: solve.seed ?? 12345,
       onProgress: (done, total, gain) => onProgress?.({ phase: 'solve-mono-global', done, total, gain }),
     });
     result.route = buildMonoRouteFromCounts(table, result.counts);
     result.target = target;
     result.portrait = portraitMaps ? { enabled: true, faceBox: portraitMaps.faceBox } : { enabled: false };
-  result.backgroundSuppression = suppress;
     result.backgroundSuppression = suppress;
     result.mode = 'mono-global';
     return result;
@@ -151,6 +151,9 @@ export function solveImageV4({
     allowRemove: solve.allowRemove ?? true,
     candidateLimit: solve.candidateLimit ?? 0,
     refreshEvery: solve.refreshEvery ?? 48,
+    removalEvery: solve.removalEvery ?? 10,
+    removalLimit: solve.removalLimit ?? 180,
+    rescueMultiplier: solve.rescueMultiplier ?? 3,
     chromaWeight: solve.chromaWeight ?? 1.8,
     background: solve.background || [1, 1, 1],
     seed: solve.seed ?? 24681357,

@@ -9,6 +9,8 @@ if (params.get('engine') === 'v4') {
   let lastResult = null;
   let lastRender = null;
   let raf = 0;
+  const pending = new Map();
+  const prewarmed = new Set();
 
   const AR = () => document.documentElement.lang === 'ar';
   const setStatus = (msg, pct=0) => {
@@ -21,10 +23,10 @@ if (params.get('engine') === 'v4') {
   const clamp = (v, lo=0, hi=1) => Math.max(lo, Math.min(hi, v));
 
   const profile = () => {
-    const q = $('[data-sa-quality].active')?.dataset.saQuality || 'share';
-    if(q === 'quick' || q === 'fast') return { size:144, nails:220, monoFibers:2400, colorFibers:3400, candidates:120, palette:4, detail:.58, crossingMono:.14, crossingColor:.10, opacityMono:.62, opacityColor:.54, repeatMono:2, repeatColor:2, refreshEvery:640 };
-    if(q === 'enhanced') return { size:184, nails:300, monoFibers:4800, colorFibers:6800, candidates:165, palette:5, detail:.68, crossingMono:.17, crossingColor:.12, opacityMono:.54, opacityColor:.46, repeatMono:3, repeatColor:2, refreshEvery:520 };
-    return { size:224, nails:360, monoFibers:7600, colorFibers:10800, candidates:210, palette:6, detail:.78, crossingMono:.20, crossingColor:.145, opacityMono:.48, opacityColor:.40, repeatMono:3, repeatColor:2, refreshEvery:420 };
+    const q = $('[data-sa-quality].active')?.dataset.saQuality || 'enhanced';
+    if(q === 'quick' || q === 'fast') return { key:'fast', size:128, nails:200, monoFibers:2300, colorFibers:3200, candidates:180, palette:4, detail:.60, crossingMono:.14, crossingColor:.10, opacityMono:.58, opacityColor:.48, repeatMono:2, repeatColor:2, refreshEvery:0, removalEvery:14, removalLimit:120 };
+    if(q === 'share') return { key:'master', size:208, nails:330, monoFibers:6500, colorFibers:9000, candidates:320, palette:5, detail:.80, crossingMono:.20, crossingColor:.15, opacityMono:.46, opacityColor:.38, repeatMono:3, repeatColor:3, refreshEvery:0, removalEvery:8, removalLimit:240 };
+    return { key:'studio', size:176, nails:280, monoFibers:4300, colorFibers:6200, candidates:260, palette:5, detail:.72, crossingMono:.18, crossingColor:.13, opacityMono:.52, opacityColor:.42, repeatMono:3, repeatColor:3, refreshEvery:0, removalEvery:10, removalLimit:180 };
   };
 
   const mode = () => $('[data-sa-mode].active')?.dataset.saMode === 'color' ? 'color' : 'mono';
@@ -77,16 +79,62 @@ if (params.get('engine') === 'v4') {
         '<div><span>'+tr('الألوان','COLORS')+'</span><b data-v4-meta="colors">—</b></div>';
       tools.insertBefore(meta,tools.firstChild);
     }
-    $('[data-sa-mode]').forEach(b=>{
+    $$('[data-sa-mode]').forEach(b=>{
       if(b.dataset.v4ModeBound)return;b.dataset.v4ModeBound='1';
-      b.addEventListener('click',()=>{$('[data-sa-mode]').forEach(x=>x.classList.remove('active'));b.classList.add('active');updateColorPanel()});
+      b.addEventListener('click',()=>{$$('[data-sa-mode]').forEach(x=>x.classList.remove('active'));b.classList.add('active');updateColorPanel()});
     });
-    $('[data-sa-colors]').forEach(b=>{
+    $$('[data-sa-colors]').forEach(b=>{
       if(b.dataset.v4ColorBound)return;b.dataset.v4ColorBound='1';
-      b.addEventListener('click',()=>{$('[data-sa-colors]').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
+      b.addEventListener('click',()=>{$$('[data-sa-colors]').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
     });
+    $$('[data-sa-quality]').forEach(b=>{
+      if(b.dataset.v4QualityBound)return;b.dataset.v4QualityBound='1';
+      b.addEventListener('click',()=>{$$('[data-sa-quality]').forEach(x=>x.classList.remove('active'));b.classList.add('active');schedulePrewarm()});
+    });
+    if(segmented && !segmented.dataset.v4StudioDefault){
+      segmented.dataset.v4StudioDefault='1';
+      $$('[data-sa-quality]').forEach(x=>x.classList.remove('active'));
+      $('[data-sa-quality="enhanced"]')?.classList.add('active');
+    }
     updateColorPanel();
     return true;
+  }
+
+  function simplifyV4Ui(){
+    const controls=$('.sa-lab-controls');
+    if(!controls||controls.dataset.v4Simple)return;
+    controls.dataset.v4Simple='1';
+    const head=$('.sa-lab-head h2');if(head)head.textContent=tr('حوّل صورتك إلى String Art.','TURN YOUR PHOTO INTO STRING ART.');
+    const intro=$('.sa-lab-head>p');if(intro)intro.textContent=tr('ارفع الصورة، اضبط وجهًا واحدًا داخل الدائرة، والباقي يتم تلقائيًا.','UPLOAD A PHOTO, KEEP ONE FACE IN THE CIRCLE, AND ATS HANDLES THE REST.');
+    const generate=$('#sa-generate');if(generate)generate.textContent=tr('أنشئ البورتريه','CREATE MY PORTRAIT');
+    const note=$('.sa-production-note');if(note)note.innerHTML=tr('ألوان تلقائية · أولوية للملامح · الصورة لا تغادر جهازك<br><b>© ATS</b>','AUTO COLOR · PORTRAIT-FIRST · IMAGE STAYS ON YOUR DEVICE<br><b>© ATS</b>');
+
+    const upload=$('#sa-upload-zone');
+    if(upload&&!$('.sa-v4-auto-summary')){
+      const card=document.createElement('div');card.className='sa-v4-auto-summary';
+      card.innerHTML='<b>'+tr('إعداد تلقائي ذكي','SMART AUTO SETUP')+'</b><span>● '+tr('ألوان بصرية','OPTICAL COLOR')+'</span><span>● '+tr('أولوية للوجه','FACE PRIORITY')+'</span><span>● '+tr('جودة Studio','STUDIO QUALITY')+'</span>';
+      upload.insertAdjacentElement('afterend',card);
+    }
+
+    if(!$('.sa-v4-advanced')){
+      const modeGroup=$$('[data-sa-mode]')?.closest('.sa-control-group');
+      const colorPanel=$('#sa-v4-color-panel');
+      const quality=$$('[data-sa-quality]')?.closest('.sa-control-group');
+      const tuning=$('.sa-tune-row');
+      const details=document.createElement('details');details.className='sa-v4-advanced';
+      const summary=document.createElement('summary');summary.textContent=tr('إعدادات متقدمة','ADVANCED SETTINGS');details.appendChild(summary);
+      [modeGroup,colorPanel,quality,tuning].forEach(el=>{if(el)details.appendChild(el)});
+      const frame=$('.sa-framing-controls');
+      (frame||generate)?.insertAdjacentElement(frame?'afterend':'beforebegin',details);
+    }
+
+    const preview=$('#sa-palette-preview'),tools=$('#sa-result-tools'),meta=$('#sa-v4-result-meta');
+    if(preview&&tools&&preview.parentElement!==tools){
+      preview.classList.add('sa-result-palette');
+      if(meta)meta.insertAdjacentElement('afterend',preview);else tools.prepend(preview);
+    }
+    const hint=$('.sa-source-figure figcaption small');
+    if(hint)hint.textContent=tr('اسحب واضبط وجهًا واحدًا داخل الدائرة','DRAG / ZOOM · KEEP ONE FACE IN THE CIRCLE');
   }
 
   function captureFramedRgba(size) {
@@ -94,8 +142,11 @@ if (params.get('engine') === 'v4') {
     if(!src) throw new Error('Source canvas unavailable');
     const c=document.createElement('canvas'); c.width=c.height=size;
     const ctx=c.getContext('2d',{willReadFrequently:true});
+    const contrast=Number($('#sa-contrast')?.value||1.12);
     ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
+    ctx.filter='contrast('+contrast+')';
     ctx.drawImage(src,0,0,src.width,src.height,0,0,size,size);
+    ctx.filter='none';
     return ctx.getImageData(0,0,size,size).data;
   }
 
@@ -103,10 +154,18 @@ if (params.get('engine') === 'v4') {
     const src=$('#sa-user-source');
     if(!src || typeof window.FaceDetector!=='function') return null;
     try{
-      const detector=new window.FaceDetector({fastMode:true,maxDetectedFaces:1});
-      const faces=await detector.detect(src), b=faces?.[0]?.boundingBox;
+      const detector=new window.FaceDetector({fastMode:true,maxDetectedFaces:5});
+      const faces=await detector.detect(src);
+      if(!faces?.length)return null;
+      const cx=src.width/2,cy=src.height/2;
+      const ranked=faces.map(f=>{
+        const b=f.boundingBox,fx=b.x+b.width/2,fy=b.y+b.height/2;
+        const dist=Math.hypot((fx-cx)/src.width,(fy-cy)/src.height);
+        return {b,score:b.width*b.height*(1-.40*Math.min(1,dist))};
+      }).sort((a,b)=>b.score-a.score);
+      const b=ranked[0].b;
       if(!b || b.width<8 || b.height<8) return null;
-      const px=b.width*.15, py=b.height*.20;
+      const px=b.width*.18, py=b.height*.22;
       return {x:clamp((b.x-px)/src.width),y:clamp((b.y-py)/src.height),width:clamp((b.width+px*2)/src.width,.18,1),height:clamp((b.height+py*2)/src.height,.22,1)};
     }catch(_){return null}
   }
@@ -119,7 +178,7 @@ if (params.get('engine') === 'v4') {
       chroma+=cc;sat+=mx>0?cc/mx:0;n++;
     }
     const score=(chroma/Math.max(1,n))*.62+(sat/Math.max(1,n))*.38;
-    return score<.065?4:score<.16?5:6;
+    return score<.09?4:5;
   }
 
   function requestedPaletteSize(rgba,p){
@@ -177,27 +236,37 @@ if (params.get('engine') === 'v4') {
   }
   function paint(data,count=data.lines.length){
     const canvas=$('#sa-user-result');if(!canvas)return;
-    const box=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2.5),w=Math.max(1,box.width),h=Math.max(1,box.height);
+    const box=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2.25),w=Math.max(1,box.width),h=Math.max(1,box.height);
     canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
     const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
-    ctx.fillStyle='#f2efe8';ctx.fillRect(0,0,w,h);
-    const scale=Math.min(w,h)/data.size,ox=(w-data.size*scale)/2,oy=(h-data.size*scale)/2;
+    ctx.fillStyle='#071923';ctx.fillRect(0,0,w,h);
+
+    const art=Math.min(w,h),radius=art*.486,cx=w/2,cy=h/2;
+    const scale=art/data.size,ox=(w-art)/2,oy=(h-art)/2;
+    ctx.save();
+    ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.clip();
+    ctx.fillStyle='#f4f0e8';ctx.fillRect(ox,oy,art,art);
+
     const exactColor=data.meta.mode==='color-global'&&count>=data.lines.length&&Boolean(data.renderedRgb);
     if(exactColor){
       const raster=solverRaster(data);
-      if(raster){ctx.save();ctx.globalAlpha=.94;ctx.imageSmoothingEnabled=true;ctx.drawImage(raster,ox,oy,data.size*scale,data.size*scale);ctx.restore()}
+      if(raster){ctx.save();ctx.globalAlpha=.94;ctx.imageSmoothingEnabled=true;ctx.drawImage(raster,ox,oy,art,art);ctx.restore()}
     }
+
     ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);ctx.globalCompositeOperation='multiply';ctx.lineCap='round';
-    const alpha=data.meta.mode==='color-global'?(exactColor?.042:.11):.10;
-    const lineWidth=data.meta.mode==='color-global'?.48:.54;
+    const alpha=data.meta.mode==='color-global'?(exactColor?.045:.11):.10;
+    const lineWidth=data.meta.mode==='color-global'?.46:.54;
     for(let i=0;i<Math.min(count,data.lines.length);i++){
       const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
       ctx.strokeStyle=hexWithAlpha(l.color,alpha);ctx.lineWidth=lineWidth;
       ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
     }
     ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle='#9a6a16';
-    for(const p of data.pins){ctx.beginPath();ctx.arc(p[0],p[1],.7,0,Math.PI*2);ctx.fill()}
-    ctx.restore();
+    for(const p of data.pins){ctx.beginPath();ctx.arc(p[0],p[1],.62,0,Math.PI*2);ctx.fill()}
+    ctx.restore();ctx.restore();
+
+    ctx.strokeStyle='#d7ad59';ctx.lineWidth=Math.max(1,art*.0022);
+    ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.stroke();
   }
 
   function animate(data){
@@ -207,10 +276,42 @@ if (params.get('engine') === 'v4') {
     raf=requestAnimationFrame(tick);
   }
 
-  function workerForRun(){
-    if(worker) worker.terminate();
+  function getWorker(){
+    if(worker)return worker;
     worker=new Worker(new URL('./string-art-v4/worker.mjs',import.meta.url),{type:'module'});
+    worker.onmessage=e=>{
+      const msg=e.data,job=pending.get(msg.id);if(!job)return;
+      if(msg.type==='progress'){job.onProgress?.(msg);return}
+      pending.delete(msg.id);
+      if(msg.type==='error')job.reject(new Error(msg.message||'V4 worker error'));else job.resolve(msg);
+    };
+    worker.onerror=e=>{
+      const error=new Error(e.message||'V4 worker failed');
+      for(const job of pending.values())job.reject(error);
+      pending.clear();try{worker.terminate()}catch(_){}worker=null;
+    };
     return worker;
+  }
+
+  function sendWorker(message,transfer=[],onProgress){
+    const id=++requestId,w=getWorker();
+    return new Promise((resolve,reject)=>{
+      pending.set(id,{resolve,reject,onProgress});
+      try{w.postMessage({...message,id},transfer)}catch(error){pending.delete(id);reject(error)}
+    });
+  }
+
+  function schedulePrewarm(){
+    const p=profile(),table={size:p.size,nails:p.nails,minGap:8,canvasMm:600,fiberWidthMm:.12,density:1};
+    const key=JSON.stringify(table);if(prewarmed.has(key))return;prewarmed.add(key);
+    setTimeout(()=>sendWorker({type:'prepare-table',table},[],msg=>{
+      if(msg.phase==='matrix'){
+        const pct=Math.min(18,(msg.done/Math.max(1,msg.total))*18);
+        setStatus(tr('تجهيز محرك الخيوط في الخلفية…','PREPARING THREAD ENGINE IN BACKGROUND…'),pct);
+      }
+    }).then(()=>setStatus(tr('جاهز · اضبط الكادر ثم أنشئ البورتريه','READY · FRAME THE FACE, THEN CREATE'),0)).catch(error=>{
+      prewarmed.delete(key);console.error('[ATS V4 PREWARM]',error);
+    }),120);
   }
 
   function progressText(msg){
@@ -247,45 +348,36 @@ if (params.get('engine') === 'v4') {
       ensureV4Controls();
       const p=profile(),m=mode(),rgba=captureFramedRgba(p.size),nColors=m==='color'?requestedPaletteSize(rgba,p):1;
       const faceBox=await detectFaceBox();
-      const id=++requestId,w=workerForRun();
-      setStatus(tr('V4 · تحليل الصورة وبناء خريطة الملامح…','V4 · BUILDING PORTRAIT PRIORITY MAP…'),1);
-      const done=new Promise((resolve,reject)=>{
-        w.onmessage=e=>{
-          const msg=e.data;if(msg.id!==id)return;
-          if(msg.type==='progress'){
-            const total=msg.total||1,done=msg.done||0;
-            const pct=msg.phase==='matrix'?Math.min(18,done/total*18):msg.phase==='palette'?22:Math.min(97,24+done/total*73);
-            setStatus(progressText(msg),pct);return;
-          }
-          if(msg.type==='error') reject(new Error(msg.message||'V4 worker error'));
-          if(msg.type==='v4-result') resolve(msg.result);
-        };
-        w.onerror=e=>reject(new Error(e.message||'V4 worker failed'));
-      });
-      w.postMessage({
-        type:'solve-image-v4',id,
+      setStatus(tr('تحليل الوجه والألوان…','ANALYZING FACE + COLORS…'),22);
+      const response=await sendWorker({
+        type:'solve-image-v4',
         table:{size:p.size,nails:p.nails,minGap:8,canvasMm:600,fiberWidthMm:.12,density:1},
         rgba,mode:m,
         preprocess:{
-          gamma:Number($('#sa-gamma')?.value||.9),detail:p.detail,detailRadius:p.size/30,toneFloor:0,toneCeiling:.985,ditherBlend:.18,colorAffinityTemperature:.07,
-          portraitPriority:true,faceBox,backgroundWeight:.055,faceBoost:1.55,edgeBoost:2.05,featureBoost:2.85,darkDetailBoost:.78,avoidanceBoost:1.38,backgroundSuppress:.72
+          gamma:Number($('#sa-gamma')?.value||.9),detail:p.detail,detailRadius:p.size/30,toneFloor:0,toneCeiling:.985,ditherBlend:.16,colorAffinityTemperature:.07,
+          portraitPriority:true,faceBox,backgroundWeight:.045,faceBoost:1.65,edgeBoost:2.15,featureBoost:3.05,darkDetailBoost:.82,avoidanceBoost:1.42,backgroundSuppress:.76
         },
-        palette:{nColors,fixedHex:['#111111'],simulationSize:Math.min(58,p.size),maxCombinations:2500},
+        palette:{nColors,fixedHex:['#111111'],simulationSize:Math.min(42,p.size),maxCombinations:1400},
         solve:{
           maxFibers:m==='color'?p.colorFibers:p.monoFibers,opacity:m==='color'?p.opacityColor:p.opacityMono,maxRepeat:m==='color'?p.repeatColor:p.repeatMono,allowRemove:true,
-          candidateLimit:p.candidates,refreshEvery:p.refreshEvery,chromaWeight:2.15,crossingPenalty:m==='color'?p.crossingColor:p.crossingMono,affinityStrength:m==='color'?1.35:0,minGain:1e-10
+          candidateLimit:p.candidates,refreshEvery:p.refreshEvery,removalEvery:p.removalEvery,removalLimit:p.removalLimit,rescueMultiplier:3,
+          chromaWeight:2.25,crossingPenalty:m==='color'?p.crossingColor:p.crossingMono,affinityStrength:m==='color'?1.4:0,minGain:1e-10
         },
         useDither:m==='color'
-      },[rgba.buffer]);
-      const result=await done;
+      },[rgba.buffer],msg=>{
+        const total=msg.total||1,done=msg.done||0,phase=msg.phase||'';
+        const pct=phase==='matrix'?Math.min(24,done/total*24):phase==='palette'?30:phase==='preprocess'?24+done/total*12:Math.min(96,36+done/total*60);
+        setStatus(progressText(msg),pct);
+      });
+      const result=response.result;
       lastResult=result;lastRender=extractLines(result,p,p.size);
       window.__saV4LastResult=result;window.__saV4LastRender=lastRender;
-      animate(lastRender);renderMeta(lastRender);
+      paint(lastRender,lastRender.lines.length);renderMeta(lastRender);
       const palette=lastRender.meta.palette.filter((_,i)=>Number(lastRender.meta.perColor[i]||0)>0).join(' · ');
       $('#sa-user-sequence').textContent=(m==='color'?'PALETTE '+palette+'  ·  ':'')+lastRender.lines.slice(0,10).map(x=>String(x.a).padStart(3,'0')+'→'+String(x.b).padStart(3,'0')).join(' · ');
       $('#sa-result-tools')?.classList.remove('hidden');
       const usedColors=lastRender.meta.colorsUsed||1;
-      setStatus(tr('اكتمل V4','V4 COMPLETE')+' · '+lastRender.lines.length+' '+tr('خيط','FIBERS')+' · '+p.nails+' '+tr('مسمار','NAILS')+(m==='color'?' · '+usedColors+' '+tr('ألوان مستخدمة','COLORS USED'):'') ,100);
+      setStatus(tr('اكتمل · البورتريه جاهز','COMPLETE · YOUR PORTRAIT IS READY')+' · '+lastRender.lines.length.toLocaleString()+' '+tr('خيط','FIBERS')+' · '+usedColors+' '+tr('ألوان','COLORS'),100);
     }catch(error){
       console.error('[ATS V4]',error);setStatus(tr('فشل V4: ','V4 FAILED: ')+(error.message||error),100);
     }finally{btn.disabled=false}
@@ -314,16 +406,18 @@ if (params.get('engine') === 'v4') {
 
   function attach(){
     if(!ensureV4Controls())return false;
+    simplifyV4Ui();
     const btn=$('#sa-generate');if(!btn)return false;
     bindOnce(btn,'v4Bound','click',generateV4);
     bindOnce($('#sa-user-replay'),'v4Bound','click',e=>{if(!lastRender)return;e.preventDefault();e.stopImmediatePropagation();animate(lastRender)});
     bindOnce($('#sa-user-download'),'v4Bound','click',savePng);
     bindOnce($('#sa-user-share'),'v4Bound','click',sharePng);
+    bindOnce($('#sa-user-file'),'v4WarmBound','change',()=>schedulePrewarm());
     $('#sa-user-speak')?.classList.add('sa-v4-hidden-action');
     $('#sa-user-video')?.classList.add('sa-v4-hidden-action');
     window.__ATS_STRING_ART_V4_GENERATE=generateV4;
     document.documentElement.dataset.saEngine='v4';
-    setStatus(tr('V4 جاهز · Mono + Optical Color · الصورة لا تغادر جهازك','V4 READY · MONO + OPTICAL COLOR · IMAGE STAYS ON DEVICE'),0);
+    setStatus(tr('ارفع صورة واحدة · سنضبط الباقي تلقائيًا','UPLOAD ONE PHOTO · ATS HANDLES THE REST'),0);
     return true;
   }
 
