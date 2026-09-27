@@ -516,6 +516,7 @@
     }).join(''):'<div class="ops-empty">No task sequence yet. Run ATS diagnosis first.</div>';
     updateCaseCockpit();
     updateLeadWorkspaceState();
+    renderLeadExecutionPath(executionCtx);
   }
 
   async function loadLeadDiagnosis(leadId,{autoAnalyze=true}={}){
@@ -987,6 +988,16 @@
   }
 
   document.addEventListener('click',e=>{
+    const exec=e.target.closest('[data-exec-action]');
+    if(exec){
+      const action=exec.dataset.execAction;
+      if(action==='analysis'){setLeadFocusMode(false);void runDiagnosticEngine(false);return}
+      if(action==='evidence'){setLeadFocusMode(false);const fold=$('#fold-discovery');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
+      if(action==='diagnosis'){setLeadFocusMode(false);const fold=$('#fold-working-diagnosis');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
+      if(action==='causes'){setLeadFocusMode(false);const fold=$('#fold-root-causes');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
+      if(action==='plan'||action==='verification'){setLeadFocusMode(false);const fold=$('#fold-solution-tasks');fold?.setAttribute('open','');if(action==='verification'){if($('#solution-task-type'))$('#solution-task-type').value='verification';if($('#solution-task-title')&&!$('#solution-task-title').value)$('#solution-task-title').value='Verify effectiveness of the proposed solution';}fold?.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$('#solution-task-title')?.focus(),250);return}
+      if(action==='qualify'){if($('#lead-status'))$('#lead-status').value='qualified';if($('#lead-next-action'))$('#lead-next-action').value='Prepare proposal';updateLeadWorkspaceState();void saveLead(false);return}
+    }
     const jump=e.target.closest('[data-jump]');if(jump){window.ATS_ADMIN?.switchTab?.(jump.dataset.jump);loadPanel(jump.dataset.jump);return}
     const refresh=e.target.closest('[data-ops-refresh]');if(refresh){loadPanel(refresh.dataset.opsRefresh,true);return}
     const priorityLead=e.target.closest('[data-priority-lead]');if(priorityLead){void (async()=>{window.ATS_ADMIN?.switchTab?.('leads');await loadLeads();await openLead(priorityLead.dataset.priorityLead)})();return}
