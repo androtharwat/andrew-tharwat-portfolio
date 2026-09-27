@@ -129,3 +129,64 @@ test('optical color affinity separates portrait color layers', () => {
   assert.equal(affinity.length, 3);
   assert.ok(affinity[1] > affinity[0]);
 });
+
+
+test('portrait priority follows supplied landmarks and exposes solver penalty maps', () => {
+  const size = 52, rgb = new Float32Array(size * size * 3), mask = core.makeCircularMask(size);
+  rgb.fill(.92);
+  const darkSpot = (cx,cy,rx,ry) => {
+    for (let y=0;y<size;y++) for (let x=0;x<size;x++) {
+      const nx=x/(size-1),ny=y/(size-1);
+      if ((((nx-cx)/rx)**2+((ny-cy)/ry)**2)<1) {
+        const p=y*size+x; rgb[p*3]=rgb[p*3+1]=rgb[p*3+2]=.08;
+      }
+    }
+  };
+  darkSpot(.32,.38,.045,.02); darkSpot(.68,.38,.045,.02); darkSpot(.5,.66,.11,.018);
+  const maps = pre.buildPortraitPriorityMaps(rgb, size, {
+    mask,
+    faceBox:{x:.20,y:.12,width:.60,height:.72},
+    landmarks:{leftEye:{x:.32,y:.38},rightEye:{x:.68,y:.38},mouth:{x:.50,y:.66}},
+  });
+  const eye=Math.round(.38*(size-1))*size+Math.round(.32*(size-1));
+  const cheek=Math.round(.50*(size-1))*size+Math.round(.38*(size-1));
+  assert.ok(maps.featureMap[eye] > maps.featureMap[cheek], 'real eye landmark should focus feature gain');
+  assert.equal(maps.edgeMap.length,size*size);
+  assert.equal(maps.structureMap.length,size*size);
+  assert.equal(maps.backgroundPenalty.length,size*size);
+  assert.ok(maps.landmarksUsed);
+});
+
+test('fast portrait solver uses feature-gain stages without center-starburst domination', async () => {
+  const fast = await import('../string-art-v4/fast-layered.mjs');
+  const size=56,rgba=new Uint8ClampedArray(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const nx=x/(size-1),ny=y/(size-1),i=(y*size+x)*4;
+    let c=[246,242,235];
+    const face=(((nx-.5)/.25)**2+((ny-.45)/.34)**2)<1;
+    if(face)c=[216,166,134];
+    if(face&&ny<.22)c=[45,29,23];
+    const eye=(Math.abs(ny-.39)<.022&&(Math.abs(nx-.36)<.055||Math.abs(nx-.64)<.055));
+    const brow=(Math.abs(ny-.335)<.014&&(Math.abs(nx-.36)<.07||Math.abs(nx-.64)<.07));
+    const nose=(Math.abs(nx-.5)<.015&&ny>.42&&ny<.58);
+    const mouth=(Math.abs(ny-.64)<.018&&Math.abs(nx-.5)<.12);
+    const beard=(ny>.68&&ny<.78&&Math.abs(nx-.5)<.18);
+    if(eye||brow||nose||mouth||beard)c=[35,24,20];
+    rgba[i]=c[0];rgba[i+1]=c[1];rgba[i+2]=c[2];rgba[i+3]=255;
+  }
+  const result=fast.solveFastLayeredPortrait({
+    size,nails:92,minGap:5,rgba,
+    preprocess:{
+      faceBox:{x:.25,y:.10,width:.50,height:.72},
+      landmarks:{leftEye:{x:.36,y:.39},rightEye:{x:.64,y:.39},nose:{x:.50,y:.52},mouth:{x:.50,y:.64}},
+      backgroundSuppress:.9
+    },
+    palette:{nColors:4,fixedHex:['#111111'],candidateHex:['#111111','#70452f','#d99a72','#e8b694','#2358a6'],simulationSize:22,maxCombinations:40},
+    solve:{maxFibers:420,candidateLimit:34,maxRepeat:2,timeBudgetMs:1800},
+  });
+  assert.equal(result.metrics.method,'portrait-multistage-feature-gain');
+  assert.ok(result.metrics.fibers>70,'solver should build a useful portrait');
+  assert.ok(result.metrics.featureCompletion>0,'feature residual should be reduced');
+  assert.ok(result.metrics.centerCrossingRate<.72,'center crossings should not dominate');
+  assert.equal(result.routes.reduce((s,r)=>s+r.selectedFibers,0),result.metrics.fibers);
+});

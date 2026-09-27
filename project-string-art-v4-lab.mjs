@@ -11,6 +11,13 @@ if (params.get('engine') === 'v4') {
   let raf = 0;
   const pending = new Map();
   const prewarmed = new Set();
+  let detectedFaces = [];
+  let selectedFaceIndex = 0;
+  let faceDetector = null;
+  let mediaPipeFaceDetector = null;
+  let mediaPipeLoading = null;
+  let faceDetectToken = 0;
+  let faceDetectTimer = 0;
 
   const AR = () => document.documentElement.lang === 'ar';
   const setStatus = (msg, pct=0) => {
@@ -24,10 +31,10 @@ if (params.get('engine') === 'v4') {
 
   const FIXED_PROFILE = Object.freeze({
     key:'portrait',
-    size:160,
-    nails:288,
-    colorFibers:5600,
-    candidates:72,
+    size:176,
+    nails:320,
+    colorFibers:6200,
+    candidates:84,
     palette:5,
     detail:.84,
     crossingColor:.15,
@@ -158,37 +165,173 @@ if (params.get('engine') === 'v4') {
     tools?.classList.add('sa-v4-share-tools');
   }
 
-  function captureFramedRgba(size) {
-    const src=$('#sa-user-source');
-    if(!src) throw new Error('Source canvas unavailable');
-    const c=document.createElement('canvas'); c.width=c.height=size;
-    const ctx=c.getContext('2d',{willReadFrequently:true});
-    const contrast=1.16;
-    ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
-    ctx.filter='contrast('+contrast+')';
-    ctx.drawImage(src,0,0,src.width,src.height,0,0,size,size);
-    ctx.filter='none';
-    return ctx.getImageData(0,0,size,size).data;
+  function removeFaceTargets(){
+    $('#sa-face-targets')?.remove();
   }
 
-  async function detectFaceBox(){
-    const src=$('#sa-user-source');
-    if(!src || typeof window.FaceDetector!=='function') return null;
+  function renderFaceTargets(){
+    removeFaceTargets();
+    const src=$('#sa-user-source'),wrap=src?.parentElement;
+    if(!src||!wrap||detectedFaces.length<2)return;
+    if(getComputedStyle(wrap).position==='static')wrap.style.position='relative';
+    const layer=document.createElement('div');
+    layer.id='sa-face-targets';
+    Object.assign(layer.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'6'});
+    detectedFaces.forEach((face,index)=>{
+      const b=face.box,button=document.createElement('button');
+      button.type='button';button.dataset.faceIndex=String(index);
+      button.setAttribute('aria-label',tr('اختيار الوجه '+(index+1),'Select face '+(index+1)));
+      Object.assign(button.style,{
+        position:'absolute',left:(b.x*100)+'%',top:(b.y*100)+'%',width:(b.width*100)+'%',height:(b.height*100)+'%',
+        border:index===selectedFaceIndex?'3px solid #d7ad59':'2px solid rgba(255,255,255,.78)',borderRadius:'12px',
+        background:index===selectedFaceIndex?'rgba(215,173,89,.08)':'rgba(0,0,0,.02)',boxShadow:'0 0 0 1px rgba(0,0,0,.28)',
+        cursor:'pointer',pointerEvents:'auto',padding:'0',margin:'0'
+      });
+      const badge=document.createElement('span');
+      badge.textContent=String(index+1);
+      Object.assign(badge.style,{position:'absolute',left:'6px',top:'6px',minWidth:'22px',height:'22px',lineHeight:'22px',borderRadius:'999px',background:'#071923',color:'#f4d895',font:'800 11px Montserrat,Arial'});
+      button.appendChild(badge);
+      button.addEventListener('click',e=>{
+        e.preventDefault();e.stopPropagation();selectedFaceIndex=index;renderFaceTargets();
+        setStatus(tr('تم اختيار الوجه · اضغط توليد البورتريه','FACE SELECTED · GENERATE PORTRAIT'),0);
+      });
+      layer.appendChild(button);
+    });
+    wrap.appendChild(layer);
+  }
+
+  function averageLocation(locations=[]){
+    if(!locations?.length)return null;
+    let x=0,y=0,n=0;
+    for(const p of locations){if(Number.isFinite(p?.x)&&Number.isFinite(p?.y)){x+=p.x;y+=p.y;n++}}
+    return n?{x:x/n,y:y/n}:null;
+  }
+
+  function serializeDetectedFace(face,src){
+    const b=face?.boundingBox;
+    if(!b||b.width<8||b.height<8)return null;
+    const box={x:clamp(b.x/src.width),y:clamp(b.y/src.height),width:clamp(b.width/src.width,.04,1),height:clamp(b.height/src.height,.04,1)};
+    const raw=[];
+    for(const lm of face.landmarks||[]){
+      const point=averageLocation(lm.locations||[]);if(!point)continue;
+      raw.push({type:String(lm.type||'').toLowerCase(),x:clamp(point.x/src.width),y:clamp(point.y/src.height)});
+    }
+    const eyes=raw.filter(x=>x.type.includes('eye')).sort((a,b)=>a.x-b.x);
+    const mouth=raw.find(x=>x.type.includes('mouth'))||null;
+    const nose=raw.find(x=>x.type.includes('nose'))||null;
+    const landmarks={};
+    if(eyes[0])landmarks.leftEye={x:eyes[0].x,y:eyes[0].y};
+    if(eyes[1])landmarks.rightEye={x:eyes[eyes.length-1].x,y:eyes[eyes.length-1].y};
+    if(mouth)landmarks.mouth={x:mouth.x,y:mouth.y};
+    if(nose)landmarks.nose={x:nose.x,y:nose.y};
+    const cx=box.x+box.width/2,cy=box.y+box.height/2,dist=Math.hypot(cx-.5,cy-.5);
+    return {box,landmarks,score:box.width*box.height*(1-.48*Math.min(1,dist))};
+  }
+
+  async function getPortableFaceDetector(){
+    if(mediaPipeFaceDetector)return mediaPipeFaceDetector;
+    if(mediaPipeLoading)return mediaPipeLoading;
+    mediaPipeLoading=(async()=>{
+      const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm');
+      const fileset=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
+      mediaPipeFaceDetector=await vision.FaceDetector.createFromModelPath(
+        fileset,
+        'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'
+      );
+      return mediaPipeFaceDetector;
+    })().catch(error=>{mediaPipeLoading=null;throw error});
+    return mediaPipeLoading;
+  }
+
+  function serializeMediaPipeDetection(d,src){
+    const b=d?.boundingBox;
+    if(!b||b.width<8||b.height<8)return null;
+    const box={
+      x:clamp(Number(b.originX||0)/src.width),y:clamp(Number(b.originY||0)/src.height),
+      width:clamp(Number(b.width||0)/src.width,.04,1),height:clamp(Number(b.height||0)/src.height,.04,1)
+    };
+    const kp=d.keypoints||[];
+    const eyes=[kp[0],kp[1]].filter(Boolean).sort((a,b)=>a.x-b.x);
+    const landmarks={};
+    if(eyes[0])landmarks.leftEye={x:clamp(eyes[0].x),y:clamp(eyes[0].y)};
+    if(eyes[1])landmarks.rightEye={x:clamp(eyes[1].x),y:clamp(eyes[1].y)};
+    if(kp[2])landmarks.nose={x:clamp(kp[2].x),y:clamp(kp[2].y)};
+    if(kp[3])landmarks.mouth={x:clamp(kp[3].x),y:clamp(kp[3].y)};
+    const cx=box.x+box.width/2,cy=box.y+box.height/2,dist=Math.hypot(cx-.5,cy-.5);
+    const confidence=Number(d.categories?.[0]?.score||1);
+    return {box,landmarks,score:box.width*box.height*(1-.48*Math.min(1,dist))*(.75+.25*confidence),source:'mediapipe'};
+  }
+
+  async function runFaceDetection(src){
+    if(typeof window.FaceDetector==='function'){
+      try{
+        faceDetector ||= new window.FaceDetector({fastMode:true,maxDetectedFaces:8});
+        const nativeFaces=await faceDetector.detect(src);
+        if(nativeFaces?.length)return nativeFaces.map(f=>serializeDetectedFace(f,src)).filter(Boolean);
+      }catch(error){
+        if(error?.name!=='NotSupportedError')console.warn('[ATS V4 NATIVE FACE DETECT]',error);
+      }
+    }
     try{
-      const detector=new window.FaceDetector({fastMode:true,maxDetectedFaces:5});
-      const faces=await detector.detect(src);
-      if(!faces?.length)return null;
-      const cx=src.width/2,cy=src.height/2;
-      const ranked=faces.map(f=>{
-        const b=f.boundingBox,fx=b.x+b.width/2,fy=b.y+b.height/2;
-        const dist=Math.hypot((fx-cx)/src.width,(fy-cy)/src.height);
-        return {b,score:b.width*b.height*(1-.40*Math.min(1,dist))};
-      }).sort((a,b)=>b.score-a.score);
-      const b=ranked[0].b;
-      if(!b || b.width<8 || b.height<8) return null;
-      const px=b.width*.18, py=b.height*.22;
-      return {x:clamp((b.x-px)/src.width),y:clamp((b.y-py)/src.height),width:clamp((b.width+px*2)/src.width,.18,1),height:clamp((b.height+py*2)/src.height,.22,1)};
-    }catch(_){return null}
+      const detector=await getPortableFaceDetector();
+      const result=detector.detect(src);
+      return (result?.detections||[]).map(d=>serializeMediaPipeDetection(d,src)).filter(Boolean);
+    }catch(error){
+      console.warn('[ATS V4 MEDIAPIPE FACE DETECT]',error);
+      return [];
+    }
+  }
+
+  async function detectPortraitFaces({render=true}={}){
+    const src=$('#sa-user-source');
+    if(!src){detectedFaces=[];selectedFaceIndex=0;removeFaceTargets();return detectedFaces}
+    const token=++faceDetectToken;
+    try{
+      const faces=await runFaceDetection(src);
+      if(token!==faceDetectToken)return detectedFaces;
+      detectedFaces=(faces||[]).sort((a,b)=>b.score-a.score);
+      selectedFaceIndex=Math.min(selectedFaceIndex,Math.max(0,detectedFaces.length-1));
+      if(render)renderFaceTargets();
+      if(render&&detectedFaces.length>1)setStatus(tr('تم العثور على أكثر من وجه · اضغط على الوجه المطلوب','MULTIPLE FACES FOUND · TAP THE PORTRAIT YOU WANT'),0);
+      return detectedFaces;
+    }catch(error){
+      console.warn('[ATS V4 FACE DETECT]',error);detectedFaces=[];selectedFaceIndex=0;removeFaceTargets();return detectedFaces;
+    }
+  }
+
+  function scheduleFaceDetection(delay=220){
+    clearTimeout(faceDetectTimer);
+    faceDetectTimer=setTimeout(()=>detectPortraitFaces({render:true}),delay);
+  }
+
+  function transformPointToCrop(point,cropX,cropY,side,src){
+    if(!point)return null;
+    return {x:(point.x*src.width-cropX)/side,y:(point.y*src.height-cropY)/side};
+  }
+
+  function capturePortraitTarget(size,face){
+    const src=$('#sa-user-source');
+    if(!src)throw new Error('Source canvas unavailable');
+    const c=document.createElement('canvas');c.width=c.height=size;
+    const ctx=c.getContext('2d',{willReadFrequently:true});
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
+    let cropX=0,cropY=0,side=Math.max(src.width,src.height),faceBox=null,landmarks=null;
+    if(face?.box){
+      const b=face.box,bx=b.x*src.width,by=b.y*src.height,bw=b.width*src.width,bh=b.height*src.height;
+      side=Math.min(Math.max(src.width,src.height)*1.12,Math.max(bw*2.35,bh*2.78));
+      const centerX=bx+bw*.5,centerY=by+bh*.5+bh*.56;
+      cropX=centerX-side*.5;cropY=centerY-side*.5;
+      faceBox={x:(bx-cropX)/side,y:(by-cropY)/side,width:bw/side,height:bh/side};
+      landmarks={};
+      for(const [key,point] of Object.entries(face.landmarks||{})){
+        const mapped=transformPointToCrop(point,cropX,cropY,side,src);
+        if(mapped)landmarks[key]=mapped;
+      }
+    }
+    const scale=size/side;
+    ctx.save();ctx.filter='contrast(1.12) saturate(1.02)';
+    ctx.translate(-cropX*scale,-cropY*scale);ctx.scale(scale,scale);ctx.drawImage(src,0,0);ctx.restore();ctx.filter='none';
+    return {rgba:ctx.getImageData(0,0,size,size).data,faceBox,landmarks,crop:{x:cropX,y:cropY,side}};
   }
 
   function autoPaletteSize(rgba){
@@ -298,7 +441,7 @@ if (params.get('engine') === 'v4') {
 
   function getWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('./string-art-v4/worker.mjs',import.meta.url),{type:'module'});
+    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=2',import.meta.url),{type:'module'});
     worker.onmessage=e=>{
       const msg=e.data,job=pending.get(msg.id);if(!job)return;
       if(msg.type==='progress'){job.onProgress?.(msg);return}
@@ -335,6 +478,12 @@ if (params.get('engine') === 'v4') {
     if(phase==='matrix') return tr('بناء نموذج الخيط الفيزيائي…','BUILDING PHYSICAL THREAD MATRIX…');
     if(phase==='palette') return tr('محاكاة واختيار ألوان الخيط…','SIMULATING THREAD PALETTE…');
     if(phase==='preprocess') return tr('تحليل الوجه والملامح…','ANALYZING PORTRAIT FEATURES…');
+    if(phase==='portrait-stage'){
+      if(msg.stage==='structure')return tr('بناء شكل الرأس والشعر والفك…','BUILDING HEAD · HAIR · JAW…');
+      if(msg.stage==='features')return tr('تثبيت العينين والأنف والفم…','BUILDING EYES · NOSE · MOUTH…');
+      if(msg.stage==='color')return tr('إضافة طبقات اللون…','LAYERING PORTRAIT COLOR…');
+      return tr('تحسين الملامح المتبقية…','REFINING FACIAL DETAIL…');
+    }
     if(phase==='fast-layer') return tr('توليد طبقات الخيط والملامح…','GENERATING THREAD + PORTRAIT LAYERS…');
     if(phase==='solve-color-fast') return tr('بناء ملامح الوجه وتوزيع الخيوط…','BUILDING PORTRAIT THREAD GEOMETRY…');
     if(phase.includes('color')) return tr('تحسين الخط واللون والملامح…','OPTIMIZING COLOR + PORTRAIT DETAIL…');
@@ -364,29 +513,31 @@ if (params.get('engine') === 'v4') {
     btn.disabled=true;$('#sa-result-tools')?.classList.add('hidden');
     try{
       ensureV4Controls();
-      const p=profile(),m='color',rgba=captureFramedRgba(p.size),nColors=requestedPaletteSize(rgba,p);
-      const faceBox=await detectFaceBox();
-      setStatus(tr('تحليل الوجه والألوان…','ANALYZING FACE + COLORS…'),22);
+      const p=profile(),m='color';
+      await detectPortraitFaces({render:true});
+      const face=detectedFaces[selectedFaceIndex]||null;
+      const target=capturePortraitTarget(p.size,face);
+      const rgba=target.rgba,nColors=requestedPaletteSize(rgba,p);
+      setStatus(tr('تحليل الوجه والملامح والألوان…','ANALYZING PORTRAIT FEATURES + COLORS…'),18);
       const response=await sendWorker({
         type:'solve-image-v4',
-        table:{size:p.size,nails:p.nails,minGap:8},
+        table:{size:p.size,nails:p.nails,minGap:9},
         rgba,mode:m,
         preprocess:{
-          gamma:.90,detail:p.detail,detailRadius:p.size/31,toneFloor:0,toneCeiling:.988,ditherBlend:.15,colorAffinityTemperature:.07,
-          portraitPriority:true,faceBox,backgroundWeight:.035,faceBoost:1.82,edgeBoost:2.30,featureBoost:3.45,darkDetailBoost:.90,avoidanceBoost:1.50,backgroundSuppress:.82
+          gamma:.90,detail:p.detail,detailRadius:p.size/31,toneFloor:0,toneCeiling:.988,ditherBlend:.12,colorAffinityTemperature:.065,
+          portraitPriority:true,faceBox:target.faceBox,landmarks:target.landmarks,backgroundWeight:.025,faceBoost:1.95,edgeBoost:2.45,featureBoost:4.10,darkDetailBoost:1.05,avoidanceBoost:1.75,backgroundSuppress:.90
         },
-        palette:{nColors:5,fixedHex:['#111111'],simulationSize:34,maxCombinations:120},
-        solve:{
-          maxFibers:p.colorFibers,
-          timeBudgetMs:6500,
-          candidateLimit:p.candidates,
-          maxRepeat:p.repeatColor,
-          depletion:.055
+        palette:{
+          nColors,
+          fixedHex:['#111111'],
+          candidateHex:['#111111','#2a1712','#4b2b20','#70452f','#9a5e42','#bd7956','#d99a72','#e8b694','#f0cfb4','#c77b77','#d95f73','#e47b2c','#d92d35','#2358a6','#283a63','#2f6f73','#7a7a7a'],
+          simulationSize:36,maxCombinations:180
         },
+        solve:{maxFibers:p.colorFibers,timeBudgetMs:7000,candidateLimit:p.candidates,maxRepeat:p.repeatColor},
         useDither:true
       },[rgba.buffer],msg=>{
         const total=msg.total||1,done=msg.done||0,phase=msg.phase||'';
-        const pct=phase==='matrix'?Math.min(24,done/total*24):phase==='palette'?30:phase==='preprocess'?24+done/total*12:Math.min(96,36+done/total*60);
+        const pct=phase==='palette'?30:phase==='preprocess'?24:Math.min(97,34+done/total*63);
         setStatus(progressText(msg),pct);
       });
       const result=response.result;
@@ -394,10 +545,9 @@ if (params.get('engine') === 'v4') {
       window.__saV4LastResult=result;window.__saV4LastRender=lastRender;
       paint(lastRender,lastRender.lines.length);renderMeta(lastRender);
       const palette=lastRender.meta.palette.filter((_,i)=>Number(lastRender.meta.perColor[i]||0)>0).join(' · ');
-      $('#sa-user-sequence').textContent=(m==='color'?'PALETTE '+palette+'  ·  ':'')+lastRender.lines.slice(0,10).map(x=>String(x.a).padStart(3,'0')+'→'+String(x.b).padStart(3,'0')).join(' · ');
+      $('#sa-user-sequence').textContent='PALETTE '+palette;
       $('#sa-result-tools')?.classList.remove('hidden');
-      const usedColors=lastRender.meta.colorsUsed||1;
-      setStatus(tr('اكتمل · البورتريه جاهز','COMPLETE · YOUR PORTRAIT IS READY')+' · '+lastRender.lines.length.toLocaleString()+' '+tr('خيط','FIBERS'),100);
+      setStatus(tr('اكتمل · البورتريه جاهز','COMPLETE · YOUR PORTRAIT IS READY'),100);
     }catch(error){
       console.error('[ATS V4 GENERATE]',error);
       setStatus(tr('تعذر التوليد: ','GENERATION FAILED: ')+(error?.message||String(error)),100);
@@ -442,7 +592,7 @@ if (params.get('engine') === 'v4') {
     ctx.fillStyle='#e7edf0';ctx.font='800 18px Montserrat,Arial';
     ctx.fillText('STRING ART · PORTRAIT ENGINE',190,size+68);
     ctx.fillStyle='#7896a5';ctx.font='700 14px Montserrat,Arial';
-    ctx.fillText(data.meta.lines.toLocaleString()+' FIBERS · '+data.meta.pins+' NAILS · '+data.meta.colorsUsed+' COLORS',190,size+98);
+    ctx.fillText('PORTRAIT GENERATED BY ANDREW THARWAT STUDIO',190,size+98);
     ctx.textAlign='right';ctx.fillText('© ATS 2026',size-54,size+86);ctx.textAlign='left';
   }
 
@@ -563,7 +713,10 @@ if (params.get('engine') === 'v4') {
     bindOnce($('#sa-user-download'),'v4Bound','click',savePng);
     bindOnce($('#sa-user-share'),'v4Bound','click',sharePng);
     bindOnce($('#sa-user-video'),'v4Bound','click',shareVideo);
-    bindOnce($('#sa-user-file'),'v4WarmBound','change',()=>schedulePrewarm());
+    bindOnce($('#sa-user-file'),'v4WarmBound','change',()=>{schedulePrewarm();detectedFaces=[];selectedFaceIndex=0;removeFaceTargets();scheduleFaceDetection(320);setTimeout(()=>scheduleFaceDetection(40),900)});
+    bindOnce($('#sa-user-source'),'v4FacePointerBound','pointerup',()=>scheduleFaceDetection(260));
+    bindOnce($('#sa-zoom'),'v4FaceZoomBound','input',()=>scheduleFaceDetection(260));
+    for(const id of ['#sa-fit','#sa-center','#sa-rotate'])bindOnce($(id),'v4FaceFrameBound','click',()=>scheduleFaceDetection(260));
     $('#sa-user-speak')?.classList.add('sa-v4-hidden-action');
     window.__ATS_STRING_ART_V4_GENERATE=generateV4;
     document.documentElement.dataset.saEngine='v4';

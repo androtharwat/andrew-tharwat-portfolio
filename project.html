@@ -42,7 +42,7 @@
         document.head.appendChild(link);
       }
       if (engineV4) {
-        for (const href of ['/project-string-art-v4-lab.mjs?v=6','/string-art-v4/core.mjs']) {
+        for (const href of ['/project-string-art-v4-lab.mjs?v=8','/string-art-v4/core.mjs']) {
           const link = document.createElement('link');
           link.rel = 'modulepreload';
           link.href = href;
@@ -82,7 +82,7 @@
       window.__ATS_LOAD_STRING_ART_RUNTIME = () => loadScript('/project-string-art.js?v=7');
       window.__ATS_LOAD_STRING_ART_V4 = () => {
         if (!engineV4) return Promise.resolve();
-        if (!window.__atsV4ModulePromise) window.__atsV4ModulePromise = import('/project-string-art-v4-lab.mjs?v=6');
+        if (!window.__atsV4ModulePromise) window.__atsV4ModulePromise = import('/project-string-art-v4-lab.mjs?v=8');
         return window.__atsV4ModulePromise;
       };
 
