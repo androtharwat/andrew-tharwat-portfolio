@@ -1,8 +1,8 @@
 (() => {
   const cfg=window.PORTFOLIO_CONFIG;
   const root=document.getElementById('project-root');
-  if(!cfg || !window.supabase){root.innerHTML='<section class="project-error"><h1>Configuration error</h1></section>';return;}
-  const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
+  if(!cfg){root.innerHTML='<section class="project-error"><h1>Configuration error</h1></section>';return;}
+  const sb=window.supabase?.createClient ? window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey) : null;
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const media=(u='')=>{if(!u)return'/assets/ats-logo-mark.webp';if(/^https?:\/\//i.test(u))return u;const clean=String(u).replace(/^\/+/, '');if(window.PORTFOLIO_ASSETS&&window.PORTFOLIO_ASSETS[clean])return window.PORTFOLIO_ASSETS[clean];return '/'+clean;};
   const pathSlug=location.pathname.match(/\/projects\/([^/?#]+)/)?.[1];
@@ -21,7 +21,7 @@
 
     if(stringArt){
       const total=items.length+1;
-      const slides=items.map((m,i)=>{const url=esc(media(m.url)),alt=esc(m.alt_text||local(p,'title')),number=String(i+1).padStart(2,'0');if(m.media_type==='video')return `<article class="gallery-slide gallery-slide-video" data-slide-index="${i}" data-i18n-skip="1"><div class="gallery-slide-stage"><video controls playsinline preload="metadata" src="${url}"></video><span class="slide-kind">${ar?'فيديو':'VIDEO'}</span></div><div class="slide-caption"><span>${number} / ${String(total).padStart(2,'0')}</span><strong>${ar?'عملية التنفيذ':'PROCESS / MOTION'}</strong></div></article>`;return `<figure class="gallery-slide gallery-slide-image" data-slide-index="${i}" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" aria-label="${ar?'فتح العمل الفني':'Open artwork'} ${i+1}" data-i18n-skip="1"><div class="gallery-slide-stage"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="slide-kind">${ar?'عمل فني':'ARTWORK'}</span></div><figcaption class="slide-caption"><span>${number} / ${String(total).padStart(2,'0')}</span><strong>${ar?'بورتريه مصنوع يدويًا':'HANDCRAFTED PORTRAIT'}</strong></figcaption></figure>`;}).join('');
+      const slides=items.map((m,i)=>{const url=esc(media(m.url)),alt=esc(m.alt_text||local(p,'title')),number=String(i+1).padStart(2,'0');if(m.media_type==='video')return `<article class="gallery-slide gallery-slide-video" data-slide-index="${i}" data-i18n-skip="1"><div class="gallery-slide-stage"><video controls playsinline preload="none" src="${url}"></video><span class="slide-kind">${ar?'فيديو':'VIDEO'}</span></div><div class="slide-caption"><span>${number} / ${String(total).padStart(2,'0')}</span><strong>${ar?'عملية التنفيذ':'PROCESS / MOTION'}</strong></div></article>`;return `<figure class="gallery-slide gallery-slide-image" data-slide-index="${i}" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" aria-label="${ar?'فتح العمل الفني':'Open artwork'} ${i+1}" data-i18n-skip="1"><div class="gallery-slide-stage"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="slide-kind">${ar?'عمل فني':'ARTWORK'}</span></div><figcaption class="slide-caption"><span>${number} / ${String(total).padStart(2,'0')}</span><strong>${ar?'بورتريه مصنوع يدويًا':'HANDCRAFTED PORTRAIT'}</strong></figcaption></figure>`;}).join('');
       const waText=encodeURIComponent(ar?'مرحبًا أندرو، أرغب في طلب بورتريه String Art ملون مقاس 60 سم بسعر العرض 350 دولار. أود إرسال الصورة والبدء في مراجعة التصميم معك.':"Hello Andrew, I'd like to order a 60 cm colored String Art portrait at the limited offer price of $350. I'd like to send my photo and start the design review with you.");
       const waHref=`https://wa.me/201505414444?text=${waText}`;
       const orderIndex=items.length,orderNumber=String(total).padStart(2,'0');
@@ -32,7 +32,7 @@
       return `<section id="sa-gallery" class="gallery art-gallery carousel-gallery" data-i18n-skip="1"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${ar?`${items.length} أعمال + طلب`:`${items.length} ARTWORK${items.length===1?'':'S'} + ORDER`}</span></div><div class="gallery-slider-shell"><button type="button" class="gallery-arrow gallery-prev" aria-label="${ar?'العمل السابق':'Previous artwork'}">←</button><div class="gallery-slider-track" tabindex="0">${slides+orderSlide}</div><button type="button" class="gallery-arrow gallery-next" aria-label="${ar?'العمل التالي':'Next artwork'}">→</button></div><div class="gallery-slider-footer"><div class="gallery-dots">${dots}</div><div class="gallery-progress"><strong id="gallery-current">01</strong><span>/ ${String(total).padStart(2,'0')}</span></div></div><div class="gallery-swipe-hint">${ar?'اسحب للمشاهدة • أو استخدم الأسهم':'SWIPE / DRAG • OR USE ARROWS'}</div></section>`;
     }
 
-    const cards=items.map((m,i)=>{const url=esc(media(m.url)),alt=esc(m.alt_text||local(p,'title'));if(m.media_type==='video')return `<article class="media-item media-video" data-i18n-skip="1"><div class="media-frame"><video controls playsinline preload="metadata" src="${url}"></video><span class="media-type">${ar?'فيديو':'VIDEO'}</span></div></article>`;return `<figure class="media-item media-image" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" data-i18n-skip="1"><div class="media-frame"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="media-type">${ar?'عرض':'VIEW'}</span><span class="media-index">${String(i+1).padStart(2,'0')}</span></div></figure>`;}).join('');
+    const cards=items.map((m,i)=>{const url=esc(media(m.url)),alt=esc(m.alt_text||local(p,'title'));if(m.media_type==='video')return `<article class="media-item media-video" data-i18n-skip="1"><div class="media-frame"><video controls playsinline preload="none" src="${url}"></video><span class="media-type">${ar?'فيديو':'VIDEO'}</span></div></article>`;return `<figure class="media-item media-image" data-lightbox-src="${url}" data-lightbox-alt="${alt}" tabindex="0" role="button" data-i18n-skip="1"><div class="media-frame"><img src="${url}" alt="${alt}" loading="lazy" decoding="async" /><span class="media-type">${ar?'عرض':'VIEW'}</span><span class="media-index">${String(i+1).padStart(2,'0')}</span></div></figure>`;}).join('');
     return `<section class="gallery" data-i18n-skip="1"><div class="gallery-head"><div><span class="gallery-kicker">${kicker}</span><h2>${title}</h2><p>${note}</p></div><span class="gallery-count">${ar?`${items.length} عناصر`:`${items.length} PIECE${items.length===1?'':'S'}`}</span></div><div class="media-grid">${cards}</div></section>`;
   }
 
@@ -133,7 +133,7 @@ function stringArtMarkup(p,mediaItems){
           <div class="sa-actions"><a class="sa-primary" href="#sa-process">${esc(copy.watch)}</a><a class="sa-secondary" href="#sa-gallery">${esc(copy.works)}</a></div>
         </div>
         <figure class="sa-hero-visual">
-          <div class="sa-hero-frame"><img src="${cover}" alt="${esc(local(p,'title'))}" loading="eager" decoding="async"><canvas id="sa-hero-thread" width="900" height="620" aria-hidden="true"></canvas></div>
+          <div class="sa-hero-frame"><img src="${cover}" alt="${esc(local(p,'title'))}" loading="lazy" fetchpriority="low" decoding="async"><canvas id="sa-hero-thread" width="900" height="620" aria-hidden="true"></canvas></div>
           <figcaption><span>${ar?'قرب: هندسة':'UP CLOSE: GEOMETRY'}</span><i></i><span>${ar?'ابعد: ملامح':'STEP BACK: LIKENESS'}</span></figcaption>
         </figure>
       </div>
@@ -224,8 +224,37 @@ function stringArtMarkup(p,mediaItems){
     if(isStringArt)installGallerySlider();if(mediaItems.some(m=>m.media_type!=='video'))installLightbox();
   }
 
+  async function fetchProject(){
+    if(sb){
+      const {data,error}=await sb.from('portfolio_projects').select('*,portfolio_categories(name,name_ar,color),portfolio_project_media(*)').eq('slug',slug).eq('status','published').eq('page_enabled',true).single();
+      if(error) throw error;
+      return data;
+    }
+    const select='*,portfolio_categories(name,name_ar,color),portfolio_project_media(*)';
+    const url=cfg.supabaseUrl.replace(/\/$/,'')+'/rest/v1/portfolio_projects?select='+encodeURIComponent(select)+'&slug=eq.'+encodeURIComponent(slug)+'&status=eq.published&page_enabled=eq.true&limit=1';
+    const response=await fetch(url,{
+      headers:{
+        apikey:cfg.supabaseKey,
+        Authorization:'Bearer '+cfg.supabaseKey,
+        Accept:'application/json'
+      },
+      cache:'default'
+    });
+    if(!response.ok) throw new Error('Project request failed: '+response.status);
+    const rows=await response.json();
+    return rows?.[0]||null;
+  }
+
   async function load(){
-    if(!slug){fail(isAr()?'المشروع غير موجود':'Project not found');return;}const {data:p,error}=await sb.from('portfolio_projects').select('*,portfolio_categories(name,name_ar,color),portfolio_project_media(*)').eq('slug',slug).eq('status','published').eq('page_enabled',true).single();if(error||!p){fail(isAr()?'صفحة المشروع غير متاحة حاليًا':'Project page is not available yet');return;}currentProject=p;render(p);
+    if(!slug){fail(isAr()?'المشروع غير موجود':'Project not found');return;}
+    try{
+      const p=await fetchProject();
+      if(!p){fail(isAr()?'صفحة المشروع غير متاحة حاليًا':'Project page is not available yet');return;}
+      currentProject=p;render(p);
+    }catch(error){
+      console.error('[ATS Project]',error);
+      fail(isAr()?'صفحة المشروع غير متاحة حاليًا':'Project page is not available yet');
+    }
   }
   function fail(msg){const ar=isAr();root.innerHTML=`<section class="project-error" data-i18n-skip="1"><h1>${esc(msg)}</h1><p>${ar?'هذا المشروع إما غير منشور بعد أو أن صفحته العامة غير مفعلة.':'This project is either not published yet or its public page is currently disabled.'}</p><a class="btn btn-primary" href="/work">${ar?'العودة للأعمال':'BACK TO WORK'}</a></section>`;}
   document.addEventListener('portfolio:languagechange',()=>{if(currentProject)render(currentProject);else load()});

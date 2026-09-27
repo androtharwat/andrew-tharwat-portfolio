@@ -11,16 +11,34 @@
   <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/project.css?v=3" />
-  <link rel="stylesheet" href="/project-story-upgrade.css?v=2" />
-  <link rel="stylesheet" href="/project-natural-gallery.css?v=1" />
-  <link rel="stylesheet" href="/project-string-art.css?v=4" />
-  <link rel="stylesheet" href="/media-engagement.css?v=2" />
-  <link rel="stylesheet" href="/media-share-drawer.css?v=1" />
-  <link rel="stylesheet" href="/project-hse-series.css?v=1" />
-  <link rel="stylesheet" href="/project-v9-case-study.css?v=3" />
-  <link rel="stylesheet" href="/project-v9-visual-themes.css?v=1" />
   <link rel="stylesheet" href="/i18n.css?v=2" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
+  <script>
+    (() => {
+      const pathSlug = location.pathname.match(/\/projects\/([^/?#]+)/)?.[1];
+      const slug = decodeURIComponent(pathSlug || new URLSearchParams(location.search).get('slug') || '');
+      const stringArt = slug === 'magic-of-string-art';
+      window.__ATS_PROJECT_SLUG = slug;
+      window.__ATS_STRING_ART_PAGE = stringArt;
+      const css = stringArt
+        ? ['/project-string-art.css?v=5']
+        : [
+            '/project-story-upgrade.css?v=2',
+            '/project-natural-gallery.css?v=1',
+            '/media-engagement.css?v=2',
+            '/media-share-drawer.css?v=1',
+            '/project-hse-series.css?v=1',
+            '/project-v9-case-study.css?v=3',
+            '/project-v9-visual-themes.css?v=1'
+          ];
+      for (const href of css) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        document.head.appendChild(link);
+      }
+    })();
+  </script>
 </head>
 <body class="project-page">
   <header class="project-nav">
@@ -28,18 +46,88 @@
     <a class="btn btn-ghost small" href="/v9/#work">← BACK TO SELECTED WORK</a>
   </header>
   <main id="project-root"><section class="project-loading"><div class="loader-mark"></div><p>Loading project...</p></section></main>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    (() => {
+      const stringArt = Boolean(window.__ATS_STRING_ART_PAGE);
+      const engineV4 = stringArt && new URLSearchParams(location.search).get('engine') === 'v4';
+      const loaded = new Map();
+
+      const loadScript = (src) => {
+        if (loaded.has(src)) return loaded.get(src);
+        const promise = new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = src;
+          s.async = true;
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+        loaded.set(src, promise);
+        return promise;
+      };
+
+      window.__ATS_LOAD_STRING_ART_RUNTIME = () => loadScript('/project-string-art.js?v=6');
+      window.__ATS_LOAD_STRING_ART_V4 = () => {
+        if (!engineV4) return Promise.resolve();
+        if (!window.__atsV4ModulePromise) {
+          window.__atsV4ModulePromise = import('/project-string-art-v4-lab.mjs?v=2');
+        }
+        return window.__atsV4ModulePromise;
+      };
+
+      if (stringArt) {
+        document.addEventListener('ats:stringart:rendered', () => {
+          const startRuntime = () => window.__ATS_LOAD_STRING_ART_RUNTIME();
+          const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 700));
+          idle(startRuntime, { timeout: 1200 });
+        }, { once: true });
+
+        document.addEventListener('pointerdown', (event) => {
+          if (event.target.closest?.('#sa-upload-zone, #sa-generate')) {
+            window.__ATS_LOAD_STRING_ART_RUNTIME();
+            if (event.target.closest?.('#sa-generate')) window.__ATS_LOAD_STRING_ART_V4();
+          }
+        }, { capture: true, passive: true });
+
+        document.addEventListener('change', (event) => {
+          if (event.target?.id === 'sa-user-file') {
+            window.__ATS_LOAD_STRING_ART_RUNTIME();
+            window.__ATS_LOAD_STRING_ART_V4();
+          }
+        }, { capture: true });
+
+        document.addEventListener('drop', (event) => {
+          if (event.target.closest?.('#sa-upload-zone')) {
+            window.__ATS_LOAD_STRING_ART_RUNTIME();
+            window.__ATS_LOAD_STRING_ART_V4();
+          }
+        }, { capture: true });
+      } else {
+        // Preserve the existing richer project experience for all other project pages.
+        window.__ATS_LOAD_LEGACY_PROJECT_BUNDLES = async () => {
+          await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+          await loadScript('/content-runtime.js?v=1');
+          [
+            '/project-story-upgrade.js?v=2',
+            '/project-hse-series.js?v=2',
+            '/project-v9-case-study.js?v=4',
+            '/project-v9-visual-themes.js?v=1',
+            '/media-engagement.js?v=4',
+            '/media-share-drawer.js?v=1'
+          ].forEach(loadScript);
+        };
+      }
+    })();
+  </script>
+
   <script src="/config.js"></script>
   <script src="/i18n.js?v=3"></script>
-  <script src="/content-runtime.js?v=1"></script>
-  <script src="/project.js?v=14"></script>
-  <script src="/project-story-upgrade.js?v=2"></script>
-  <script src="/project-hse-series.js?v=2"></script>
-  <script src="/project-v9-case-study.js?v=4"></script>
-  <script src="/project-v9-visual-themes.js?v=1"></script>
-  <script src="/media-engagement.js?v=4"></script>
-  <script src="/media-share-drawer.js?v=1"></script>
-  <script src="/project-string-art.js?v=5"></script>
-  <script type="module" src="/project-string-art-v4-lab.mjs?v=1"></script>
+  <script>
+    if (!window.__ATS_STRING_ART_PAGE) {
+      window.__ATS_LOAD_LEGACY_PROJECT_BUNDLES?.();
+    }
+  </script>
+  <script src="/project.js?v=15"></script>
 </body>
 </html>
