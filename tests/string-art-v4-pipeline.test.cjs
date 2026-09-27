@@ -72,3 +72,28 @@ test('exhaustive dither-simulation palette search captures complementary portrai
   assert.ok(picked.hex.includes('#d92d35') || picked.hex.includes('#e47b2c'));
   assert.ok(picked.estimatedError >= 0);
 });
+
+
+test('V4 end-to-end color pipeline picks a palette, solves globally, and returns executable routes', async () => {
+  const pipeline = await import('../string-art-v4/pipeline.mjs');
+  const size = 22;
+  const table = core.buildPackedLineTable({ size, nails: 22, minGap: 2, fiberWidthMm: 2.6, density: 2 });
+  const rgba = new Uint8ClampedArray(size * size * 4);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const p = y * size + x, i = p * 4;
+    rgba[i] = x < size / 2 ? 42 : 220;
+    rgba[i + 1] = y < size / 2 ? 95 : 150;
+    rgba[i + 2] = x < size / 2 ? 190 : 55;
+    rgba[i + 3] = 255;
+  }
+  const result = pipeline.solveImageV4({
+    table, rgba, mode:'color',
+    palette:{ candidateHex:['#111111','#2358a6','#d92d35','#e47b2c','#f2c84b','#29a8c7'], nColors:4, simulationSize:22 },
+    solve:{ maxFibers:140, opacity:.55, candidateLimit:0 },
+  });
+  assert.equal(result.mode, 'color-global');
+  assert.equal(result.palette.linearRgb.length, 4);
+  assert.ok(result.metrics.fibers > 10);
+  assert.ok(result.metrics.colorsUsed >= 2);
+  assert.equal(result.routes.reduce((s,r)=>s+r.selectedFibers,0), result.metrics.fibers);
+});

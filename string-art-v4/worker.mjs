@@ -5,6 +5,7 @@ import {
   solveColorGlobalOptical,
 } from './core.mjs';
 import { buildColorRoutesFromCounts } from './path.mjs';
+import { solveImageV4 } from './pipeline.mjs';
 
 const cache = new Map();
 
@@ -26,6 +27,23 @@ function getTable(options, postProgress) {
 self.onmessage = (event) => {
   const msg = event.data;
   try {
+    if (msg.type === 'solve-image-v4') {
+      const progress = (data) => self.postMessage({ type: 'progress', id: msg.id, ...data });
+      const table = getTable(msg.table, progress);
+      const result = solveImageV4({
+        table,
+        rgba: msg.rgba,
+        mode: msg.mode || 'color',
+        preprocess: msg.preprocess || {},
+        palette: msg.palette || {},
+        solve: msg.solve || {},
+        useDither: msg.useDither !== false,
+        importance: msg.importance || null,
+        onProgress: progress,
+      });
+      self.postMessage({ type: 'v4-result', id: msg.id, result });
+      return;
+    }
     if (msg.type === 'clear-cache') {
       cache.clear();
       self.postMessage({ type: 'cache-cleared', id: msg.id });

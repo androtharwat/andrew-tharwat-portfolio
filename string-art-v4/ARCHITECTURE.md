@@ -73,12 +73,21 @@ Implemented in `core.mjs`:
 - deterministic candidate sampling for performance experiments
 - synthetic targets and metrics for regression tests
 
+Implemented in `pipeline.mjs`:
+
+- one-call RGBA → linear-light preprocessing → mono/color target
+- exhaustive simulated thread-palette selection for color
+- optional Floyd–Steinberg target dithering
+- global mono or global joint line+color solve
+- automatic conversion to executable mono/per-color routes
+
 Implemented in `worker.mjs`:
 
 - reusable line-table cache keyed by physical/geometry parameters
 - mono solve messages
 - color solve messages
 - progress messages
+- end-to-end `solve-image-v4` message for UI integration
 - no image upload or backend dependency
 
 ## Quality targets
