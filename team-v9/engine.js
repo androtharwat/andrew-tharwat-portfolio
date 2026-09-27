@@ -9,7 +9,11 @@
   let rows = {tasks:[],members:[],skills:[],streams:[],ledger:[],events:[],projects:[],dependencies:[],context:[]};
   let me = null, email = '';
   let memberLinkOpened=false;
-  const requestedMember=new URLSearchParams(location.search).get('member');
+  const params=new URLSearchParams(location.search);
+  const requestedMember=params.get('member');
+  const requestedProject=params.get('project');
+  const requestedNewTask=params.get('newTask')==='1';
+  let requestedTaskOpened=false;
   const intake=[];
   const openStates = ['assigned','in_progress','review'];
   const label = s => String(s).replaceAll('_',' ');
@@ -127,8 +131,9 @@
     const projects=rows.projects.filter(p=>!['completed','cancelled'].includes(p.status));
     const members=rows.members.filter(m=>m.active);
     if(!projects.length||!members.length){message('Add a member and make sure an active client project exists before creating tasks.',true);return;}
+    const defaultProject=id?t.project_id:(projects.some(p=>p.id===requestedProject)?requestedProject:t.project_id);
     const deps=rows.dependencies.filter(d=>d.task_id===id).map(d=>d.depends_on);
-    modal(id?'Edit available task':'Create project task',select('project_id','Project',projects.map(p=>[p.id,p.title]),t.project_id,'required')+field('workstream','Workstream',stream(t.workstream_id),'text','required maxlength="160"')+field('title','Task name',t.title,'text','required maxlength="200"')+field('required_skill','Required skill',t.required_skill,'text','required maxlength="80" list="team-skill-options"')+`<datalist id="team-skill-options">${[...new Set(rows.skills.map(s=>s.skill))].map(s=>`<option value="${esc(s)}">`).join('')}</datalist>`+field('required_level','Minimum skill level',t.required_level,'number','min="1" max="5" required')+field('base_tokens','Base tokens',t.base_tokens,'number','min="1" max="100000" required')+select('reviewer_id','Reviewer',members.map(m=>[m.id,m.full_name]),t.reviewer_id,'required')+field('due_at','Deadline',t.due_at?localDate(t.due_at):'','datetime-local','required')+area('expected_output','Expected output',t.expected_output)+area('acceptance_criteria','Acceptance criteria',t.acceptance_criteria)+select('assignment_mode','Assignment mode',[['marketplace','Marketplace'],['direct','Admin assignment only']],t.assignment_mode||'marketplace')+field('escalate_hours','Escalate unclaimed after (hours)',t.escalate_hours,'number','min="1" max="720" required')+`<label class="wide">Dependencies (Ctrl / Command to select multiple)<select name="dependencies" multiple>${rows.tasks.filter(x=>x.id!==id).map(x=>`<option value="${x.id}" data-project="${x.project_id}" ${deps.includes(x.id)?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label>`+check('admin_acceptance','Require admin for final acceptance',t.admin_acceptance)+(id?area('reason','Reason for scope change'):''),async(fd,form)=>{
+    modal(id?'Edit available task':'Create project task',select('project_id','Project',projects.map(p=>[p.id,p.title]),defaultProject,'required')+field('workstream','Workstream',stream(t.workstream_id),'text','required maxlength="160"')+field('title','Task name',t.title,'text','required maxlength="200"')+field('required_skill','Required skill',t.required_skill,'text','required maxlength="80" list="team-skill-options"')+`<datalist id="team-skill-options">${[...new Set(rows.skills.map(s=>s.skill))].map(s=>`<option value="${esc(s)}">`).join('')}</datalist>`+field('required_level','Minimum skill level',t.required_level,'number','min="1" max="5" required')+field('base_tokens','Base tokens',t.base_tokens,'number','min="1" max="100000" required')+select('reviewer_id','Reviewer',members.map(m=>[m.id,m.full_name]),t.reviewer_id,'required')+field('due_at','Deadline',t.due_at?localDate(t.due_at):'','datetime-local','required')+area('expected_output','Expected output',t.expected_output)+area('acceptance_criteria','Acceptance criteria',t.acceptance_criteria)+select('assignment_mode','Assignment mode',[['marketplace','Marketplace'],['direct','Admin assignment only']],t.assignment_mode||'marketplace')+field('escalate_hours','Escalate unclaimed after (hours)',t.escalate_hours,'number','min="1" max="720" required')+`<label class="wide">Dependencies (Ctrl / Command to select multiple)<select name="dependencies" multiple>${rows.tasks.filter(x=>x.id!==id).map(x=>`<option value="${x.id}" data-project="${x.project_id}" ${deps.includes(x.id)?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label>`+check('admin_acceptance','Require admin for final acceptance',t.admin_acceptance)+(id?area('reason','Reason for scope change'):''),async(fd,form)=>{
       await command(id?'edit_task':'create_task',{...Object.fromEntries(fd),id:id||null,base_tokens:Number(fd.get('base_tokens')),required_level:Number(fd.get('required_level')),escalate_hours:Number(fd.get('escalate_hours')),due_at:new Date(fd.get('due_at')).toISOString(),dependencies:fd.getAll('dependencies'),admin_acceptance:form.elements.admin_acceptance.checked});
     },id?'Save changes':'Create task');
     const form=$('#team-dialog form',root); if(id)form.elements.project_id.disabled=true;
@@ -174,6 +179,13 @@
     const cfg=window.PORTFOLIO_CONFIG;
     sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{global:{headers:{'x-portfolio-device-id':device.id,'x-portfolio-device-secret':device.secret}},auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
     active=true;await refresh();showAdmin();
+    if(requestedProject){
+      const p=rows.projects.find(x=>x.id===requestedProject);
+      if(p)message('Project ready for execution: '+p.title+'. Create or assign its tasks below.');
+    }
+    if(requestedNewTask&&requestedProject&&!requestedTaskOpened&&rows.projects.some(x=>x.id===requestedProject)){
+      requestedTaskOpened=true;setTimeout(()=>taskForm(null),80);
+    }
   }
   async function initMember() {
     const cfg=window.PORTFOLIO_CONFIG;if(!window.supabase||!cfg){$('#team-auth-message').textContent='Connection library unavailable. Please reload.';return;}
