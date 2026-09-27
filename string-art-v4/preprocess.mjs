@@ -185,6 +185,141 @@ export function chooseThreadPalette(targetRgb, {
   };
 }
 
+
+function resizeLinearRgbBilinear(src, srcSize, dstSize) {
+  if (srcSize === dstSize) return new Float32Array(src);
+  const out = new Float32Array(dstSize * dstSize * 3);
+  const scale = srcSize / dstSize;
+  for (let y = 0; y < dstSize; y++) for (let x = 0; x < dstSize; x++) {
+    const sx = Math.max(0, Math.min(srcSize - 1, (x + 0.5) * scale - 0.5));
+    const sy = Math.max(0, Math.min(srcSize - 1, (y + 0.5) * scale - 0.5));
+    const x0 = Math.floor(sx), y0 = Math.floor(sy), x1 = Math.min(srcSize - 1, x0 + 1), y1 = Math.min(srcSize - 1, y0 + 1);
+    const fx = sx - x0, fy = sy - y0;
+    for (let c = 0; c < 3; c++) {
+      const a = src[(y0 * srcSize + x0) * 3 + c] * (1 - fx) + src[(y0 * srcSize + x1) * 3 + c] * fx;
+      const b = src[(y1 * srcSize + x0) * 3 + c] * (1 - fx) + src[(y1 * srcSize + x1) * 3 + c] * fx;
+      out[(y * dstSize + x) * 3 + c] = a * (1 - fy) + b * fy;
+    }
+  }
+  return out;
+}
+
+function resizeScalarBilinear(src, srcSize, dstSize) {
+  if (!src) return null;
+  if (srcSize === dstSize) return new Float32Array(src);
+  const out = new Float32Array(dstSize * dstSize);
+  const scale = srcSize / dstSize;
+  for (let y = 0; y < dstSize; y++) for (let x = 0; x < dstSize; x++) {
+    const sx = Math.max(0, Math.min(srcSize - 1, (x + 0.5) * scale - 0.5));
+    const sy = Math.max(0, Math.min(srcSize - 1, (y + 0.5) * scale - 0.5));
+    const x0 = Math.floor(sx), y0 = Math.floor(sy), x1 = Math.min(srcSize - 1, x0 + 1), y1 = Math.min(srcSize - 1, y0 + 1);
+    const fx = sx - x0, fy = sy - y0;
+    const a = src[y0 * srcSize + x0] * (1 - fx) + src[y0 * srcSize + x1] * fx;
+    const b = src[y1 * srcSize + x0] * (1 - fx) + src[y1 * srcSize + x1] * fx;
+    out[y * dstSize + x] = a * (1 - fy) + b * fy;
+  }
+  return out;
+}
+
+function blurRgb(src, size, sigma = 1.15) {
+  const out = new Float32Array(src.length);
+  for (let c = 0; c < 3; c++) {
+    const channel = new Float32Array(size * size);
+    for (let p = 0; p < channel.length; p++) channel[p] = src[p * 3 + c];
+    const blurred = gaussianBlurScalar(channel, size, sigma);
+    for (let p = 0; p < channel.length; p++) out[p * 3 + c] = blurred[p];
+  }
+  return out;
+}
+
+export function paletteDitherSimulationError(targetRgb, size, paletteLinear, {
+  mask = null,
+  simulationSize = 64,
+  blurSigma = 1.15,
+} = {}) {
+  const simSize = Math.max(12, Math.min(size, Math.round(simulationSize)));
+  const targetSmall = resizeLinearRgbBilinear(targetRgb, size, simSize);
+  const maskSmall = resizeScalarBilinear(mask, size, simSize);
+  const dithered = floydSteinbergDitherLinear(targetSmall, simSize, paletteLinear, maskSmall).rgb;
+  const targetBlur = blurRgb(targetSmall, simSize, blurSigma);
+  const ditherBlur = blurRgb(dithered, simSize, blurSigma);
+  let err = 0, wsum = 0;
+  for (let p = 0; p < simSize * simSize; p++) {
+    const w = maskSmall ? maskSmall[p] : 1;
+    if (w <= .01) continue;
+    const dr = targetBlur[p * 3] - ditherBlur[p * 3];
+    const dg = targetBlur[p * 3 + 1] - ditherBlur[p * 3 + 1];
+    const db = targetBlur[p * 3 + 2] - ditherBlur[p * 3 + 2];
+    const dy = .2126 * dr + .7152 * dg + .0722 * db;
+    const co = dr - db, cg = dg - .5 * (dr + db);
+    err += w * (dy * dy + 1.45 * (.5 * co * co + cg * cg));
+    wsum += w;
+  }
+  return err / Math.max(EPS, wsum);
+}
+
+function combinationCount(n, k) {
+  if (k < 0 || k > n) return 0;
+  k = Math.min(k, n - k);
+  let v = 1;
+  for (let i = 1; i <= k; i++) v = v * (n - k + i) / i;
+  return Math.round(v);
+}
+
+function enumerateCombinations(n, k, visit) {
+  const pick = new Int16Array(k);
+  const walk = (depth, start) => {
+    if (depth === k) { visit(Array.from(pick)); return; }
+    for (let i = start; i <= n - (k - depth); i++) {
+      pick[depth] = i;
+      walk(depth + 1, i + 1);
+    }
+  };
+  if (k === 0) visit([]);
+  else walk(0, 0);
+}
+
+export function chooseThreadPaletteSimulation(targetRgb, size, {
+  candidateHex = DEFAULT_THREAD_CANDIDATES,
+  nColors = 4,
+  fixedHex = ['#111111'],
+  mask = null,
+  simulationSize = 64,
+  blurSigma = 1.15,
+  maxCombinations = 2500,
+} = {}) {
+  if (targetRgb.length !== size * size * 3) throw new Error('targetRgb/size mismatch');
+  if (nColors < fixedHex.length) throw new Error('nColors must be >= fixedHex length');
+  const fixedLower = new Set(fixedHex.map((x) => x.toLowerCase()));
+  const fixed = fixedHex.map((hex) => ({ hex, rgb: hexToLinearRgb(hex) }));
+  const candidates = candidateHex.filter((hex) => !fixedLower.has(hex.toLowerCase()))
+    .map((hex) => ({ hex, rgb: hexToLinearRgb(hex) }));
+  const choose = nColors - fixed.length;
+  const combos = combinationCount(candidates.length, choose);
+  if (choose < 0 || choose > candidates.length) throw new Error('not enough candidate thread colors');
+
+  if (combos > maxCombinations) {
+    const greedy = chooseThreadPalette(targetRgb, { candidateHex, nColors, fixedHex, mask });
+    return { ...greedy, method: 'greedy-fallback', combinations: combos };
+  }
+
+  let best = null, bestError = Infinity;
+  enumerateCombinations(candidates.length, choose, (ids) => {
+    const selected = [...fixed, ...ids.map((i) => candidates[i])];
+    const palette = selected.map((x) => x.rgb);
+    const error = paletteDitherSimulationError(targetRgb, size, palette, { mask, simulationSize, blurSigma });
+    if (error < bestError) { bestError = error; best = selected; }
+  });
+
+  return {
+    hex: best.map((x) => x.hex),
+    linearRgb: best.map((x) => x.rgb),
+    estimatedError: bestError,
+    method: 'exhaustive-dither-simulation',
+    combinations: combos,
+  };
+}
+
 function nearestPaletteColor(rgb, palette) {
   let best = 0, bestD = Infinity;
   for (let i = 0; i < palette.length; i++) {

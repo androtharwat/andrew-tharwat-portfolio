@@ -23,6 +23,7 @@ V4 is informed by the public state of the art and mature open implementations, e
    - mono darkness target
    - tone floor / gamma / local detail
    - palette selection + optional dithering for color
+   - exhaustive palette-combination search scored by dither + perceptual blur simulation for high-quality color profiles
    - optional importance map
 
 2. **Physical geometry**

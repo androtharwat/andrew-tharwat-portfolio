@@ -52,3 +52,23 @@ test('global edge solution can be covered and stitched into executable nail rout
   assert.ok(stitched.sequence.length >= edges.length + 1);
   assert.ok(stitched.connectors.length >= 0);
 });
+
+
+test('exhaustive dither-simulation palette search captures complementary portrait colors', () => {
+  const size = 24, rgb = new Float32Array(size * size * 3), mask = core.makeCircularMask(size);
+  const blue = pre.hexToLinearRgb('#2358a6'), red = pre.hexToLinearRgb('#d92d35'), skin = pre.hexToLinearRgb('#e47b2c');
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const p = y * size + x;
+    const c = y < size / 3 ? blue : (x < size / 2 ? red : skin);
+    rgb[p * 3] = c[0]; rgb[p * 3 + 1] = c[1]; rgb[p * 3 + 2] = c[2];
+  }
+  const candidateHex = ['#111111','#2358a6','#d92d35','#e47b2c','#f2c84b','#2f7d4b'];
+  const picked = pre.chooseThreadPaletteSimulation(rgb, size, {
+    candidateHex, fixedHex:['#111111'], nColors:4, mask, simulationSize:24
+  });
+  assert.equal(picked.method, 'exhaustive-dither-simulation');
+  assert.equal(picked.hex.length, 4);
+  assert.ok(picked.hex.includes('#2358a6'));
+  assert.ok(picked.hex.includes('#d92d35') || picked.hex.includes('#e47b2c'));
+  assert.ok(picked.estimatedError >= 0);
+});
