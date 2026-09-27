@@ -117,6 +117,111 @@ export function prepareMonoTarget(rgb, size, {
   return darkness;
 }
 
+
+function normalizedFaceBox(faceBox) {
+  if (!faceBox) return { x: 0.20, y: 0.08, width: 0.60, height: 0.80 };
+  const x = clamp01(Number(faceBox.x ?? 0.20));
+  const y = clamp01(Number(faceBox.y ?? 0.08));
+  const width = Math.max(0.18, Math.min(1 - x, Number(faceBox.width ?? 0.60)));
+  const height = Math.max(0.22, Math.min(1 - y, Number(faceBox.height ?? 0.80)));
+  return { x, y, width, height };
+}
+
+function gaussianFeature(nx, ny, cx, cy, sx, sy) {
+  const dx = (nx - cx) / Math.max(1e-4, sx);
+  const dy = (ny - cy) / Math.max(1e-4, sy);
+  return Math.exp(-0.5 * (dx * dx + dy * dy));
+}
+
+export function buildPortraitPriorityMaps(rgb, size, {
+  mask = null,
+  faceBox = null,
+  backgroundWeight = 0.18,
+  faceBoost = 1.15,
+  edgeBoost = 1.65,
+  featureBoost = 2.15,
+  darkDetailBoost = 0.55,
+  avoidanceBoost = 1,
+} = {}) {
+  if (rgb.length !== size * size * 3) throw new Error('portrait priority rgb/size mismatch');
+  const box = normalizedFaceBox(faceBox);
+  const luminance = new Float32Array(size * size);
+  const gradient = new Float32Array(size * size);
+  for (let p = 0; p < luminance.length; p++) {
+    luminance[p] = 0.2126 * rgb[p * 3] + 0.7152 * rgb[p * 3 + 1] + 0.0722 * rgb[p * 3 + 2];
+  }
+
+  let gradMax = 1e-6;
+  for (let y = 1; y < size - 1; y++) for (let x = 1; x < size - 1; x++) {
+    const i = y * size + x;
+    const a = luminance[(y - 1) * size + x - 1], b = luminance[(y - 1) * size + x], cc = luminance[(y - 1) * size + x + 1];
+    const d = luminance[y * size + x - 1], f = luminance[y * size + x + 1];
+    const g = luminance[(y + 1) * size + x - 1], h = luminance[(y + 1) * size + x], j = luminance[(y + 1) * size + x + 1];
+    const gx = -a + cc - 2 * d + 2 * f - g + j;
+    const gy = -a - 2 * b - cc + g + 2 * h + j;
+    const v = Math.sqrt(gx * gx + gy * gy);
+    gradient[i] = v;
+    if (v > gradMax) gradMax = v;
+  }
+
+  const importance = new Float32Array(size * size);
+  const avoidance = new Float32Array(size * size);
+  const featureMap = new Float32Array(size * size);
+  let weightedSum = 0, maskSum = 0;
+
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const p = y * size + x;
+    const m = mask ? mask[p] : 1;
+    if (m <= 0.001) continue;
+
+    const ux = (x / Math.max(1, size - 1) - box.x) / box.width;
+    const uy = (y / Math.max(1, size - 1) - box.y) / box.height;
+    const ex = (ux - 0.5) / 0.52;
+    const ey = (uy - 0.50) / 0.54;
+    const face = Math.exp(-1.55 * (ex * ex + ey * ey));
+    const hair = gaussianFeature(ux, uy, 0.50, 0.16, 0.34, 0.17);
+
+    const leftBrow = gaussianFeature(ux, uy, 0.34, 0.31, 0.13, 0.045);
+    const rightBrow = gaussianFeature(ux, uy, 0.66, 0.31, 0.13, 0.045);
+    const leftEye = gaussianFeature(ux, uy, 0.35, 0.39, 0.12, 0.055);
+    const rightEye = gaussianFeature(ux, uy, 0.65, 0.39, 0.12, 0.055);
+    const noseBridge = gaussianFeature(ux, uy, 0.50, 0.50, 0.060, 0.16);
+    const noseBase = gaussianFeature(ux, uy, 0.50, 0.60, 0.12, 0.060);
+    const mouth = gaussianFeature(ux, uy, 0.50, 0.70, 0.19, 0.060);
+    const beard = gaussianFeature(ux, uy, 0.50, 0.79, 0.29, 0.18);
+    const jaw = gaussianFeature(ux, uy, 0.50, 0.72, 0.39, 0.24);
+
+    const features = Math.min(1.9,
+      0.88 * (leftBrow + rightBrow) +
+      1.25 * (leftEye + rightEye) +
+      0.72 * noseBridge + 0.92 * noseBase +
+      1.05 * mouth + 0.42 * beard + 0.24 * jaw
+    );
+    featureMap[p] = features * m;
+
+    const edge = Math.min(1, gradient[p] / gradMax * 2.4);
+    const dark = Math.pow(clamp01(1 - luminance[p]), 0.85);
+    const base = backgroundWeight + faceBoost * face + 0.25 * hair;
+    const detail = edgeBoost * edge * (0.35 + 0.65 * face) + featureBoost * features + darkDetailBoost * dark * features;
+    const w = Math.max(0.025, (base + detail) * m);
+    importance[p] = w;
+    weightedSum += w;
+    maskSum += m;
+
+    const smoothBright = Math.pow(clamp01(luminance[p]), 1.7) * (1 - 0.62 * edge);
+    const featureClearance = 0.62 + 0.38 * Math.min(1, features);
+    avoidance[p] = Math.max(0, avoidanceBoost * m * face * smoothBright * featureClearance);
+  }
+
+  const mean = weightedSum / Math.max(EPS, maskSum);
+  if (mean > EPS) {
+    const inv = 1 / mean;
+    for (let p = 0; p < importance.length; p++) importance[p] = Math.min(5, importance[p] * inv);
+  }
+
+  return { importance, avoidance, featureMap, faceBox: box };
+}
+
 function mixOptical(colors, strengths) {
   const od = [0, 0, 0];
   for (let i = 0; i < colors.length; i++) {
