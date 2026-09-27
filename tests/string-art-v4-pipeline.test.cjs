@@ -116,3 +116,16 @@ test('palette simulation treats white as a no-thread state', () => {
   const error = pre.paletteDitherSimulationError(rgb, size, black, { mask, simulationSize:size, blurSigma:.8 });
   assert.ok(error < 0.01, 'white image should remain achievable without forcing dark thread: ' + error);
 });
+
+
+test('optical color affinity separates portrait color layers', () => {
+  const target = Float32Array.from(pre.hexToLinearRgb('#d99a72'));
+  const palette = [
+    pre.hexToLinearRgb('#111111'),
+    pre.hexToLinearRgb('#d99a72'),
+    pre.hexToLinearRgb('#d95f73'),
+  ];
+  const affinity = pre.buildPaletteAffinityMap(target, palette);
+  assert.equal(affinity.length, 3);
+  assert.ok(affinity[1] > affinity[0]);
+});

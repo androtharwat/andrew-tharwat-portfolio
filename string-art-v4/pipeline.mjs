@@ -9,6 +9,7 @@ import {
   chooseThreadPaletteSimulation,
   floydSteinbergDitherLinear,
   buildPortraitPriorityMaps,
+  buildPaletteAffinityMap,
 } from './preprocess.mjs';
 import {
   expandCountsToEdges,
@@ -131,6 +132,10 @@ export function solveImageV4({
   }
   onProgress?.({ phase: 'preprocess', done: 4, total: 4 });
 
+  const affinityStrength = solve.affinityStrength ?? 1.35;
+  const colorAffinity = buildPaletteAffinityMap(targetRgb, selected.linearRgb, importanceMap, {
+    temperature: preprocess.colorAffinityTemperature ?? 0.07,
+  });
   const result = solveColorGlobalOptical({
     table,
     targetRgb,
@@ -138,6 +143,8 @@ export function solveImageV4({
     importance: importanceMap,
     avoidance: avoidanceMap,
     crossingPenalty: solve.crossingPenalty ?? (portraitMaps ? 0.09 : 0),
+    colorAffinity,
+    affinityStrength,
     maxFibers: solve.maxFibers ?? 10000,
     opacity: solve.opacity ?? 1,
     maxRepeat: solve.maxRepeat ?? 1,
@@ -155,6 +162,7 @@ export function solveImageV4({
   result.targetRgb = targetRgb;
   result.ditherIndexMap = dithered?.indexMap || null;
   result.ditherIncludesWhite = Boolean(dithered);
+  result.colorLayering = { enabled: true, affinityStrength };
   result.portrait = portraitMaps ? { enabled: true, faceBox: portraitMaps.faceBox } : { enabled: false };
   result.mode = 'color-global';
   return result;

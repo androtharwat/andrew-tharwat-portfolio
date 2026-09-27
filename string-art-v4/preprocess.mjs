@@ -230,6 +230,37 @@ export function buildPortraitPriorityMaps(rgb, size, {
   return { importance, avoidance, featureMap, subjectMap, faceBox: box };
 }
 
+export function buildPaletteAffinityMap(targetRgb, paletteLinear, importance = null, { temperature = 0.07 } = {}) {
+  if (!paletteLinear?.length) throw new Error('palette required for affinity map');
+  const colors = paletteLinear.length;
+  const dirs = paletteLinear.map((rgb) => {
+    const od = rgb.map((v) => -Math.log(Math.max(0.035, Math.min(1, v))));
+    const mag = Math.hypot(od[0], od[1], od[2]) || 1;
+    return [od[0] / mag, od[1] / mag, od[2] / mag];
+  });
+  const out = new Float32Array((targetRgb.length / 3) * colors);
+  const temp = Math.max(0.02, temperature);
+  for (let p = 0; p < targetRgb.length / 3; p++) {
+    if (importance && importance[p] <= 0.001) continue;
+    const b = p * 3;
+    const o0 = -Math.log(Math.max(0.035, targetRgb[b]));
+    const o1 = -Math.log(Math.max(0.035, targetRgb[b + 1]));
+    const o2 = -Math.log(Math.max(0.035, targetRgb[b + 2]));
+    const mag = Math.hypot(o0, o1, o2);
+    if (mag < 0.02) continue;
+    const t0=o0/mag,t1=o1/mag,t2=o2/mag;
+    let best=-Infinity,sum=0;
+    const scores=new Float32Array(colors);
+    for(let ci=0;ci<colors;ci++){
+      const d=dirs[ci],score=Math.max(0,Math.min(1,t0*d[0]+t1*d[1]+t2*d[2]));
+      scores[ci]=score;if(score>best)best=score;
+    }
+    for(let ci=0;ci<colors;ci++){const e=Math.exp((scores[ci]-best)/temp);scores[ci]=e;sum+=e}
+    for(let ci=0;ci<colors;ci++)out[p*colors+ci]=scores[ci]/Math.max(1e-9,sum);
+  }
+  return out;
+}
+
 function mixOptical(colors, strengths) {
   const od = [0, 0, 0];
   for (let i = 0; i < colors.length; i++) {

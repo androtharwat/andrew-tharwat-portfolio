@@ -305,13 +305,17 @@ function opponentError(tr, tg, tb, rr, rg, rb, chromaWeight = 1.6) {
   return dy * dy + chromaWeight * (0.5 * co * co + cg * cg);
 }
 
-function colorMoveGain(table, edge, colorOd, targetRgb, opticalDepth, importance, background, opacity, chromaWeight, avoidance = null, crossingPenalty = 0, sign = 1) {
+function colorMoveGain(table, edge, colorOd, targetRgb, opticalDepth, importance, background, opacity, chromaWeight, avoidance = null, crossingPenalty = 0, colorAffinity = null, affinityStride = 0, colorIndex = 0, affinityStrength = 0, sign = 1) {
   let gain = 0;
   const start = table.offsets[edge], end = table.offsets[edge + 1];
   for (let k = start; k < end; k++) {
     const p = table.indices[k];
-    const w = importance ? importance[p] : 1;
+    let w = importance ? importance[p] : 1;
     if (w <= 0) continue;
+    if (colorAffinity && affinityStride > 0 && affinityStrength > 0) {
+      const affinity = colorAffinity[p * affinityStride + colorIndex] || 0;
+      w *= Math.max(0.36, 0.58 + affinityStrength * affinity);
+    }
     const cov = table.coverages[k] * opacity;
     const base = p * 3;
     const br = background[0] * Math.exp(-opticalDepth[base]);
@@ -350,6 +354,8 @@ export function solveColorOptical({
   importance,
   avoidance = null,
   crossingPenalty = 0,
+  colorAffinity = null,
+  affinityStrength = 0,
   maxFibers = 8000,
   opacity = 1,
   candidateLimit = 0,
@@ -382,7 +388,7 @@ export function solveColorOptical({
           : null;
       }
       const scan = (e) => {
-        let g = colorMoveGain(table, e, ods[ci], targetRgb, opticalDepth, importance, background, opacity, chromaWeight, avoidance, crossingPenalty);
+        let g = colorMoveGain(table, e, ods[ci], targetRgb, opticalDepth, importance, background, opacity, chromaWeight, avoidance, crossingPenalty, colorAffinity, palette.length, ci, affinityStrength);
         if (lastColor >= 0 && ci !== lastColor) g -= switchPenalty;
         if (g <= bestGain) return;
         const a = table.a[e], b = table.b[e];
@@ -431,6 +437,8 @@ export function solveColorGlobalOptical({
   importance,
   avoidance = null,
   crossingPenalty = 0,
+  colorAffinity = null,
+  affinityStrength = 0,
   maxFibers = 10000,
   opacity = 1,
   maxRepeat = 1,
@@ -458,7 +466,7 @@ export function solveColorGlobalOptical({
     const count = counts[slot];
     if (sign > 0 && count >= maxRepeat) return;
     if (sign < 0 && (!allowRemove || count === 0)) return;
-    const g = colorMoveGain(table, edge, ods[ci], targetRgb, opticalDepth, importance, background, opacity, chromaWeight, avoidance, crossingPenalty, sign);
+    const g = colorMoveGain(table, edge, ods[ci], targetRgb, opticalDepth, importance, background, opacity, chromaWeight, avoidance, crossingPenalty, colorAffinity, colors, ci, affinityStrength, sign);
     if (g > state.gain) { state.gain = g; state.edge = edge; state.color = ci; state.sign = sign; }
   };
 
