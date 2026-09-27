@@ -29,6 +29,7 @@ if (params.get('engine') === 'v4') {
 
   const tr = (ar, en) => AR() ? ar : en;
   const clamp = (v, lo=0, hi=1) => Math.max(lo, Math.min(hi, v));
+  const withTimeout=(promise,ms,label='operation')=>Promise.race([Promise.resolve(promise),new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timeout')),ms))]);
 
   const FIXED_PROFILE = Object.freeze({
     key:'portrait',
@@ -302,22 +303,26 @@ if (params.get('engine') === 'v4') {
   }
 
   async function runFaceDetection(src){
-    try{
-      const landmarker=await getPortableFaceLandmarker();
-      const result=landmarker.detect(src);
-      const dense=(result?.faceLandmarks||[]).map(mesh=>serializeLandmarkerFace(mesh)).filter(Boolean);
-      if(dense.length)return dense;
-    }catch(error){
-      console.warn('[ATS V4 FACE LANDMARKER]',error);
-    }
+    // Native detector is cheap and local: use it first when available.
     if(typeof window.FaceDetector==='function'){
       try{
         faceDetector ||= new window.FaceDetector({fastMode:true,maxDetectedFaces:8});
-        const nativeFaces=await faceDetector.detect(src);
-        if(nativeFaces?.length)return nativeFaces.map(f=>serializeDetectedFace(f,src)).filter(Boolean);
+        const nativeFaces=await withTimeout(faceDetector.detect(src),1400,'native face detector');
+        const serialized=(nativeFaces||[]).map(f=>serializeDetectedFace(f,src)).filter(Boolean);
+        if(serialized.length)return serialized;
       }catch(error){
         console.warn('[ATS V4 NATIVE FACE DETECT]',error);
       }
+    }
+
+    // Dense landmarks improve likeness but must NEVER block portrait generation.
+    try{
+      const landmarker=await withTimeout(getPortableFaceLandmarker(),2600,'face landmarker load');
+      const result=await withTimeout(Promise.resolve().then(()=>landmarker.detect(src)),1600,'face landmarker detect');
+      const dense=(result?.faceLandmarks||[]).map(mesh=>serializeLandmarkerFace(mesh)).filter(Boolean);
+      if(dense.length)return dense;
+    }catch(error){
+      console.warn('[ATS V4 FACE LANDMARKER FALLBACK]',error);
     }
     return [];
   }
@@ -327,15 +332,15 @@ if (params.get('engine') === 'v4') {
     if(!src){detectedFaces=[];selectedFaceIndex=0;removeFaceTargets();return detectedFaces}
     const token=++faceDetectToken;
     try{
-      const faces=await runFaceDetection(src);
+      const faces=await withTimeout(runFaceDetection(src),4200,'portrait detection');
       if(token!==faceDetectToken)return detectedFaces;
-      detectedFaces=(faces||[]).sort((a,b)=>b.score-a.score);
+      if(faces?.length)detectedFaces=(faces||[]).sort((a,b)=>b.score-a.score);
       selectedFaceIndex=Math.min(selectedFaceIndex,Math.max(0,detectedFaces.length-1));
       if(render)renderFaceTargets();
       if(render&&detectedFaces.length>1)setStatus(tr('تم العثور على أكثر من وجه · اضغط على الوجه المطلوب','MULTIPLE FACES FOUND · TAP THE PORTRAIT YOU WANT'),0);
       return detectedFaces;
     }catch(error){
-      console.warn('[ATS V4 FACE DETECT]',error);detectedFaces=[];selectedFaceIndex=0;removeFaceTargets();return detectedFaces;
+      console.warn('[ATS V4 FACE DETECT]',error);removeFaceTargets();return detectedFaces;
     }
   }
 
@@ -549,7 +554,7 @@ if (params.get('engine') === 'v4') {
 
   function getWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=4',import.meta.url),{type:'module'});
+    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=5',import.meta.url),{type:'module'});
     worker.onmessage=e=>{
       const msg=e.data,job=pending.get(msg.id);if(!job)return;
       if(msg.type==='progress'){job.onProgress?.(msg);return}
@@ -622,9 +627,16 @@ if (params.get('engine') === 'v4') {
     try{
       ensureV4Controls();
       const p=profile(),m='color';
-      await detectPortraitFaces({render:true});
-      const face=detectedFaces[selectedFaceIndex]||null;
-      if(!face)setStatus(tr('لم يتم التعرف على وجه بوضوح — اضبط الكادر بحيث يكون الوجه واضحًا','NO CLEAR FACE FOUND — FRAME ONE FACE CLEARLY'),10);
+      setStatus(tr('بدء التوليد · تجهيز الصورة…','STARTING · PREPARING SOURCE IMAGE…'),6);
+      const cachedFace=detectedFaces[selectedFaceIndex]||null;
+      let face=cachedFace;
+      try{
+        const faces=await withTimeout(detectPortraitFaces({render:true}),4300,'portrait detection');
+        face=(faces?.[selectedFaceIndex]||faces?.[0]||cachedFace||null);
+      }catch(error){
+        console.warn('[ATS V4 GENERATE FACE FALLBACK]',error);
+      }
+      if(!face)setStatus(tr('تعذر تحليل الوجه سريعًا · جاري التوليد من الصورة نفسها','FACE ANALYSIS SKIPPED · SOLVING DIRECTLY FROM SOURCE IMAGE'),12);
       const target=capturePortraitTarget(p.size,face);
       const rgba=target.rgba,nColors=requestedPaletteSize(rgba,p);
       const likeness=clamp(tuning.likeness/100),detail=clamp(tuning.detail/100),colorStrength=clamp(tuning.color/100);
@@ -632,7 +644,8 @@ if (params.get('engine') === 'v4') {
       const candidateLimit=Math.round(72+detail*40);
       const timeBudgetMs=Math.round(6500+detail*4500);
       setStatus(tr('قراءة هندسة الوجه والملامح…','READING FACIAL GEOMETRY + CONTOURS…'),16);
-      const response=await sendWorker({
+      setStatus(tr('تشغيل محرك مطابقة الصورة…','RUNNING SOURCE-MATCH SOLVER…'),18);
+      const response=await withTimeout(sendWorker({
         type:'solve-image-v4',
         table:{size:p.size,nails:p.nails,minGap:9},
         rgba,mode:m,
@@ -657,7 +670,7 @@ if (params.get('engine') === 'v4') {
         const total=msg.total||1,done=msg.done||0,phase=msg.phase||'';
         const pct=phase==='palette'?28:phase==='preprocess'?22:Math.min(97,31+done/total*66);
         setStatus(progressText(msg),pct);
-      });
+      }),22000,'portrait solver');
       const result=response.result;
       lastResult=result;lastRender=extractLines(result,p,p.size);
       lastRender.meta.engine='ATS-image-residual-identity-hybrid';

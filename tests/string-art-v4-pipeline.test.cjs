@@ -275,3 +275,15 @@ test('hybrid residual solver never lets color override the likeness scaffold', a
   assert.ok(result.metrics.colorShare<=.36);
   assert.ok(result.metrics.centerCrossingRate<.72);
 });
+
+
+test('V4 UI generation cannot silently wait on face detection', async () => {
+  const fs=require('node:fs');
+  const src=fs.readFileSync(require('node:path').join(__dirname,'..','project-string-art-v4-lab.mjs'),'utf8');
+  const start=src.indexOf("async function generateV4");
+  const detect=src.indexOf("detectPortraitFaces",start);
+  const visible=src.indexOf("STARTING · PREPARING SOURCE IMAGE",start);
+  assert.ok(start>=0&&visible>start&&detect>visible,'status must update before awaiting face detection');
+  assert.ok(src.includes("withTimeout(getPortableFaceLandmarker(),2600"));
+  assert.ok(src.includes("FACE ANALYSIS SKIPPED · SOLVING DIRECTLY FROM SOURCE IMAGE"));
+});
