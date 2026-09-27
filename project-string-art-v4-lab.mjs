@@ -17,14 +17,71 @@ if (params.get('engine') === 'v4') {
     if(p) p.textContent=Math.max(0,Math.min(100,Math.round(pct)))+'%';
   };
 
+  const tr = (ar, en) => AR() ? ar : en;
+  const clamp = (v, lo=0, hi=1) => Math.max(lo, Math.min(hi, v));
+
   const profile = () => {
     const q = $('[data-sa-quality].active')?.dataset.saQuality || 'share';
-    if(q === 'fast') return { size:128, nails:180, monoFibers:1200, colorFibers:2400, candidates:90, palette:4 };
-    if(q === 'enhanced') return { size:164, nails:240, monoFibers:2200, colorFibers:4200, candidates:110, palette:5 };
-    return { size:210, nails:300, monoFibers:3500, colorFibers:7000, candidates:120, palette:5 };
+    if(q === 'quick' || q === 'fast') return { size:132, nails:190, monoFibers:1450, colorFibers:2300, candidates:100, palette:4, detail:.54, crossingMono:.12, crossingColor:.085 };
+    if(q === 'enhanced') return { size:170, nails:250, monoFibers:2550, colorFibers:4100, candidates:125, palette:5, detail:.60, crossingMono:.135, crossingColor:.095 };
+    return { size:208, nails:320, monoFibers:4100, colorFibers:6200, candidates:155, palette:5, detail:.66, crossingMono:.15, crossingColor:.105 };
   };
 
   const mode = () => $('[data-sa-mode].active')?.dataset.saMode === 'color' ? 'color' : 'mono';
+  const paletteChoice = () => $('[data-sa-colors].active')?.dataset.saColors || 'auto';
+
+  function updateColorPanel(){
+    const panel=$('#sa-v4-color-panel');
+    if(panel) panel.hidden=mode()!=='color';
+  }
+
+  function ensureV4Controls(){
+    const mono=$('[data-sa-mode="mono"]');
+    if(!mono) return false;
+    const segmented=mono.parentElement;
+    segmented?.classList.remove('sa-mono-only');
+    segmented?.classList.add('sa-v4-modes');
+    if(!segmented?.querySelector('[data-sa-mode="color"]')){
+      const color=document.createElement('button');
+      color.type='button'; color.dataset.saMode='color'; color.textContent=tr('ألوان بصرية','OPTICAL COLOR');
+      segmented.appendChild(color);
+    }
+    mono.textContent=tr('أحادي واقعي','REALISTIC MONO');
+    const modeGroup=segmented.closest('.sa-control-group');
+    if(modeGroup && !$('#sa-v4-color-panel')){
+      const panel=document.createElement('div');
+      panel.id='sa-v4-color-panel'; panel.className='sa-control-group sa-v4-color-panel'; panel.hidden=true;
+      panel.innerHTML='<span>'+tr('ألوان الخيط','THREAD PALETTE')+'</span>'+
+        '<div class="sa-segmented sa-palette-count">'+
+        '<button type="button" data-sa-colors="3">3</button>'+
+        '<button type="button" data-sa-colors="4">4</button>'+
+        '<button type="button" data-sa-colors="5">5</button>'+
+        '<button type="button" class="active" data-sa-colors="auto">'+tr('تلقائي','AUTO')+'</button></div>'+
+        '<div class="sa-palette-caption">'+tr('يتم اختيار أقوى توليفة خيوط للصورة بالمحاكاة البصرية','THE ENGINE SIMULATES THE STRONGEST THREAD COMBINATION FOR THIS IMAGE')+'</div>'+
+        '<div id="sa-palette-preview" class="sa-palette-preview"><span class="sa-palette-empty">'+tr('ستظهر الألوان المختارة هنا بعد التحليل','SELECTED COLORS APPEAR HERE AFTER ANALYSIS')+'</span></div>';
+      modeGroup.insertAdjacentElement('afterend',panel);
+    }
+    const tools=$('#sa-result-tools');
+    if(tools && !$('#sa-v4-result-meta')){
+      const meta=document.createElement('div');
+      meta.id='sa-v4-result-meta'; meta.className='sa-v4-result-meta';
+      meta.innerHTML='<div><span>'+tr('الوضع','MODE')+'</span><b data-v4-meta="mode">—</b></div>'+
+        '<div><span>'+tr('الخيوط','FIBERS')+'</span><b data-v4-meta="fibers">—</b></div>'+
+        '<div><span>'+tr('المسامير','NAILS')+'</span><b data-v4-meta="nails">—</b></div>'+
+        '<div><span>'+tr('الألوان','COLORS')+'</span><b data-v4-meta="colors">—</b></div>';
+      tools.insertBefore(meta,tools.firstChild);
+    }
+    $('[data-sa-mode]').forEach(b=>{
+      if(b.dataset.v4ModeBound)return;b.dataset.v4ModeBound='1';
+      b.addEventListener('click',()=>{$('[data-sa-mode]').forEach(x=>x.classList.remove('active'));b.classList.add('active');updateColorPanel()});
+    });
+    $('[data-sa-colors]').forEach(b=>{
+      if(b.dataset.v4ColorBound)return;b.dataset.v4ColorBound='1';
+      b.addEventListener('click',()=>{$('[data-sa-colors]').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
+    });
+    updateColorPanel();
+    return true;
+  }
 
   function captureFramedRgba(size) {
     const src=$('#sa-user-source');
@@ -34,6 +91,34 @@ if (params.get('engine') === 'v4') {
     ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
     ctx.drawImage(src,0,0,src.width,src.height,0,0,size,size);
     return ctx.getImageData(0,0,size,size).data;
+  }
+
+  async function detectFaceBox(){
+    const src=$('#sa-user-source');
+    if(!src || typeof window.FaceDetector!=='function') return null;
+    try{
+      const detector=new window.FaceDetector({fastMode:true,maxDetectedFaces:1});
+      const faces=await detector.detect(src), b=faces?.[0]?.boundingBox;
+      if(!b || b.width<8 || b.height<8) return null;
+      const px=b.width*.15, py=b.height*.20;
+      return {x:clamp((b.x-px)/src.width),y:clamp((b.y-py)/src.height),width:clamp((b.width+px*2)/src.width,.18,1),height:clamp((b.height+py*2)/src.height,.22,1)};
+    }catch(_){return null}
+  }
+
+  function autoPaletteSize(rgba){
+    let chroma=0,sat=0,n=0;
+    const step=Math.max(4,Math.floor((rgba.length/4)/2600));
+    for(let p=0;p<rgba.length/4;p+=step){
+      const k=p*4,r=rgba[k]/255,g=rgba[k+1]/255,b=rgba[k+2]/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),cc=mx-mn;
+      chroma+=cc;sat+=mx>0?cc/mx:0;n++;
+    }
+    const score=(chroma/Math.max(1,n))*.62+(sat/Math.max(1,n))*.38;
+    return score<.085?3:score<.19?4:5;
+  }
+
+  function requestedPaletteSize(rgba,p){
+    const selected=paletteChoice();
+    return selected==='3'||selected==='4'||selected==='5'?Number(selected):(autoPaletteSize(rgba)||p.palette);
   }
 
   function pinsAsPairs(count,size){
