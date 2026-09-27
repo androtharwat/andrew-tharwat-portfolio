@@ -58,9 +58,22 @@ export function solveImageV4({
   });
   const importanceMap = importance || portraitMaps?.importance || geometryMask;
   const avoidanceMap = portraitMaps?.avoidance || null;
+  let workingRgb = linearRgb;
+  const suppress = portraitMaps ? Math.max(0, Math.min(0.95, preprocess.backgroundSuppress ?? 0)) : 0;
+  if (suppress > 0 && portraitMaps?.subjectMap) {
+    workingRgb = new Float32Array(linearRgb.length);
+    for (let p = 0; p < size * size; p++) {
+      const subject = Math.max(0, Math.min(1, portraitMaps.subjectMap[p] || 0));
+      const amount = suppress * Math.pow(1 - subject, 1.25);
+      const base = p * 3;
+      workingRgb[base] = linearRgb[base] * (1 - amount) + amount;
+      workingRgb[base + 1] = linearRgb[base + 1] * (1 - amount) + amount;
+      workingRgb[base + 2] = linearRgb[base + 2] * (1 - amount) + amount;
+    }
+  }
 
   if (mode === 'mono') {
-    const target = prepareMonoTarget(linearRgb, size, {
+    const target = prepareMonoTarget(workingRgb, size, {
       gamma: preprocess.gamma ?? 0.95,
       detail: preprocess.detail ?? 0.45,
       detailRadius: preprocess.detailRadius ?? size / 24,
@@ -88,6 +101,8 @@ export function solveImageV4({
     result.route = buildMonoRouteFromCounts(table, result.counts);
     result.target = target;
     result.portrait = portraitMaps ? { enabled: true, faceBox: portraitMaps.faceBox } : { enabled: false };
+  result.backgroundSuppression = suppress;
+    result.backgroundSuppression = suppress;
     result.mode = 'mono-global';
     return result;
   }
@@ -96,7 +111,7 @@ export function solveImageV4({
   onProgress?.({ phase: 'palette', done: 2, total: 4 });
   const selected = palette.linearRgb && palette.linearRgb.length
     ? { linearRgb: palette.linearRgb, hex: palette.hex || [], estimatedError: null, method: 'provided' }
-    : chooseThreadPaletteSimulation(linearRgb, size, {
+    : chooseThreadPaletteSimulation(workingRgb, size, {
         candidateHex: palette.candidateHex,
         nColors: palette.nColors ?? 5,
         fixedHex: palette.fixedHex ?? ['#111111'],
@@ -107,12 +122,12 @@ export function solveImageV4({
       });
 
   const ditherPalette = [[1, 1, 1], ...selected.linearRgb];
-  const dithered = useDither ? floydSteinbergDitherLinear(linearRgb, size, ditherPalette, geometryMask) : null;
-  let targetRgb = linearRgb;
+  const dithered = useDither ? floydSteinbergDitherLinear(workingRgb, size, ditherPalette, geometryMask) : null;
+  let targetRgb = workingRgb;
   if (dithered) {
     const ditherBlend = Math.max(0, Math.min(1, preprocess.ditherBlend ?? 0.28));
-    targetRgb = new Float32Array(linearRgb.length);
-    for (let i = 0; i < targetRgb.length; i++) targetRgb[i] = linearRgb[i] * (1 - ditherBlend) + dithered.rgb[i] * ditherBlend;
+    targetRgb = new Float32Array(workingRgb.length);
+    for (let i = 0; i < targetRgb.length; i++) targetRgb[i] = workingRgb[i] * (1 - ditherBlend) + dithered.rgb[i] * ditherBlend;
   }
   onProgress?.({ phase: 'preprocess', done: 4, total: 4 });
 
