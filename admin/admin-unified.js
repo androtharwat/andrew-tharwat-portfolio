@@ -5,6 +5,7 @@
   const money=v=>window.ATS_I18N?.formatNumber?.(v)??new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt=v=>v?(window.ATS_I18N?.formatDate?.(v,{day:'2-digit',month:'short',year:'numeric'})??new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v))):'—';
   const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[],diagnosticRun:null,clientAccessCode:null};
+  let executionCtx={};
   let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
   const briefNames={goal:'CHALLENGE & OUTCOME',type:'STARTING POINT',team:'POSSIBLE EXPERTISE',scope:'SCOPE & TIMING',contact:'CONTACT'};
@@ -600,45 +601,90 @@
     const btn=$('#lead-view-toggle');if(btn)btn.textContent=on?'SHOW DETAILS':'FOCUS MODE';
   }
 
-  function renderLeadExecutionPath(ctx={}){
+  function renderLeadExecutionPath(ctx=executionCtx){
     const lead=state.currentLead;if(!lead)return;
-    const proposal=ctx.proposal||null,deposit=ctx.deposit||null,project=ctx.project||null,taskCount=Number(ctx.taskCount||0);
+    executionCtx=ctx||executionCtx||{};
+    const proposal=executionCtx.proposal||null,deposit=executionCtx.deposit||null,project=executionCtx.project||null,taskCount=Number(executionCtx.taskCount||0);
+    const gate=diagnosisGateState();
     const leadReady=['qualified','proposal_sent','negotiation','won'].includes(lead.status);
+    const proposalCreated=!!proposal;
     const proposalAccepted=proposal?.status==='accepted';
     const depositPaid=deposit?.status==='paid';
+    const projectLive=!!project;
     const steps=[
-      {label:'01 · QUALIFY',value:leadReady?'Ready':'Not ready',done:leadReady,current:!leadReady},
-      {label:'02 · PROPOSAL',value:proposal?String(proposal.status||'draft').replaceAll('_',' '):'Not created',done:proposalAccepted,current:leadReady&&!proposalAccepted},
-      {label:'03 · DEPOSIT',value:deposit?String(deposit.status||'pending'):'Waiting',done:depositPaid,current:proposalAccepted&&!depositPaid},
-      {label:'04 · EXECUTION',value:project?(taskCount+' task'+(taskCount===1?'':'s')):'No project yet',done:!!project,current:depositPaid&&!project}
+      {label:'01 · DIAGNOSE',value:gate.ready?'Ready':'Needs work',done:gate.ready,current:!gate.ready},
+      {label:'02 · QUALIFY',value:leadReady?'Qualified':'Waiting',done:leadReady,current:gate.ready&&!leadReady,locked:!gate.ready&&!leadReady},
+      {label:'03 · PROPOSAL',value:proposalCreated?String(proposal.status||'draft').replaceAll('_',' '):'Not created',done:proposalCreated,current:leadReady&&!proposalCreated,locked:!leadReady},
+      {label:'04 · ACCEPT',value:proposalAccepted?'Accepted':'Waiting',done:proposalAccepted,current:proposalCreated&&!proposalAccepted,locked:!proposalCreated},
+      {label:'05 · DEPOSIT',value:deposit?String(deposit.status||'pending'):'Waiting',done:depositPaid,current:proposalAccepted&&!depositPaid,locked:!proposalAccepted},
+      {label:'06 · PROJECT',value:projectLive?(project.project_code||'Live'):'Not live',done:projectLive,current:depositPaid&&!projectLive,locked:!depositPaid},
+      {label:'07 · TASKS',value:projectLive?(taskCount+' created'):'Waiting',done:taskCount>0,current:projectLive&&taskCount===0,locked:!projectLive}
     ];
-    $('#lead-execution-steps').innerHTML=steps.map(s=>'<div class="lead-execution-step '+(s.done?'done ':s.current?'current ':'')+'"><span>'+esc(s.label)+'</span><b>'+esc(s.value)+'</b></div>').join('');
+    $('#lead-execution-steps').innerHTML=steps.map(s=>'<div class="lead-execution-step '+(s.done?'done ':s.current?'current ':s.locked?'locked ':'')+'"><span>'+esc(s.label)+'</span><b>'+esc(s.value)+'</b></div>').join('');
+
+    const missing=[];
+    if(!gate.analysisCurrent)missing.push({title:'Run the ATS diagnosis',action:'analysis',cta:'RUN DIAGNOSIS'});
+    if(!gate.coverage)missing.push({title:'Complete the missing evidence',action:'evidence',cta:'ADD EVIDENCE'});
+    if(!gate.synthesis)missing.push({title:'Confirm the working diagnosis',action:'diagnosis',cta:'OPEN DIAGNOSIS'});
+    if(!gate.validated)missing.push({title:'Validate one real root cause',action:'causes',cta:'CHOOSE ROOT CAUSE'});
+    if(!gate.hasTask)missing.push({title:'Add at least one work task',action:'plan',cta:'ADD WORK TASK'});
+    if(!gate.verification)missing.push({title:'Add one verification task',action:'verification',cta:'ADD VERIFICATION'});
+
+    const checklist=$('#lead-start-checklist');
+    if(!leadReady){
+      if(gate.ready){
+        checklist.innerHTML='<div class="start-check-head"><b>READY TO START COMMERCIAL</b><small>The diagnosis gate is complete.</small></div><div class="start-check-items"><article class="start-check-item done"><span>DIAGNOSIS</span><b>All required checks are complete.</b></article><article class="start-check-item"><span>NEXT</span><b>Move this lead to Qualified.</b><button type="button" class="primary" data-exec-action="qualify">QUALIFY NOW</button></article></div>';
+      }else{
+        const items=missing.slice(0,3).map((m,i)=>{
+          if(m.action==='causes'&&state.rootCauses.length){
+            const causeButtons=state.rootCauses.filter(x=>x.status!=='rejected').slice(0,3).map(x=>'<button type="button" data-cause-status="'+esc(x.id)+':validated">'+esc(String(x.statement||'Root cause').slice(0,48))+'</button>').join('');
+            return '<article class="start-check-item"><span>REQUIRED '+String(i+1).padStart(2,'0')+'</span><b>'+esc(m.title)+'</b><div class="start-check-mini">'+causeButtons+'</div></article>';
+          }
+          return '<article class="start-check-item"><span>REQUIRED '+String(i+1).padStart(2,'0')+'</span><b>'+esc(m.title)+'</b><button type="button" class="'+(i===0?'primary':'')+'" data-exec-action="'+esc(m.action)+'">'+esc(m.cta)+'</button></article>';
+        }).join('');
+        checklist.innerHTML='<div class="start-check-head"><b>DO THESE '+missing.length+' ITEM'+(missing.length===1?'':'S')+' TO START THE PROJECT</b><small>Only missing requirements are shown.</small></div><div class="start-check-items">'+items+'</div>';
+      }
+    }else checklist.innerHTML='';
+
+    const plan=$('#lead-plan-preview');
+    const activePlan=state.solutionTasks.filter(x=>x.status!=='rejected');
+    if(activePlan.length){
+      plan.innerHTML='<div class="lead-plan-head"><div><span>WORK PLAN</span><b>'+activePlan.length+' planned work step'+(activePlan.length===1?'':'s')+'</b></div><small>These are the actions already derived from the diagnosis.</small></div><div class="lead-plan-items">'+activePlan.slice(0,6).map((x,i)=>'<article class="lead-plan-item"><span>'+esc((x.task_type||'task').replaceAll('_',' '))+' · '+esc(x.status||'todo')+'</span><b>'+(i+1)+'. '+esc(x.title)+'</b><small>'+esc(x.owner_type||'ATS')+(x.due_date?' · due '+esc(x.due_date):'')+'</small></article>').join('')+'</div>';
+    }else{
+      plan.innerHTML='<div class="lead-plan-head"><div><span>WORK PLAN</span><b>No work steps created yet</b></div><button type="button" class="secondary" data-exec-action="plan">+ ADD FIRST WORK STEP</button></div>';
+    }
+
     const title=$('#lead-execution-title'),copy=$('#lead-execution-copy'),btn=$('#lead-execution-primary');
-    btn.dataset.action='';btn.dataset.id='';
-    if(project){
-      title.textContent='Project is live · distribute the work';
-      copy.textContent=(project.project_code||'Project')+' · '+(project.title||'')+' · '+taskCount+' team task'+(taskCount===1?'':'s')+'.';
-      btn.textContent=taskCount?'OPEN TEAM & TASKS →':'CREATE FIRST TASK →';btn.dataset.action='open-tasks';btn.dataset.id=project.id;btn.dataset.newTask=taskCount?'0':'1';
+    btn.dataset.action='';btn.dataset.id='';btn.dataset.newTask='0';
+    if(projectLive){
+      title.textContent=taskCount?'Project is live · manage the task board':'Project is live · create the first execution task';
+      copy.textContent=(project.project_code||'Project')+' · '+(project.title||'')+' · '+taskCount+' execution task'+(taskCount===1?'':'s')+'.';
+      btn.textContent=taskCount?'OPEN TASK BOARD →':'CREATE FIRST TASK →';btn.dataset.action='open-tasks';btn.dataset.id=project.id;btn.dataset.newTask=taskCount?'0':'1';
     }else if(proposalAccepted&&deposit&&!depositPaid){
-      title.textContent='Commercial gate ready';
-      copy.textContent='Confirm the deposit only after payment is actually received. The system will create the Client + Project automatically.';
+      title.textContent='One step before project start';
+      copy.textContent='Confirm the deposit only after the payment is actually received. ATS will then create the Client + Project automatically.';
       btn.textContent='CONFIRM DEPOSIT →';btn.dataset.action='confirm-deposit';btn.dataset.id=deposit.id;
     }else if(proposal?.status==='sent'){
-      title.textContent='Waiting for proposal decision';
-      copy.textContent='Once the client accepts, create the deposit request and move directly toward project start.';
+      title.textContent='Proposal sent · waiting for approval';
+      copy.textContent='When the client accepts, confirm it here and ATS will create the deposit request.';
       btn.textContent='ACCEPT PROPOSAL →';btn.dataset.action='accept-proposal';btn.dataset.id=proposal.id;
-    }else if(proposal){
-      title.textContent='Finish the proposal';
-      copy.textContent='The case is ready commercially. Open the proposal, complete the scope, then send it.';
+    }else if(proposalCreated){
+      title.textContent='Proposal is the current step';
+      copy.textContent='Complete the scope and deliverables, then send the proposal.';
       btn.textContent='OPEN PROPOSAL →';btn.dataset.action='open-proposal';btn.dataset.id=proposal.id;
     }else if(leadReady){
-      title.textContent='Turn the qualified case into a project';
-      copy.textContent='Create one proposal. After acceptance + confirmed deposit, ATS creates the live project automatically.';
+      title.textContent='Qualified · create the commercial offer';
+      copy.textContent='Turn the approved work plan into one proposal. No need to revisit the full diagnosis now.';
       btn.textContent='CREATE PROPOSAL →';btn.dataset.action='create-proposal';
+    }else if(gate.ready){
+      title.textContent='Diagnosis complete · qualify the lead';
+      copy.textContent='All start conditions are complete. One click moves this case to the proposal stage.';
+      btn.textContent='QUALIFY & CONTINUE →';btn.dataset.action='qualify';
     }else{
-      title.textContent='Finish the decision first';
-      copy.textContent='Validate the diagnosis and qualify the lead. Commercial and execution steps stay hidden until the case is ready.';
-      btn.textContent='COMPLETE DIAGNOSIS →';btn.dataset.action='diagnosis';
+      const next=missing[0];
+      title.textContent='Project start · '+missing.length+' requirement'+(missing.length===1?'':'s')+' left';
+      copy.textContent=next?'Next: '+next.title+'.':'Complete the required project-start checks.';
+      btn.textContent=next?(next.cta+' →'):'CONTINUE →';btn.dataset.action=next?.action||'diagnosis';
     }
   }
 
@@ -655,7 +701,7 @@
       const q=await sb().from('studio_project_tasks').select('id',{count:'exact',head:true}).eq('project_id',proj.data.id);
       if(!q.error)taskCount=q.count||0;
     }
-    renderLeadExecutionPath({proposal:pr.data,deposit:pay.data,project:proj.data,taskCount});
+    executionCtx={proposal:pr.data,deposit:pay.data,project:proj.data,taskCount};renderLeadExecutionPath(executionCtx);
   }
 
   function updateLeadWorkspaceState(){
@@ -693,7 +739,7 @@
     $('#lead-last-contact').textContent=x.last_contacted_at?'Last contact '+fmt(x.last_contacted_at):'No contact logged';
     const mail=$('#lead-email-link');mail.href=x.email?'mailto:'+encodeURIComponent(x.email):'#';mail.classList.toggle('hidden',!x.email);
     const wa=$('#lead-wa-link');const digits=String(x.phone||'').replace(/\D/g,'');wa.href=digits?'https://wa.me/'+digits:'#';wa.classList.toggle('hidden',!digits);
-    updateLeadWorkspaceState();setLeadFocusMode(['qualified','proposal_sent','negotiation','won'].includes(x.status));$('#lead-dialog').showModal();await Promise.all([loadLeadTimeline(x.id),loadLeadDiagnosis(x.id)]);await refreshLeadExecutionPath();
+    updateLeadWorkspaceState();setLeadFocusMode(true);$('#lead-dialog').showModal();await Promise.all([loadLeadTimeline(x.id),loadLeadDiagnosis(x.id)]);await refreshLeadExecutionPath();
   }
   function renderClientAccessCode(data){
     const x=state.currentLead,code=$('#client-access-code'),stateEl=$('#client-access-code-state'),copy=$('#copy-client-access-code'),share=$('#share-client-access-wa');
@@ -753,7 +799,7 @@
     const i=state.leads.findIndex(v=>v.id===x.id);if(i>=0)state.leads[i]=r.data;state.currentLead=r.data;
     if(before.status!==r.data.status)await logLeadActivity('lead_status_changed',{from:before.status,to:r.data.status});
     if(before.next_action!==r.data.next_action||String(before.next_action_due_at||'')!==String(r.data.next_action_due_at||''))await logLeadActivity('lead_next_action_changed',{next_action:r.data.next_action,due_at:r.data.next_action_due_at});
-    notify('Lead workspace saved');renderLeads();state.loaded.dashboard=false;void loadDashboard(true);updateLeadWorkspaceState();setLeadFocusMode(['qualified','proposal_sent','negotiation','won'].includes(r.data.status));void refreshLeadExecutionPath();
+    notify('Lead workspace saved');renderLeads();state.loaded.dashboard=false;void loadDashboard(true);updateLeadWorkspaceState();setLeadFocusMode(true);void refreshLeadExecutionPath();
     if(close)$('#lead-dialog').close();
     return true;
   }
