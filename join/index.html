@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#04121c" />
+  <meta name="description" content="Apply to join the Andrew Tharwat Studio specialist network." />
+  <title>Join ATS — Andrew Tharwat Studio</title>
+  <link rel="icon" href="/assets/favicon-official.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/join/join.css?v=1" />
+</head>
+<body>
+  <header class="join-header">
+    <a class="brand" href="/v9/" aria-label="ATS home">
+      <img src="/assets/app-icon-official.png" alt="ATS" width="46" height="46" />
+      <span><b>ATS</b><small>ANDREW THARWAT STUDIO</small></span>
+    </a>
+    <a class="back" href="/v9/#team">العودة للفريق ←</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <span class="eyebrow">ATS SPECIALIST NETWORK · JOIN REQUEST</span>
+        <h1>مش بندوّر على موظفين.<br><span>بندوّر على ناس تخلق قيمة.</span></h1>
+        <p>لو عندك تخصص حقيقي، تقدر تستلم مسؤولية واضحة وتوصل لنتيجة، ابعت بياناتك. كل مشروع في ATS بيتكوّن من الأشخاص الأنسب للمشكلة.</p>
+      </div>
+      <aside>
+        <b>طريقة العمل</b>
+        <ol>
+          <li>املأ بياناتك ومهاراتك.</li>
+          <li>اقرأ سياسة الفريق المختصرة.</li>
+          <li>وقّع رقميًا وأرسل الطلب.</li>
+          <li>لو فيه Fit مناسب، بياناتك تدخل شبكة ATS للمشروعات القادمة.</li>
+        </ol>
+      </aside>
+    </section>
+
+    <form id="join-form" novalidate>
+      <input class="trap" id="website_confirm" name="website_confirm" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+      <section class="form-section">
+        <div class="section-title"><span>01</span><div><small>ABOUT YOU</small><h2>بياناتك الأساسية</h2></div></div>
+        <div class="grid">
+          <label><span>الاسم بالكامل *</span><input id="full_name" required maxlength="160" autocomplete="name" /></label>
+          <label><span>البريد الإلكتروني *</span><input id="email" type="email" required maxlength="254" autocomplete="email" /></label>
+          <label><span>رقم الهاتف / WhatsApp</span><input id="phone" maxlength="80" autocomplete="tel" /></label>
+          <label><span>المدينة / الدولة</span><input id="city_country" maxlength="160" /></label>
+          <label><span>التخصص الأساسي *</span><input id="primary_specialty" required maxlength="160" placeholder="مثال: Graphic Designer / HSE / Developer" /></label>
+          <label><span>سنوات الخبرة</span><input id="years_experience" type="number" min="0" max="60" inputmode="numeric" /></label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="section-title"><span>02</span><div><small>CAPABILITIES</small><h2>إيه اللي تقدر تعمله فعليًا؟</h2></div></div>
+        <p class="hint">اختار فقط المجالات اللي تقدر تستلم فيها Task حقيقية وتتحمل مسؤولية نتيجتها.</p>
+        <div class="checks" id="skill-domains">
+          <label><input type="checkbox" value="HSE / Safety" /><span>HSE / Safety</span></label><label><input type="checkbox" value="Risk Assessment" /><span>Risk Assessment</span></label><label><input type="checkbox" value="Training" /><span>Training</span></label><label><input type="checkbox" value="Digital Systems" /><span>Digital Systems</span></label><label><input type="checkbox" value="Web Development" /><span>Web Development</span></label><label><input type="checkbox" value="Software Development" /><span>Software Development</span></label><label><input type="checkbox" value="UI / UX" /><span>UI / UX</span></label><label><input type="checkbox" value="Graphic Design" /><span>Graphic Design</span></label><label><input type="checkbox" value="Branding" /><span>Branding</span></label><label><input type="checkbox" value="Motion Graphics" /><span>Motion Graphics</span></label><label><input type="checkbox" value="Video Editing" /><span>Video Editing</span></label><label><input type="checkbox" value="Photography" /><span>Photography</span></label><label><input type="checkbox" value="Content Writing" /><span>Content Writing</span></label><label><input type="checkbox" value="Copywriting" /><span>Copywriting</span></label><label><input type="checkbox" value="Social Media" /><span>Social Media</span></label><label><input type="checkbox" value="Performance Marketing" /><span>Performance Marketing</span></label><label><input type="checkbox" value="AI / Automation" /><span>AI / Automation</span></label><label><input type="checkbox" value="Data / Research" /><span>Data / Research</span></label><label><input type="checkbox" value="Voice Over" /><span>Voice Over</span></label><label><input type="checkbox" value="Project Management" /><span>Project Management</span></label>
+        </div>
+        <div class="grid top-gap">
+          <label class="wide"><span>مهارات إضافية</span><input id="additional_skills" placeholder="افصل بين المهارات بفاصلة" /></label>
+          <label class="wide"><span>البرامج والأدوات التي تجيد استخدامها</span><input id="tools" placeholder="Adobe, Figma, AutoCAD, VS Code, AI tools..." /></label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="section-title"><span>03</span><div><small>WORK LEVEL</small><h2>مستوى المسؤولية اللي تقدر تشيله</h2></div></div>
+        <div class="choice-list" id="capability-level">
+          <label><input type="radio" name="level" value="Learning" /><span><b>Learning</b><small>أتعلم وأحتاج توجيهًا.</small></span></label>
+          <label><input type="radio" name="level" value="Junior" /><span><b>Junior</b><small>أنفذ Tasks واضحة تحت مراجعة.</small></span></label>
+          <label><input type="radio" name="level" value="Independent" /><span><b>Independent</b><small>أستلم Task وأنفذها كاملة.</small></span></label>
+          <label><input type="radio" name="level" value="Advanced" /><span><b>Advanced</b><small>أحل المشاكل وأتخذ قرارات داخل تخصصي.</small></span></label>
+          <label><input type="radio" name="level" value="Lead" /><span><b>Lead</b><small>أقود Workstream وأراجع عمل الآخرين.</small></span></label>
+        </div>
+
+        <div class="checks compact top-gap" id="work-preferences">
+          <label><input type="checkbox" value="Small Tasks" /><span>Tasks صغيرة</span></label>
+          <label><input type="checkbox" value="Medium Projects" /><span>مشروعات متوسطة</span></label>
+          <label><input type="checkbox" value="Lead Workstream" /><span>قيادة جزء كامل</span></label>
+          <label><input type="checkbox" value="Quality Review" /><span>Quality Review</span></label>
+          <label><input type="checkbox" value="Short Deadlines" /><span>Deadlines قصيرة عند الحاجة</span></label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="section-title"><span>04</span><div><small>AVAILABILITY</small><h2>التوفر وطريقة العمل</h2></div></div>
+        <div class="grid">
+          <label><span>متاح للعمل أسبوعيًا</span>
+            <select id="weekly_availability">
+              <option value="">اختر</option>
+              <option>أقل من 5 ساعات</option>
+              <option>5–10 ساعات</option>
+              <option>10–20 ساعة</option>
+              <option>أكثر من 20 ساعة</option>
+            </select>
+          </label>
+          <label><span>مستوى الإنجليزية</span>
+            <select id="english_level">
+              <option value="">اختر</option>
+              <option>Basic</option><option>Good</option><option>Very Good</option><option>Fluent</option>
+            </select>
+          </label>
+        </div>
+        <div class="checks compact top-gap" id="preferred-times">
+          <label><input type="checkbox" value="Morning" /><span>صباحًا</span></label>
+          <label><input type="checkbox" value="Evening" /><span>مساءً</span></label>
+          <label><input type="checkbox" value="Weekend" /><span>Weekend</span></label>
+          <label><input type="checkbox" value="Flexible" /><span>Flexible</span></label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="section-title"><span>05</span><div><small>WORK PROOF</small><h2>ورّينا شغلك</h2></div></div>
+        <div class="grid">
+          <label><span>Portfolio / Behance</span><input id="portfolio_url" type="url" placeholder="https://..." /></label>
+          <label><span>LinkedIn</span><input id="linkedin_url" type="url" placeholder="https://..." /></label>
+          <label><span>GitHub</span><input id="github_url" type="url" placeholder="https://..." /></label>
+          <label><span>Website</span><input id="website_url" type="url" placeholder="https://..." /></label>
+          <label class="wide"><span>ملاحظة أو حاجة تحب نعرفها عنك</span><textarea id="note" rows="4" maxlength="5000"></textarea></label>
+        </div>
+      </section>
+
+      <section class="form-section policy-section">
+        <div class="section-title"><span>06</span><div><small>ATS TEAM POLICY</small><h2>قبل ما تبعت الطلب</h2></div></div>
+        <div class="policy">
+          <p><b>ATS مش وظيفة تقليدية ولا Freelance Marketplace.</b> إحنا شبكة متخصصين بتتجمع حسب احتياج كل مشروع، والمساهمة بتتقاس بالقيمة والمسؤولية والنتيجة.</p>
+          <ol>
+            <li>كل شغل لازم يكون Task واضحة فيها المطلوب، النتيجة، الموعد، المراجع وقيمة الـTokens.</li>
+            <li>اقبل فقط الشغل اللي تقدر تلتزم بيه وتتحمل مسؤوليته.</li>
+            <li>الجودة والقيمة أهم من عدد الساعات.</li>
+            <li>الـToken وحدة مساهمة داخلية وليس مبلغًا ثابتًا بالجنيه.</li>
+            <li>المهمة لا تعتبر مكتملة إلا بعد Review وAcceptance.</li>
+            <li>الـRework الناتج عن خطأ في التنفيذ يتم بدون Tokens إضافية لإصلاح الخطأ نفسه.</li>
+            <li>تغيير العميل للـScope يتم التعامل معه رسميًا وقد ينتج عنه Task وTokens إضافية.</li>
+            <li>أي Blocker أو تأخير لازم يتم الإبلاغ عنه مبكرًا داخل النظام.</li>
+            <li>ممنوع الاتفاق مع العميل على سعر أو Scope أو Timeline بدون صلاحية من ATS.</li>
+            <li>العميل عميل ATS، ولا يتم تحويل العلاقة لعمل شخصي خارج الاستوديو بدون موافقة.</li>
+            <li>بيانات العميل وملفاته وأسعاره والـBriefs والأنظمة الداخلية معلومات خاصة.</li>
+            <li>المشاركة في مشروع أو الدخول مبكرًا لا تعني Ownership أو نسبة دائمة في ATS.</li>
+            <li>ATS يقدر يوقف أو يقيد إسناد Tasks حسب الجودة والالتزام واحتياجات المشاريع.</li>
+            <li>الوضوح، الاحترام، المسؤولية، والجودة هي أساس التعامل داخل الفريق.</li>
+          </ol>
+        </div>
+
+        <label class="agree"><input id="policy_agree" type="checkbox" required /><span>قرأت وفهمت سياسة العمل داخل ATS وأوافق على الالتزام بها في حالة قبولي ضمن الفريق.</span></label>
+        <label class="signature"><span>التوقيع الرقمي — اكتب اسمك بالكامل كما كتبته بالأعلى *</span><input id="digital_signature" required maxlength="160" autocomplete="off" /></label>
+        <p class="policy-version">Policy version: <b id="policy-version">ATS-TEAM-POLICY-V1-2026-09-27</b></p>
+      </section>
+
+      <section class="submit-zone">
+        <div><small>FINAL CHECK</small><b>بيانات صحيحة · سياسة مقروءة · التزام واضح</b></div>
+        <button id="submit-application" type="submit">إرسال طلب الانضمام →</button>
+        <p id="form-state" role="status" aria-live="polite"></p>
+      </section>
+    </form>
+
+    <section id="success-panel" class="success-panel hidden">
+      <small>APPLICATION RECEIVED</small>
+      <h2>طلبك وصل لـ ATS.</h2>
+      <p>احتفظ بكود الطلب. لو فيه Fit مناسب لمشروع حالي أو قادم، هنرجع لبياناتك.</p>
+      <strong id="application-code">—</strong>
+      <a href="/v9/">العودة إلى ATS →</a>
+    </section>
+  </main>
+
+  <footer><b>ATS</b><span>People execute. The system organizes. ATS handles exceptions.</span></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/join/join.js?v=1"></script>
+</body>
+</html>
