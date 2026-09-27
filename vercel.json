@@ -7,6 +7,10 @@
       "destination": "/v9/index.html"
     },
     {
+      "source": "/join",
+      "destination": "/join/index.html"
+    },
+    {
       "source": "/share/:media",
       "destination": "/api/share?media=:media"
     },
