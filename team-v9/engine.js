@@ -5,7 +5,7 @@
   const $ = (s, r = document) => r.querySelector(s);
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const admin = !!$('#app');
-  let sb, root, loading = false, active = false, tab = admin ? 'attention' : 'available';
+  let sb, root, loading = false, active = false, tab = admin ? 'board' : 'available';
   let rows = {tasks:[],members:[],skills:[],streams:[],ledger:[],events:[],projects:[],dependencies:[],context:[]};
   let me = null, email = '';
   let memberLinkOpened=false;
@@ -65,13 +65,14 @@
   }
   function render() {
     const tasks=rows.tasks;
-    $('#team-tabs',root).innerHTML=(admin?[['attention','Needs attention'],['tasks','All tasks'],['members','Team load'],['wallet','Token ledger']]:[['available','Available tasks'],['mine','My work'],['reviews','My reviews'],['wallet','Wallet'],['history','History']]).map(([v,l])=>`<button type="button" data-team-tab="${v}" aria-current="${tab===v}">${l}</button>`).join('');
+    $('#team-tabs',root).innerHTML=(admin?[['board','Task board'],['attention','Needs attention'],['tasks','All tasks'],['members','Team load'],['wallet','Token ledger']]:[['available','Available tasks'],['mine','My work'],['reviews','My reviews'],['wallet','Wallet'],['history','History']]).map(([v,l])=>`<button type="button" data-team-tab="${v}" aria-current="${tab===v}">${l}</button>`).join('');
     const own=admin?tasks:tasks.filter(t=>t.owner_id===me);
     if(admin){const overview=$('#team-overview');if(overview)overview.innerHTML=`<div><p class="overline">TEAM EXECUTION</p><h2>${tasks.filter(t=>t.status==='review'||overdue(t)||escalated(t)||t.rework_reason).length} items need attention</h2><p>${tasks.filter(t=>t.status==='available').length} unassigned · ${tasks.filter(t=>t.status==='review').length} awaiting review · ${tasks.filter(overdue).length} overdue</p></div><a class="button button-primary" href="#team">OPEN TEAM & TASKS</a>`;}
     $('#team-metrics',root).innerHTML=admin?
       metric('Unassigned',tasks.filter(t=>t.status==='available').length)+metric('Active',tasks.filter(t=>openStates.includes(t.status)).length)+metric('Awaiting review',tasks.filter(t=>t.status==='review').length)+metric('Overdue',tasks.filter(overdue).length)+metric('Open rework',tasks.filter(t=>t.rework_reason).length)+metric('Founder queue',tasks.filter(escalated).length):
       metric('Active / capacity',`${load(me)} / ${rows.members.find(m=>m.id===me)?.capacity??'—'}`)+metric('In review',own.filter(t=>t.status==='review').length)+metric('Accepted',own.filter(t=>['accepted','closed'].includes(t.status)).length)+metric('Overdue',own.filter(overdue).length);
     const content=$('#team-content',root);
+    if(tab==='board'){renderTaskBoard(content);return;}
     if(tab==='members'){content.innerHTML=rows.members.length?`<div class="team-grid">${rows.members.map(m=>`<article class="team-card"><h3>${esc(m.full_name)}</h3><p class="muted">${esc(m.email)} · ${esc(label(m.member_type))}</p><p>${load(m.id)} / ${m.capacity} active tasks · ${m.active?(m.available?'Available':'Unavailable'):'Inactive'}</p><progress value="${load(m.id)}" max="${Math.max(m.capacity,load(m.id))}"></progress><p>${rows.skills.filter(s=>s.member_id===m.id).map(s=>`${esc(s.skill)} · L${s.level}`).join(' / ')||'No skills recorded'}</p><small>${m.auth_user_id?'Account linked':'Waiting for first verified login'}</small><div class="team-actions">${button('Edit member','member',m.id)}${intake.filter(a=>a.accepted_member_id===m.id).map(a=>`<a href="/admin/team-applications?application=${encodeURIComponent(a.id)}">Application & policy acknowledgement</a>`).join('')}</div></article>`).join('')}</div>`:'<div class="team-empty">Add your first member to set up skills, capacity and task reviewers.</div>';return;}
     if(tab==='wallet'){renderWallet(content);return;}
     let list=tasks;
@@ -83,6 +84,21 @@
     list=[...list].sort((a,b)=>Number(overdue(b))-Number(overdue(a))||Date.parse(a.due_at)-Date.parse(b.due_at));
     content.innerHTML=list.length?`<div class="team-grid">${list.map(taskCard).join('')}</div>`:`<div class="team-empty">${tab==='available'?'No tasks available for your skills, level and remaining capacity.':tab==='attention'?'No tasks need attention right now.':'No tasks in this view yet.'}</div>`;
   }
+  function renderTaskBoard(content){
+    const scoped=requestedProject?rows.tasks.filter(t=>t.project_id===requestedProject):rows.tasks;
+    const p=requestedProject?rows.projects.find(x=>x.id===requestedProject):null;
+    const cols=[
+      ['available','1 · TO ASSIGN',t=>t.status==='available'],
+      ['assigned','2 · ASSIGNED',t=>t.status==='assigned'],
+      ['in_progress','3 · IN PROGRESS',t=>t.status==='in_progress'],
+      ['review','4 · REVIEW',t=>t.status==='review'],
+      ['done','5 · DONE',t=>['accepted','closed'].includes(t.status)]
+    ];
+    const guide=`<div class="task-flow-guide"><div><span>PROJECT EXECUTION</span><b>${esc(p?.title||'All active projects')}</b><small>${p?'This board is filtered to the selected project.':'Follow every task from planning to acceptance.'}</small></div><div class="task-flow-steps"><span>PLAN</span><i>→</i><span>ASSIGN</span><i>→</i><span>DO</span><i>→</i><span>REVIEW</span><i>→</i><span>DONE</span></div><div class="team-actions">${button('+ New task','task','','primary')}</div></div>`;
+    const board=`<div class="team-kanban">${cols.map(([key,title,test])=>{const items=scoped.filter(test);return `<section class="kanban-col ${key}"><header><b>${title}</b><span>${items.length}</span></header><div class="kanban-stack">${items.length?items.map(taskCard).join(''):'<div class="kanban-empty">No tasks</div>'}</div></section>`}).join('')}</div>`;
+    content.innerHTML=guide+board;
+  }
+
   function taskCard(t) {
     let actions=button('Details & history','details',t.id);
     if(admin){
@@ -181,7 +197,7 @@
     active=true;await refresh();showAdmin();
     if(requestedProject){
       const p=rows.projects.find(x=>x.id===requestedProject);
-      if(p)message('Project ready for execution: '+p.title+'. Create or assign its tasks below.');
+      if(p){tab='board';render();message('Project ready for execution: '+p.title+'. Follow the board from To Assign → Done.');}
     }
     if(requestedNewTask&&requestedProject&&!requestedTaskOpened&&rows.projects.some(x=>x.id===requestedProject)){
       requestedTaskOpened=true;setTimeout(()=>taskForm(null),80);
