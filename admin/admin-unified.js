@@ -618,7 +618,7 @@
     if(project){
       title.textContent='Project is live · distribute the work';
       copy.textContent=(project.project_code||'Project')+' · '+(project.title||'')+' · '+taskCount+' team task'+(taskCount===1?'':'s')+'.';
-      btn.textContent=taskCount?'OPEN TEAM & TASKS →':'CREATE FIRST TASK →';btn.dataset.action='open-tasks';btn.dataset.id=project.id;
+      btn.textContent=taskCount?'OPEN TEAM & TASKS →':'CREATE FIRST TASK →';btn.dataset.action='open-tasks';btn.dataset.id=project.id;btn.dataset.newTask=taskCount?'0':'1';
     }else if(proposalAccepted&&deposit&&!depositPaid){
       title.textContent='Commercial gate ready';
       copy.textContent='Confirm the deposit only after payment is actually received. The system will create the Client + Project automatically.';
@@ -980,7 +980,7 @@
     if(action==='open-proposal'){const leadId=state.currentLead?.id;$('#lead-dialog')?.close();await loadProposals(true);openProposal(id||null,leadId);return}
     if(action==='accept-proposal'){await loadProposals(true);await acceptProposal(id);await refreshLeadExecutionPath();return}
     if(action==='confirm-deposit'){await loadPayments(true);await markPaid(id);await loadProjects(true);await refreshLeadExecutionPath();return}
-    if(action==='open-tasks'){location.href='/admin/team-tasks?project='+encodeURIComponent(id);return}
+    if(action==='open-tasks'){location.href='/admin/team-tasks?project='+encodeURIComponent(id)+(btn.dataset.newTask==='1'?'&newTask=1':'');return}
   });
   $('#lead-log-contact')?.addEventListener('click',logLeadContact);
   $('#issue-client-access-code')?.addEventListener('click',issueClientAccessCode);
