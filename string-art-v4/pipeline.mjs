@@ -106,8 +106,14 @@ export function solveImageV4({
         maxCombinations: palette.maxCombinations ?? 2500,
       });
 
-  const dithered = useDither ? floydSteinbergDitherLinear(linearRgb, size, selected.linearRgb, geometryMask) : null;
-  const targetRgb = dithered ? dithered.rgb : linearRgb;
+  const ditherPalette = [[1, 1, 1], ...selected.linearRgb];
+  const dithered = useDither ? floydSteinbergDitherLinear(linearRgb, size, ditherPalette, geometryMask) : null;
+  let targetRgb = linearRgb;
+  if (dithered) {
+    const ditherBlend = Math.max(0, Math.min(1, preprocess.ditherBlend ?? 0.28));
+    targetRgb = new Float32Array(linearRgb.length);
+    for (let i = 0; i < targetRgb.length; i++) targetRgb[i] = linearRgb[i] * (1 - ditherBlend) + dithered.rgb[i] * ditherBlend;
+  }
   onProgress?.({ phase: 'preprocess', done: 4, total: 4 });
 
   const result = solveColorGlobalOptical({
@@ -133,6 +139,7 @@ export function solveImageV4({
   result.palette = selected;
   result.targetRgb = targetRgb;
   result.ditherIndexMap = dithered?.indexMap || null;
+  result.ditherIncludesWhite = Boolean(dithered);
   result.portrait = portraitMaps ? { enabled: true, faceBox: portraitMaps.faceBox } : { enabled: false };
   result.mode = 'color-global';
   return result;
