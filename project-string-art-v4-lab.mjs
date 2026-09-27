@@ -134,19 +134,21 @@ if (params.get('engine') === 'v4') {
   }
 
   function extractLines(result,p,size){
-    const pins=pinsAsPairs(p.nails,size), lines=[];
+    const pins=pinsAsPairs(p.nails,size), lines=[], perColor=[];
     if(result.mode==='mono-global'){
-      for(const trail of result.route?.trails||[]) for(let i=1;i<trail.length;i++) lines.push({a:trail[i-1],b:trail[i],color:'#111111'});
+      for(const trail of result.route?.trails||[]) for(let i=1;i<trail.length;i++) lines.push({a:trail[i-1],b:trail[i],color:'#111111',colorIndex:0});
+      perColor[0]=lines.length;
     }else{
       const palette=result.palette?.hex||[];
       for(const route of result.routes||[]){
-        const color=palette[route.colorIndex]||'#111111';
-        for(const trail of route.trails||[]) for(let i=1;i<trail.length;i++) lines.push({a:trail[i-1],b:trail[i],color});
+        const color=palette[route.colorIndex]||'#111111'; let n=0;
+        for(const trail of route.trails||[]) for(let i=1;i<trail.length;i++){lines.push({a:trail[i-1],b:trail[i],color,colorIndex:route.colorIndex});n++}
+        perColor[route.colorIndex]=n;
       }
     }
-    return {pins,lines,size,meta:{mode:result.mode,pins:p.nails,lines:lines.length,palette:result.palette?.hex||[],mse:result.metrics?.mse||0,engine:'ATS-V4-global-optical'}};
+    const palette=result.mode==='mono-global'?['#111111']:(result.palette?.hex||[]);
+    return {pins,lines,size,meta:{mode:result.mode,pins:p.nails,lines:lines.length,palette,perColor,mse:result.metrics?.mse||0,engine:'ATS-V4-global-optical'}};
   }
-
   function paint(data,count=data.lines.length){
     const canvas=$('#sa-user-result');if(!canvas)return;
     const box=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2.5),w=Math.max(1,box.width),h=Math.max(1,box.height);
@@ -155,8 +157,8 @@ if (params.get('engine') === 'v4') {
     ctx.fillStyle='#f2efe8';ctx.fillRect(0,0,w,h);
     const scale=Math.min(w,h)/data.size,ox=(w-data.size*scale)/2,oy=(h-data.size*scale)/2;
     ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);ctx.globalCompositeOperation='multiply';ctx.lineCap='round';
-    const alpha=data.meta.mode==='color-global'?.115:.095;
-    const lineWidth=data.meta.mode==='color-global'?.58:.52;
+    const alpha=data.meta.mode==='color-global'?.14:.10;
+    const lineWidth=data.meta.mode==='color-global'?.62:.54;
     for(let i=0;i<Math.min(count,data.lines.length);i++){
       const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
       ctx.strokeStyle=hexWithAlpha(l.color,alpha);ctx.lineWidth=lineWidth;
@@ -182,63 +184,79 @@ if (params.get('engine') === 'v4') {
 
   function progressText(msg){
     const phase=msg.phase||'';
-    if(phase==='matrix') return AR()?'بناء نموذج الخيط الفيزيائي…':'BUILDING PHYSICAL THREAD MATRIX…';
-    if(phase==='palette') return AR()?'اختيار ألوان الخيط…':'SIMULATING THREAD PALETTE…';
-    if(phase==='preprocess') return AR()?'تحضير الصورة…':'PREPARING IMAGE…';
-    if(phase.includes('color')) return AR()?'تحسين الخط واللون عالميًا…':'GLOBAL LINE + COLOR OPTIMIZATION…';
-    if(phase.includes('mono')) return AR()?'تحسين توزيع الخيوط عالميًا…':'GLOBAL THREAD OPTIMIZATION…';
-    return AR()?'تشغيل محرك V4…':'RUNNING ATS V4…';
+    if(phase==='matrix') return tr('بناء نموذج الخيط الفيزيائي…','BUILDING PHYSICAL THREAD MATRIX…');
+    if(phase==='palette') return tr('محاكاة واختيار ألوان الخيط…','SIMULATING THREAD PALETTE…');
+    if(phase==='preprocess') return tr('تحليل الوجه والملامح…','ANALYZING PORTRAIT FEATURES…');
+    if(phase.includes('color')) return tr('تحسين الخط واللون والملامح عالميًا…','GLOBAL LINE + COLOR + PORTRAIT OPTIMIZATION…');
+    if(phase.includes('mono')) return tr('تحسين توزيع الخيوط والملامح عالميًا…','GLOBAL THREAD + PORTRAIT OPTIMIZATION…');
+    return tr('تشغيل محرك V4…','RUNNING ATS V4…');
   }
 
+  function renderPalette(hex=[],counts=[]){
+    const host=$('#sa-palette-preview');if(!host)return;
+    if(!hex.length){host.innerHTML='<span class="sa-palette-empty">'+tr('لم يتم اختيار Palette بعد','NO PALETTE SELECTED YET')+'</span>';return}
+    host.innerHTML=hex.map((h,i)=>'<span class="sa-palette-swatch" title="'+h+'"><i style="background:'+h+'"></i><b>'+h+'</b><small>'+Number(counts[i]||0).toLocaleString()+' '+tr('خيط','FIBERS')+'</small></span>').join('');
+  }
+
+  function renderMeta(data){
+    const set=(k,v)=>{const el=$('[data-v4-meta="'+k+'"]');if(el)el.textContent=v};
+    set('mode',data.meta.mode==='color-global'?tr('ألوان بصرية','OPTICAL COLOR'):tr('أحادي واقعي','REALISTIC MONO'));
+    set('fibers',Number(data.meta.lines||0).toLocaleString());
+    set('nails',String(data.meta.pins||0));
+    set('colors',String(data.meta.palette?.length||1));
+    renderPalette(data.meta.palette,data.meta.perColor);
+  }
   async function generateV4(ev){
     ev?.preventDefault();ev?.stopImmediatePropagation();
     const btn=$('#sa-generate');if(!btn)return;
     btn.disabled=true;$('#sa-result-tools')?.classList.add('hidden');
-    const p=profile(),m=mode(),rgba=captureFramedRgba(p.size),id=++requestId,w=workerForRun();
-    setStatus(AR()?'V4 · تجهيز الحل العالمي…':'V4 · PREPARING GLOBAL SOLVER…',1);
-    const done=new Promise((resolve,reject)=>{
-      w.onmessage=e=>{
-        const msg=e.data;if(msg.id!==id)return;
-        if(msg.type==='progress'){
-          const total=msg.total||1,done=msg.done||0;
-          const pct=msg.phase==='matrix'?Math.min(18,done/total*18):msg.phase==='palette'?22:Math.min(97,24+done/total*73);
-          setStatus(progressText(msg),pct);return;
-        }
-        if(msg.type==='error') reject(new Error(msg.message||'V4 worker error'));
-        if(msg.type==='v4-result') resolve(msg.result);
-      };
-      w.onerror=e=>reject(new Error(e.message||'V4 worker failed'));
-    });
-    w.postMessage({
-      type:'solve-image-v4',id,
-      table:{size:p.size,nails:p.nails,minGap:8,canvasMm:600,fiberWidthMm:.12,density:1},
-      rgba,mode:m,
-      preprocess:{gamma:Number($('#sa-gamma')?.value||.9),detail:.48,toneFloor:0,toneCeiling:.97},
-      palette:{nColors:p.palette,fixedHex:['#111111'],simulationSize:Math.min(52,p.size),maxCombinations:2500},
-      solve:{
-        maxFibers:m==='color'?p.colorFibers:p.monoFibers,
-        opacity:1,maxRepeat:m==='color'?1:2,allowRemove:true,
-        candidateLimit:p.candidates,refreshEvery:1000000000,
-        chromaWeight:1.9
-      },
-      useDither:m==='color'
-    },[rgba.buffer]);
     try{
+      ensureV4Controls();
+      const p=profile(),m=mode(),rgba=captureFramedRgba(p.size),nColors=m==='color'?requestedPaletteSize(rgba,p):1;
+      const faceBox=await detectFaceBox();
+      const id=++requestId,w=workerForRun();
+      setStatus(tr('V4 · تحليل الصورة وبناء خريطة الملامح…','V4 · BUILDING PORTRAIT PRIORITY MAP…'),1);
+      const done=new Promise((resolve,reject)=>{
+        w.onmessage=e=>{
+          const msg=e.data;if(msg.id!==id)return;
+          if(msg.type==='progress'){
+            const total=msg.total||1,done=msg.done||0;
+            const pct=msg.phase==='matrix'?Math.min(18,done/total*18):msg.phase==='palette'?22:Math.min(97,24+done/total*73);
+            setStatus(progressText(msg),pct);return;
+          }
+          if(msg.type==='error') reject(new Error(msg.message||'V4 worker error'));
+          if(msg.type==='v4-result') resolve(msg.result);
+        };
+        w.onerror=e=>reject(new Error(e.message||'V4 worker failed'));
+      });
+      w.postMessage({
+        type:'solve-image-v4',id,
+        table:{size:p.size,nails:p.nails,minGap:8,canvasMm:600,fiberWidthMm:.12,density:1},
+        rgba,mode:m,
+        preprocess:{
+          gamma:Number($('#sa-gamma')?.value||.9),detail:p.detail,detailRadius:p.size/28,toneFloor:0,toneCeiling:.97,
+          portraitPriority:true,faceBox,backgroundWeight:.16,faceBoost:1.28,edgeBoost:1.78,featureBoost:2.35,darkDetailBoost:.62,avoidanceBoost:1.12
+        },
+        palette:{nColors,fixedHex:['#111111'],simulationSize:Math.min(58,p.size),maxCombinations:2500},
+        solve:{
+          maxFibers:m==='color'?p.colorFibers:p.monoFibers,opacity:1,maxRepeat:m==='color'?1:2,allowRemove:true,
+          candidateLimit:p.candidates,refreshEvery:1000000000,chromaWeight:1.9,crossingPenalty:m==='color'?p.crossingColor:p.crossingMono
+        },
+        useDither:m==='color'
+      },[rgba.buffer]);
       const result=await done;
       lastResult=result;lastRender=extractLines(result,p,p.size);
       window.__saV4LastResult=result;window.__saV4LastRender=lastRender;
-      animate(lastRender);
+      animate(lastRender);renderMeta(lastRender);
       const palette=(result.palette?.hex||[]).join(' · ');
-      $('#sa-user-sequence').textContent=(m==='color'?'PALETTE '+palette+'  ·  ':'')+
-        (lastRender.lines.slice(0,10).map(x=>String(x.a).padStart(3,'0')+'→'+String(x.b).padStart(3,'0')).join(' · '));
+      $('#sa-user-sequence').textContent=(m==='color'?'PALETTE '+palette+'  ·  ':'')+lastRender.lines.slice(0,10).map(x=>String(x.a).padStart(3,'0')+'→'+String(x.b).padStart(3,'0')).join(' · ');
       $('#sa-result-tools')?.classList.remove('hidden');
       const mse=(result.metrics?.mse||0).toFixed(4);
-      setStatus((AR()?'اكتمل V4':'V4 COMPLETE')+' · '+lastRender.lines.length+' '+(AR()?'خيط':'FIBERS')+' · '+p.nails+' '+(AR()?'مسمار':'NAILS')+' · MSE '+mse,100);
+      setStatus(tr('اكتمل V4','V4 COMPLETE')+' · '+lastRender.lines.length+' '+tr('خيط','FIBERS')+' · '+p.nails+' '+tr('مسمار','NAILS')+(m==='color'?' · '+nColors+' COLORS':'')+' · MSE '+mse,100);
     }catch(error){
-      console.error('[ATS V4]',error);setStatus((AR()?'فشل V4: ':'V4 FAILED: ')+(error.message||error),100);
+      console.error('[ATS V4]',error);setStatus(tr('فشل V4: ','V4 FAILED: ')+(error.message||error),100);
     }finally{btn.disabled=false}
   }
-
   function savePng(ev){
     if(!lastRender)return;
     ev?.preventDefault();ev?.stopImmediatePropagation();
@@ -256,21 +274,32 @@ if (params.get('engine') === 'v4') {
     else savePng();
   }
 
+  function bindOnce(el,key,type,handler){
+    if(!el||el.dataset[key])return;el.dataset[key]='1';el.addEventListener(type,handler,true);
+  }
+
   function attach(){
-    const btn=$('#sa-generate');if(!btn||btn.dataset.v4Bound)return false;
-    btn.dataset.v4Bound='1';
-    btn.addEventListener('click',generateV4,true);
-    $('#sa-user-replay')?.addEventListener('click',e=>{if(!lastRender)return;e.preventDefault();e.stopImmediatePropagation();animate(lastRender)},true);
-    $('#sa-user-download')?.addEventListener('click',savePng,true);
-    $('#sa-user-share')?.addEventListener('click',sharePng,true);
+    if(!ensureV4Controls())return false;
+    const btn=$('#sa-generate');if(!btn)return false;
+    bindOnce(btn,'v4Bound','click',generateV4);
+    bindOnce($('#sa-user-replay'),'v4Bound','click',e=>{if(!lastRender)return;e.preventDefault();e.stopImmediatePropagation();animate(lastRender)});
+    bindOnce($('#sa-user-download'),'v4Bound','click',savePng);
+    bindOnce($('#sa-user-share'),'v4Bound','click',sharePng);
+    $('#sa-user-speak')?.classList.add('sa-v4-hidden-action');
+    $('#sa-user-video')?.classList.add('sa-v4-hidden-action');
     document.documentElement.dataset.saEngine='v4';
-    setStatus(AR()?'V4 LAB جاهز · الصورة لا تغادر جهازك':'V4 LAB READY · IMAGE STAYS ON DEVICE',0);
+    setStatus(tr('V4 جاهز · Mono + Optical Color · الصورة لا تغادر جهازك','V4 READY · MONO + OPTICAL COLOR · IMAGE STAYS ON DEVICE'),0);
     return true;
   }
 
-  if(!attach()){
+  function tryAttach(){
+    if(attach())return;
     const o=new MutationObserver(()=>{if(attach())o.disconnect()});
     o.observe(document.documentElement,{childList:true,subtree:true});
     setTimeout(()=>o.disconnect(),15000);
   }
+
+  document.addEventListener('ats:stringart:rendered',()=>setTimeout(tryAttach,30));
+  document.addEventListener('portfolio:languagechange',()=>setTimeout(tryAttach,100));
+  tryAttach();
 }
