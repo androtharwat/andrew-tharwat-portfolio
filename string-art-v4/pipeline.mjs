@@ -8,6 +8,7 @@ import {
   prepareMonoTarget,
   chooseThreadPaletteSimulation,
   floydSteinbergDitherLinear,
+  buildPortraitPriorityMaps,
 } from './preprocess.mjs';
 import {
   expandCountsToEdges,
@@ -42,9 +43,21 @@ export function solveImageV4({
 }) {
   const size = table.size;
   if (!rgba || rgba.length !== size * size * 4) throw new Error('RGBA buffer must match table size');
-  const mask = importance || makeCircularMask(size, preprocess.maskFeather ?? 1.5);
+  const geometryMask = makeCircularMask(size, preprocess.maskFeather ?? 1.5);
   onProgress?.({ phase: 'preprocess', done: 1, total: 4 });
   const linearRgb = rgbaToLinearRgb(rgba, { backgroundSrgb: preprocess.backgroundSrgb || [1, 1, 1] });
+  const portraitMaps = preprocess.portraitPriority === false ? null : buildPortraitPriorityMaps(linearRgb, size, {
+    mask: geometryMask,
+    faceBox: preprocess.faceBox || null,
+    backgroundWeight: preprocess.backgroundWeight ?? 0.18,
+    faceBoost: preprocess.faceBoost ?? 1.15,
+    edgeBoost: preprocess.edgeBoost ?? 1.65,
+    featureBoost: preprocess.featureBoost ?? 2.15,
+    darkDetailBoost: preprocess.darkDetailBoost ?? 0.55,
+    avoidanceBoost: preprocess.avoidanceBoost ?? 1,
+  });
+  const importanceMap = importance || portraitMaps?.importance || geometryMask;
+  const avoidanceMap = portraitMaps?.avoidance || null;
 
   if (mode === 'mono') {
     const target = prepareMonoTarget(linearRgb, size, {
@@ -53,13 +66,15 @@ export function solveImageV4({
       detailRadius: preprocess.detailRadius ?? size / 24,
       toneFloor: preprocess.toneFloor ?? 0,
       toneCeiling: preprocess.toneCeiling ?? 0.96,
-      mask,
+      mask: geometryMask,
     });
     onProgress?.({ phase: 'preprocess', done: 4, total: 4 });
     const result = solveMonoSparse({
       table,
       target,
-      importance: mask,
+      importance: importanceMap,
+      avoidance: avoidanceMap,
+      crossingPenalty: solve.crossingPenalty ?? (portraitMaps ? 0.12 : 0),
       maxFibers: solve.maxFibers ?? 4500,
       opacity: solve.opacity ?? 1,
       maxRepeat: solve.maxRepeat ?? 2,
@@ -72,6 +87,7 @@ export function solveImageV4({
     });
     result.route = buildMonoRouteFromCounts(table, result.counts);
     result.target = target;
+    result.portrait = portraitMaps ? { enabled: true, faceBox: portraitMaps.faceBox } : { enabled: false };
     result.mode = 'mono-global';
     return result;
   }
@@ -84,13 +100,13 @@ export function solveImageV4({
         candidateHex: palette.candidateHex,
         nColors: palette.nColors ?? 5,
         fixedHex: palette.fixedHex ?? ['#111111'],
-        mask,
+        mask: importanceMap,
         simulationSize: palette.simulationSize ?? Math.min(72, size),
         blurSigma: palette.blurSigma ?? 1.15,
         maxCombinations: palette.maxCombinations ?? 2500,
       });
 
-  const dithered = useDither ? floydSteinbergDitherLinear(linearRgb, size, selected.linearRgb, mask) : null;
+  const dithered = useDither ? floydSteinbergDitherLinear(linearRgb, size, selected.linearRgb, geometryMask) : null;
   const targetRgb = dithered ? dithered.rgb : linearRgb;
   onProgress?.({ phase: 'preprocess', done: 4, total: 4 });
 
@@ -98,7 +114,9 @@ export function solveImageV4({
     table,
     targetRgb,
     palette: selected.linearRgb,
-    importance: mask,
+    importance: importanceMap,
+    avoidance: avoidanceMap,
+    crossingPenalty: solve.crossingPenalty ?? (portraitMaps ? 0.09 : 0),
     maxFibers: solve.maxFibers ?? 10000,
     opacity: solve.opacity ?? 1,
     maxRepeat: solve.maxRepeat ?? 1,
@@ -115,6 +133,7 @@ export function solveImageV4({
   result.palette = selected;
   result.targetRgb = targetRgb;
   result.ditherIndexMap = dithered?.indexMap || null;
+  result.portrait = portraitMaps ? { enabled: true, faceBox: portraitMaps.faceBox } : { enabled: false };
   result.mode = 'color-global';
   return result;
 }
