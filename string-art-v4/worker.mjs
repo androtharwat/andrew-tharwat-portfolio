@@ -2,7 +2,9 @@ import {
   buildPackedLineTable,
   solveMonoSparse,
   solveColorOptical,
+  solveColorGlobalOptical,
 } from './core.mjs';
+import { buildColorRoutesFromCounts } from './path.mjs';
 
 const cache = new Map();
 
@@ -52,6 +54,19 @@ self.onmessage = (event) => {
         onProgress: (done, total, gain, colorIndex) => progress({ phase: 'solve-color', done, total, gain, colorIndex }),
       });
       self.postMessage({ type: 'color-result', id: msg.id, result });
+      return;
+    }
+    if (msg.type === 'solve-color-global') {
+      const result = solveColorGlobalOptical({
+        table,
+        targetRgb: msg.targetRgb,
+        palette: msg.palette,
+        importance: msg.importance,
+        ...msg.solve,
+        onProgress: (done, total, gain, colorIndex, sign) => progress({ phase: 'solve-color-global', done, total, gain, colorIndex, sign }),
+      });
+      result.routes = buildColorRoutesFromCounts(table, result.counts, msg.palette.length);
+      self.postMessage({ type: 'color-global-result', id: msg.id, result });
       return;
     }
     throw new Error('Unknown worker message: ' + msg.type);

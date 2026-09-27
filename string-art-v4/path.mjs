@@ -101,3 +101,32 @@ export function stitchTrailsAlongPerimeter(trails, nailCount) {
   }
   return { sequence, connectors, trailStarts, orderedTrails: ordered };
 }
+
+
+export function expandColorCountsToEdges(table, counts, colorCount) {
+  if (counts.length !== table.a.length * colorCount) throw new Error('color count matrix size mismatch');
+  const perColor = Array.from({ length: colorCount }, () => []);
+  for (let e = 0; e < table.a.length; e++) {
+    for (let ci = 0; ci < colorCount; ci++) {
+      const n = counts[e * colorCount + ci] || 0;
+      for (let k = 0; k < n; k++) perColor[ci].push({ a: table.a[e], b: table.b[e], sourceEdge: e, colorIndex: ci });
+    }
+  }
+  return perColor;
+}
+
+export function buildColorRoutesFromCounts(table, counts, colorCount) {
+  const edges = expandColorCountsToEdges(table, counts, colorCount);
+  return edges.map((colorEdges, colorIndex) => {
+    const trails = coverEulerTrails(colorEdges, table.nails);
+    const stitched = stitchTrailsAlongPerimeter(trails, table.nails);
+    return {
+      colorIndex,
+      selectedFibers: colorEdges.length,
+      trails,
+      sequence: stitched.sequence,
+      connectors: stitched.connectors,
+      trailStarts: stitched.trailStarts,
+    };
+  });
+}

@@ -53,3 +53,30 @@ test('joint color solver reduces RGB error and can use multiple thread colors', 
   assert.ok(result.metrics.mse < before, 'expected color error reduction: ' + before + ' -> ' + result.metrics.mse);
   assert.ok(result.metrics.colorsUsed >= 2);
 });
+
+
+test('global joint color solver selects line+color without path constraint and supports route post-processing', async () => {
+  const path = await import('../string-art-v4/path.mjs');
+  const size = 30;
+  const table = core.buildPackedLineTable({ size, nails: 26, minGap: 2, fiberWidthMm: 2.4, density: 2 });
+  const mask = core.makeCircularMask(size);
+  const target = new Float32Array(size * size * 3);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const p = y * size + x, inside = mask[p], top = y < size / 2, left = x < size / 2;
+    target[p * 3] = inside ? (top ? 0.30 : (left ? 0.78 : 0.90)) : 1;
+    target[p * 3 + 1] = inside ? (left ? 0.72 : 0.34) : 1;
+    target[p * 3 + 2] = inside ? (top ? 0.88 : 0.28) : 1;
+  }
+  const blank = new Float32Array(target.length); blank.fill(1);
+  const before = core.weightedRgbMse(target, blank, mask);
+  const palette = [[0.18,0.68,0.92],[0.92,0.28,0.35],[0.92,0.76,0.22],[0.12,0.12,0.12]];
+  const result = core.solveColorGlobalOptical({
+    table, targetRgb: target, palette, importance: mask,
+    maxFibers: 220, opacity: 0.55, candidateLimit: 0, maxRepeat: 1, allowRemove: true
+  });
+  assert.ok(result.metrics.mse < before * 0.55, 'expected strong global color reconstruction: ' + before + ' -> ' + result.metrics.mse);
+  assert.ok(result.metrics.colorsUsed >= 2);
+  const routes = path.buildColorRoutesFromCounts(table, result.counts, palette.length);
+  assert.equal(routes.reduce((s, r) => s + r.selectedFibers, 0), result.metrics.fibers);
+  assert.ok(routes.some((r) => r.sequence.length > 1));
+});

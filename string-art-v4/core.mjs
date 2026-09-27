@@ -299,7 +299,7 @@ function opponentError(tr, tg, tb, rr, rg, rb, chromaWeight = 1.6) {
   return dy * dy + chromaWeight * (0.5 * co * co + cg * cg);
 }
 
-function colorMoveGain(table, edge, colorOd, targetRgb, opticalDepth, importance, background, opacity, chromaWeight) {
+function colorMoveGain(table, edge, colorOd, targetRgb, opticalDepth, importance, background, opacity, chromaWeight, sign = 1) {
   let gain = 0;
   const start = table.offsets[edge], end = table.offsets[edge + 1];
   for (let k = start; k < end; k++) {
@@ -311,21 +311,21 @@ function colorMoveGain(table, edge, colorOd, targetRgb, opticalDepth, importance
     const br = background[0] * Math.exp(-opticalDepth[base]);
     const bg = background[1] * Math.exp(-opticalDepth[base + 1]);
     const bb = background[2] * Math.exp(-opticalDepth[base + 2]);
-    const ar = background[0] * Math.exp(-(opticalDepth[base] + colorOd[0] * cov));
-    const ag = background[1] * Math.exp(-(opticalDepth[base + 1] + colorOd[1] * cov));
-    const ab = background[2] * Math.exp(-(opticalDepth[base + 2] + colorOd[2] * cov));
+    const ar = background[0] * Math.exp(-Math.max(0, opticalDepth[base] + colorOd[0] * cov * sign));
+    const ag = background[1] * Math.exp(-Math.max(0, opticalDepth[base + 1] + colorOd[1] * cov * sign));
+    const ab = background[2] * Math.exp(-Math.max(0, opticalDepth[base + 2] + colorOd[2] * cov * sign));
     const tr = targetRgb[base], tg = targetRgb[base + 1], tb = targetRgb[base + 2];
     gain += w * (opponentError(tr, tg, tb, br, bg, bb, chromaWeight) - opponentError(tr, tg, tb, ar, ag, ab, chromaWeight));
   }
   return gain;
 }
 
-function applyColorMove(table, edge, colorOd, opticalDepth, opacity) {
+function applyColorMove(table, edge, colorOd, opticalDepth, opacity, sign = 1) {
   const start = table.offsets[edge], end = table.offsets[edge + 1];
   for (let k = start; k < end; k++) {
     const p = table.indices[k];
     const cov = table.coverages[k] * opacity;
-    for (let c = 0; c < 3; c++) opticalDepth[p * 3 + c] += colorOd[c] * cov;
+    for (let c = 0; c < 3; c++) opticalDepth[p * 3 + c] = Math.max(0, opticalDepth[p * 3 + c] + colorOd[c] * cov * sign);
   }
 }
 
@@ -403,6 +403,107 @@ export function solveColorOptical({
       fibers: sequence.length,
       colorsUsed: perColorPaths.filter((x) => x.length > 1).length,
       lastGain,
+    },
+  };
+}
+
+
+export function solveColorGlobalOptical({
+  table,
+  targetRgb,
+  palette,
+  importance,
+  maxFibers = 10000,
+  opacity = 1,
+  maxRepeat = 1,
+  allowRemove = true,
+  candidateLimit = 0,
+  refreshEvery = 48,
+  chromaWeight = 1.8,
+  background = [1, 1, 1],
+  seed = 24681357,
+  minGain = 1e-8,
+  onProgress,
+}) {
+  if (targetRgb.length !== table.size * table.size * 3) throw new Error('targetRgb size mismatch');
+  if (!palette || palette.length < 2) throw new Error('palette must contain at least two RGB colors');
+  const colors = palette.length;
+  const ods = palette.map((rgb) => rgbToOpticalDensity(rgb));
+  const opticalDepth = new Float32Array(targetRgb.length);
+  const counts = new Uint8Array(table.a.length * colors);
+  const active = new Set();
+  const moves = [];
+  let acceptedAdds = 0, acceptedRemoves = 0, lastGain = 0;
+
+  const scanPair = (edge, ci, sign, state) => {
+    const slot = edge * colors + ci;
+    const count = counts[slot];
+    if (sign > 0 && count >= maxRepeat) return;
+    if (sign < 0 && (!allowRemove || count === 0)) return;
+    const g = colorMoveGain(table, edge, ods[ci], targetRgb, opticalDepth, importance, background, opacity, chromaWeight, sign);
+    if (g > state.gain) { state.gain = g; state.edge = edge; state.color = ci; state.sign = sign; }
+  };
+
+  for (let step = 0; step < maxFibers; step++) {
+    const full = !candidateLimit || candidateLimit >= table.a.length || step % refreshEvery === 0;
+    const candidates = full ? null : deterministicSubset(table.a.length, candidateLimit, seed + step * 2654435761);
+    const best = { gain: 0, edge: -1, color: -1, sign: 1 };
+
+    if (candidates) {
+      for (let i = 0; i < candidates.length; i++) {
+        const e = candidates[i];
+        for (let ci = 0; ci < colors; ci++) scanPair(e, ci, 1, best);
+      }
+    } else {
+      for (let e = 0; e < table.a.length; e++) for (let ci = 0; ci < colors; ci++) scanPair(e, ci, 1, best);
+    }
+
+    if (allowRemove && active.size) {
+      for (const slot of active) {
+        const e = Math.floor(slot / colors), ci = slot % colors;
+        scanPair(e, ci, -1, best);
+      }
+    }
+
+    if (best.edge < 0 || best.gain <= minGain) break;
+    const slot = best.edge * colors + best.color;
+    applyColorMove(table, best.edge, ods[best.color], opticalDepth, opacity, best.sign);
+    counts[slot] += best.sign;
+    if (counts[slot] > 0) active.add(slot); else active.delete(slot);
+    if (best.sign > 0) acceptedAdds++; else acceptedRemoves++;
+    moves.push({
+      edge: best.edge,
+      a: table.a[best.edge],
+      b: table.b[best.edge],
+      colorIndex: best.color,
+      sign: best.sign,
+      gain: best.gain,
+    });
+    lastGain = best.gain;
+    if (onProgress && (step % 8 === 0 || step === maxFibers - 1)) onProgress(step + 1, maxFibers, best.gain, best.color, best.sign);
+  }
+
+  const renderedRgb = renderRgbFromOpticalDepth(opticalDepth, background);
+  let fibers = 0;
+  const usedColors = new Uint8Array(colors);
+  for (let e = 0; e < table.a.length; e++) for (let ci = 0; ci < colors; ci++) {
+    const count = counts[e * colors + ci];
+    fibers += count;
+    if (count) usedColors[ci] = 1;
+  }
+  return {
+    counts,
+    moves,
+    opticalDepth,
+    renderedRgb,
+    metrics: {
+      mse: weightedRgbMse(targetRgb, renderedRgb, importance),
+      fibers,
+      colorsUsed: usedColors.reduce((s, v) => s + v, 0),
+      acceptedAdds,
+      acceptedRemoves,
+      lastGain,
+      continuity: 'global',
     },
   };
 }

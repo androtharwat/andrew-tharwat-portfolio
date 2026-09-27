@@ -67,6 +67,8 @@ Implemented in `core.mjs`:
 - optional single-path constrained mono solver
 - optical-density color accumulation
 - joint line+color multicolor solver with per-color executable paths
+- global joint line+color coordinate-descent solver with add/remove moves for maximum fidelity
+- post-solve conversion of global per-color edge sets into executable Euler trail covers
 - deterministic candidate sampling for performance experiments
 - synthetic targets and metrics for regression tests
 
@@ -100,6 +102,6 @@ Do not paste or vendor AGPL/GPL/no-license source into ATS V4. Reimplement publi
 1. Add production preprocess module for linear-light RGB, gamma/detail and palette selection.
 2. Add packed line-table persistence in IndexedDB.
 3. Port the solver hot path to Rust/WASM behind the same worker contract.
-4. Add path post-processing for global mono solutions.
+4. Benchmark global-vs-continuous color reconstruction on real portraits and tune the fidelity/execution tradeoff.
 5. Integrate V4 into the String Art page behind an internal experimental switch.
 6. Benchmark mono and multicolor against the existing engine before any main/production change.
