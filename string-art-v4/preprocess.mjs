@@ -345,7 +345,8 @@ export function paletteDitherSimulationError(targetRgb, size, paletteLinear, {
   const simSize = Math.max(12, Math.min(size, Math.round(simulationSize)));
   const targetSmall = resizeLinearRgbBilinear(targetRgb, size, simSize);
   const maskSmall = resizeScalarBilinear(mask, size, simSize);
-  const dithered = floydSteinbergDitherLinear(targetSmall, simSize, paletteLinear, maskSmall).rgb;
+  const ditherPalette = [[1, 1, 1], ...paletteLinear];
+  const dithered = floydSteinbergDitherLinear(targetSmall, simSize, ditherPalette, maskSmall).rgb;
   const targetBlur = blurRgb(targetSmall, simSize, blurSigma);
   const ditherBlur = blurRgb(dithered, simSize, blurSigma);
   let err = 0, wsum = 0;
