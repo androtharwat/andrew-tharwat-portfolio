@@ -190,3 +190,60 @@ test('fast portrait solver uses feature-gain stages without center-starburst dom
   assert.ok(result.metrics.centerCrossingRate<.72,'center crossings should not dominate');
   assert.equal(result.routes.reduce((s,r)=>s+r.selectedFibers,0),result.metrics.fibers);
 });
+
+
+test('dense face mesh produces contour maps for real facial geometry', () => {
+  const size=64,rgb=new Float32Array(size*size*3),mask=core.makeCircularMask(size);
+  rgb.fill(.88);
+  const mesh=Array.from({length:478},()=>({x:.5,y:.5,z:0}));
+  const loop=(ids,cx,cy,rx,ry)=>ids.forEach((id,k)=>{const a=2*Math.PI*k/Math.max(1,ids.length-1);mesh[id]={x:cx+rx*Math.cos(a),y:cy+ry*Math.sin(a),z:0}});
+  loop([33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246],.36,.40,.055,.022);
+  loop([263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466],.64,.40,.055,.022);
+  loop([61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146],.50,.65,.12,.025);
+  const maps=pre.buildPortraitPriorityMaps(rgb,size,{
+    mask,faceBox:{x:.25,y:.12,width:.5,height:.72},
+    landmarks:{mesh,leftEye:{x:.36,y:.40},rightEye:{x:.64,y:.40},mouth:{x:.5,y:.65}}
+  });
+  assert.equal(maps.landmarksUsed,'dense-mesh');
+  assert.ok(Math.max(...maps.eyesMap)>0.5);
+  assert.ok(Math.max(...maps.mouthMap)>0.5);
+  assert.ok(maps.featureDirX.some(v=>Math.abs(v)>0.1));
+});
+
+test('dense landmark solver closes eye nose mouth residuals without starburst domination', async () => {
+  const fast=await import('../string-art-v4/fast-layered.mjs');
+  const size=64,rgba=new Uint8ClampedArray(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const nx=x/(size-1),ny=y/(size-1),i=(y*size+x)*4;
+    let c=[248,245,239];
+    const face=(((nx-.5)/.25)**2+((ny-.46)/.34)**2)<1;
+    if(face)c=[220,170,138];
+    if(face&&ny<.23)c=[42,28,22];
+    const eye=(Math.abs(ny-.40)<.018&&(Math.abs(nx-.36)<.052||Math.abs(nx-.64)<.052));
+    const brow=(Math.abs(ny-.34)<.012&&(Math.abs(nx-.36)<.066||Math.abs(nx-.64)<.066));
+    const nose=(Math.abs(nx-.5)<.012&&ny>.43&&ny<.58);
+    const mouth=(Math.abs(ny-.65)<.014&&Math.abs(nx-.5)<.115);
+    if(eye||brow||nose||mouth)c=[28,20,18];
+    rgba[i]=c[0];rgba[i+1]=c[1];rgba[i+2]=c[2];rgba[i+3]=255;
+  }
+  const mesh=Array.from({length:478},()=>({x:.5,y:.5,z:0}));
+  const loop=(ids,cx,cy,rx,ry)=>ids.forEach((id,k)=>{const a=2*Math.PI*k/Math.max(1,ids.length-1);mesh[id]={x:cx+rx*Math.cos(a),y:cy+ry*Math.sin(a),z:0}});
+  loop([33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246],.36,.40,.055,.022);
+  loop([263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466],.64,.40,.055,.022);
+  loop([70,63,105,66,107,55,65,52,53,46],.36,.34,.075,.015);
+  loop([300,293,334,296,336,285,295,282,283,276],.64,.34,.075,.015);
+  loop([61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146],.50,.65,.12,.025);
+  [168,6,197,195,5,4,1,19,94,2].forEach((id,k)=>mesh[id]={x:.5,y:.43+k*.017,z:0});
+  loop([98,97,2,326,327,294,278,344,440,275,4,45,220,115,48,64],.50,.575,.075,.027);
+  const result=fast.solveFastLayeredPortrait({
+    size,nails:104,minGap:6,rgba,
+    preprocess:{faceBox:{x:.25,y:.12,width:.50,height:.72},landmarks:{mesh,leftEye:{x:.36,y:.40},rightEye:{x:.64,y:.40},nose:{x:.5,y:.53},mouth:{x:.5,y:.65}},backgroundSuppress:.92},
+    palette:{nColors:4,fixedHex:['#111111'],candidateHex:['#111111','#70452f','#d99a72','#e8b694','#2358a6'],simulationSize:24,maxCombinations:40},
+    solve:{maxFibers:520,candidateLimit:42,maxRepeat:2,timeBudgetMs:2200,likeness:.9,detail:.75,colorStrength:.5},
+  });
+  const f=result.metrics.featureCompletions;
+  assert.equal(result.metrics.method,'dense-landmark-contour-solver');
+  assert.equal(result.portrait.landmarksUsed,'dense-mesh');
+  assert.ok(f.eyes>.15&&f.nose>.15&&f.mouth>.15);
+  assert.ok(result.metrics.centerCrossingRate<.70);
+});

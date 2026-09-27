@@ -14,8 +14,9 @@ if (params.get('engine') === 'v4') {
   let detectedFaces = [];
   let selectedFaceIndex = 0;
   let faceDetector = null;
-  let mediaPipeFaceDetector = null;
+  let mediaPipeFaceLandmarker = null;
   let mediaPipeLoading = null;
+  const tuning = { likeness:84, detail:78, color:56 };
   let faceDetectToken = 0;
   let faceDetectTimer = 0;
 
@@ -163,6 +164,29 @@ if (params.get('engine') === 'v4') {
       video.textContent=tr('مشاركة فيديو ●','SHARE VIDEO ●');
     }
     tools?.classList.add('sa-v4-share-tools');
+
+    const framing=$('.sa-framing-controls');
+    if(framing&&!$('#sa-realism-controls')){
+      const tune=document.createElement('div');
+      tune.id='sa-realism-controls';tune.className='sa-realism-controls';
+      tune.innerHTML=
+        '<span class="sa-realism-title">'+tr('تحكم واقعي في النتيجة','PORTRAIT TUNING')+'</span>'+
+        '<label><span>'+tr('الشبه','LIKENESS')+' <b id="sa-likeness-value">'+tuning.likeness+'%</b></span><input id="sa-likeness" type="range" min="35" max="100" step="1" value="'+tuning.likeness+'"></label>'+
+        '<label><span>'+tr('التفاصيل','DETAIL')+' <b id="sa-detail-value">'+tuning.detail+'%</b></span><input id="sa-detail" type="range" min="30" max="100" step="1" value="'+tuning.detail+'"></label>'+
+        '<label><span>'+tr('قوة اللون','COLOR')+' <b id="sa-color-value">'+tuning.color+'%</b></span><input id="sa-color-strength" type="range" min="20" max="100" step="1" value="'+tuning.color+'"></label>'+
+        '<small>'+tr('ارفع الشبه لتوجيه خيوط أكثر للعينين والأنف والفم. التفاصيل تزيد دقة الحل، واللون يتحكم في قوة طبقات الألوان.','Likeness spends more thread on eyes, nose and mouth. Detail increases solve precision. Color controls optical color layering.')+'</small>';
+      framing.insertAdjacentElement('afterend',tune);
+      const bind=(id,key,out)=>{
+        const input=$(id),value=$(out);
+        input?.addEventListener('input',()=>{
+          tuning[key]=Number(input.value);if(value)value.textContent=tuning[key]+'%';
+          if(lastRender&&generate)generate.textContent=tr('إعادة تحسين البورتريه','REFINE PORTRAIT');
+        });
+      };
+      bind('#sa-likeness','likeness','#sa-likeness-value');
+      bind('#sa-detail','detail','#sa-detail-value');
+      bind('#sa-color-strength','color','#sa-color-value');
+    }
   }
 
   function removeFaceTargets(){
@@ -228,58 +252,74 @@ if (params.get('engine') === 'v4') {
     return {box,landmarks,score:box.width*box.height*(1-.48*Math.min(1,dist))};
   }
 
-  async function getPortableFaceDetector(){
-    if(mediaPipeFaceDetector)return mediaPipeFaceDetector;
+  async function getPortableFaceLandmarker(){
+    if(mediaPipeFaceLandmarker)return mediaPipeFaceLandmarker;
     if(mediaPipeLoading)return mediaPipeLoading;
     mediaPipeLoading=(async()=>{
       const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm');
       const fileset=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
-      mediaPipeFaceDetector=await vision.FaceDetector.createFromModelPath(
-        fileset,
-        'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'
-      );
-      return mediaPipeFaceDetector;
+      mediaPipeFaceLandmarker=await vision.FaceLandmarker.createFromOptions(fileset,{
+        baseOptions:{
+          modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'
+        },
+        runningMode:'IMAGE',
+        numFaces:8,
+        minFaceDetectionConfidence:.35,
+        minFacePresenceConfidence:.35,
+        outputFaceBlendshapes:false,
+        outputFacialTransformationMatrixes:false
+      });
+      return mediaPipeFaceLandmarker;
     })().catch(error=>{mediaPipeLoading=null;throw error});
     return mediaPipeLoading;
   }
 
-  function serializeMediaPipeDetection(d,src){
-    const b=d?.boundingBox;
-    if(!b||b.width<8||b.height<8)return null;
-    const box={
-      x:clamp(Number(b.originX||0)/src.width),y:clamp(Number(b.originY||0)/src.height),
-      width:clamp(Number(b.width||0)/src.width,.04,1),height:clamp(Number(b.height||0)/src.height,.04,1)
+  function meshAverage(mesh,ids){
+    let x=0,y=0,n=0;
+    for(const id of ids){const p=mesh?.[id];if(p&&Number.isFinite(p.x)&&Number.isFinite(p.y)){x+=p.x;y+=p.y;n++}}
+    return n?{x:x/n,y:y/n}:null;
+  }
+
+  function serializeLandmarkerFace(mesh){
+    if(!Array.isArray(mesh)||mesh.length<400)return null;
+    let minX=1,minY=1,maxX=0,maxY=0;
+    const clean=mesh.map(p=>{
+      const q={x:clamp(Number(p.x||0)),y:clamp(Number(p.y||0)),z:Number(p.z||0)};
+      minX=Math.min(minX,q.x);minY=Math.min(minY,q.y);maxX=Math.max(maxX,q.x);maxY=Math.max(maxY,q.y);
+      return q;
+    });
+    const padX=(maxX-minX)*.05,padY=(maxY-minY)*.05;
+    const box={x:clamp(minX-padX),y:clamp(minY-padY),width:clamp(maxX-minX+padX*2,.04,1),height:clamp(maxY-minY+padY*2,.04,1)};
+    const landmarks={
+      mesh:clean,
+      leftEye:meshAverage(clean,[33,133,159,145]),
+      rightEye:meshAverage(clean,[263,362,386,374]),
+      nose:meshAverage(clean,[1,4,5]),
+      mouth:meshAverage(clean,[13,14,61,291])
     };
-    const kp=d.keypoints||[];
-    const eyes=[kp[0],kp[1]].filter(Boolean).sort((a,b)=>a.x-b.x);
-    const landmarks={};
-    if(eyes[0])landmarks.leftEye={x:clamp(eyes[0].x),y:clamp(eyes[0].y)};
-    if(eyes[1])landmarks.rightEye={x:clamp(eyes[1].x),y:clamp(eyes[1].y)};
-    if(kp[2])landmarks.nose={x:clamp(kp[2].x),y:clamp(kp[2].y)};
-    if(kp[3])landmarks.mouth={x:clamp(kp[3].x),y:clamp(kp[3].y)};
     const cx=box.x+box.width/2,cy=box.y+box.height/2,dist=Math.hypot(cx-.5,cy-.5);
-    const confidence=Number(d.categories?.[0]?.score||1);
-    return {box,landmarks,score:box.width*box.height*(1-.48*Math.min(1,dist))*(.75+.25*confidence),source:'mediapipe'};
+    return {box,landmarks,score:box.width*box.height*(1-.48*Math.min(1,dist)),source:'face-landmarker'};
   }
 
   async function runFaceDetection(src){
+    try{
+      const landmarker=await getPortableFaceLandmarker();
+      const result=landmarker.detect(src);
+      const dense=(result?.faceLandmarks||[]).map(mesh=>serializeLandmarkerFace(mesh)).filter(Boolean);
+      if(dense.length)return dense;
+    }catch(error){
+      console.warn('[ATS V4 FACE LANDMARKER]',error);
+    }
     if(typeof window.FaceDetector==='function'){
       try{
         faceDetector ||= new window.FaceDetector({fastMode:true,maxDetectedFaces:8});
         const nativeFaces=await faceDetector.detect(src);
         if(nativeFaces?.length)return nativeFaces.map(f=>serializeDetectedFace(f,src)).filter(Boolean);
       }catch(error){
-        if(error?.name!=='NotSupportedError')console.warn('[ATS V4 NATIVE FACE DETECT]',error);
+        console.warn('[ATS V4 NATIVE FACE DETECT]',error);
       }
     }
-    try{
-      const detector=await getPortableFaceDetector();
-      const result=detector.detect(src);
-      return (result?.detections||[]).map(d=>serializeMediaPipeDetection(d,src)).filter(Boolean);
-    }catch(error){
-      console.warn('[ATS V4 MEDIAPIPE FACE DETECT]',error);
-      return [];
-    }
+    return [];
   }
 
   async function detectPortraitFaces({render=true}={}){
@@ -318,18 +358,23 @@ if (params.get('engine') === 'v4') {
     let cropX=0,cropY=0,side=Math.max(src.width,src.height),faceBox=null,landmarks=null;
     if(face?.box){
       const b=face.box,bx=b.x*src.width,by=b.y*src.height,bw=b.width*src.width,bh=b.height*src.height;
-      side=Math.min(Math.max(src.width,src.height)*1.12,Math.max(bw*2.35,bh*2.78));
-      const centerX=bx+bw*.5,centerY=by+bh*.5+bh*.56;
+      side=Math.max(bw*2.18,bh*2.42);
+      side=Math.min(Math.max(src.width,src.height)*1.16,Math.max(side,src.width*.38));
+      const centerX=bx+bw*.5,centerY=by+bh*.61;
       cropX=centerX-side*.5;cropY=centerY-side*.5;
       faceBox={x:(bx-cropX)/side,y:(by-cropY)/side,width:bw/side,height:bh/side};
       landmarks={};
+      if(Array.isArray(face.landmarks?.mesh)){
+        landmarks.mesh=face.landmarks.mesh.map(point=>transformPointToCrop(point,cropX,cropY,side,src));
+      }
       for(const [key,point] of Object.entries(face.landmarks||{})){
+        if(key==='mesh'||Array.isArray(point))continue;
         const mapped=transformPointToCrop(point,cropX,cropY,side,src);
         if(mapped)landmarks[key]=mapped;
       }
     }
     const scale=size/side;
-    ctx.save();ctx.filter='contrast(1.12) saturate(1.02)';
+    ctx.save();ctx.filter='contrast(1.10) saturate(1.015)';
     ctx.translate(-cropX*scale,-cropY*scale);ctx.scale(scale,scale);ctx.drawImage(src,0,0);ctx.restore();ctx.filter='none';
     return {rgba:ctx.getImageData(0,0,size,size).data,faceBox,landmarks,crop:{x:cropX,y:cropY,side}};
   }
@@ -376,7 +421,7 @@ if (params.get('engine') === 'v4') {
     }
     const palette=result.mode==='mono-global'?['#111111']:(result.palette?.hex||[]);
     const colorsUsed=Math.max(1,perColor.filter((n)=>Number(n||0)>0).length);
-    return {pins,lines,size,renderedRgb:result.renderedRgb||null,meta:{mode:result.mode,pins:p.nails,lines:lines.length,palette,perColor,colorsUsed,selectedColors:palette.length,mse:result.metrics?.mse||0,engine:'ATS-V4-global-optical'}};
+    return {pins,lines,size,renderedRgb:result.renderedRgb||null,meta:{mode:result.mode,pins:p.nails,lines:lines.length,palette,perColor,colorsUsed,selectedColors:palette.length,mse:result.metrics?.mse||0,engine:'ATS-dense-landmark-contour'}};
   }
 
   function linearToSrgb(v){
@@ -441,7 +486,7 @@ if (params.get('engine') === 'v4') {
 
   function getWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=2',import.meta.url),{type:'module'});
+    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=3',import.meta.url),{type:'module'});
     worker.onmessage=e=>{
       const msg=e.data,job=pending.get(msg.id);if(!job)return;
       if(msg.type==='progress'){job.onProgress?.(msg);return}
@@ -480,7 +525,8 @@ if (params.get('engine') === 'v4') {
     if(phase==='preprocess') return tr('تحليل الوجه والملامح…','ANALYZING PORTRAIT FEATURES…');
     if(phase==='portrait-stage'){
       if(msg.stage==='structure')return tr('بناء شكل الرأس والشعر والفك…','BUILDING HEAD · HAIR · JAW…');
-      if(msg.stage==='features')return tr('تثبيت العينين والأنف والفم…','BUILDING EYES · NOSE · MOUTH…');
+      if(msg.stage==='eyes')return tr('بناء العينين والحواجب بدقة…','BUILDING EYES + BROWS…');
+      if(msg.stage==='lower')return tr('بناء الأنف والفم والفك…','BUILDING NOSE + MOUTH + JAW…');
       if(msg.stage==='color')return tr('إضافة طبقات اللون…','LAYERING PORTRAIT COLOR…');
       return tr('تحسين الملامح المتبقية…','REFINING FACIAL DETAIL…');
     }
@@ -516,16 +562,23 @@ if (params.get('engine') === 'v4') {
       const p=profile(),m='color';
       await detectPortraitFaces({render:true});
       const face=detectedFaces[selectedFaceIndex]||null;
+      if(!face)setStatus(tr('لم يتم التعرف على وجه بوضوح — اضبط الكادر بحيث يكون الوجه واضحًا','NO CLEAR FACE FOUND — FRAME ONE FACE CLEARLY'),10);
       const target=capturePortraitTarget(p.size,face);
       const rgba=target.rgba,nColors=requestedPaletteSize(rgba,p);
-      setStatus(tr('تحليل الوجه والملامح والألوان…','ANALYZING PORTRAIT FEATURES + COLORS…'),18);
+      const likeness=clamp(tuning.likeness/100),detail=clamp(tuning.detail/100),colorStrength=clamp(tuning.color/100);
+      const maxFibers=Math.round(4300+detail*3000);
+      const candidateLimit=Math.round(70+detail*46);
+      const timeBudgetMs=Math.round(5200+detail*4200);
+      setStatus(tr('قراءة هندسة الوجه والملامح…','READING FACIAL GEOMETRY + CONTOURS…'),16);
       const response=await sendWorker({
         type:'solve-image-v4',
         table:{size:p.size,nails:p.nails,minGap:9},
         rgba,mode:m,
         preprocess:{
-          gamma:.90,detail:p.detail,detailRadius:p.size/31,toneFloor:0,toneCeiling:.988,ditherBlend:.12,colorAffinityTemperature:.065,
-          portraitPriority:true,faceBox:target.faceBox,landmarks:target.landmarks,backgroundWeight:.025,faceBoost:1.95,edgeBoost:2.45,featureBoost:4.10,darkDetailBoost:1.05,avoidanceBoost:1.75,backgroundSuppress:.90
+          gamma:.90,detail:p.detail,detailRadius:p.size/32,toneFloor:0,toneCeiling:.988,ditherBlend:.10,colorAffinityTemperature:.060,
+          portraitPriority:true,faceBox:target.faceBox,landmarks:target.landmarks,
+          backgroundWeight:.018,faceBoost:2.05,edgeBoost:2.55,featureBoost:3.8+likeness*2.0,
+          darkDetailBoost:1.10,avoidanceBoost:1.95,backgroundSuppress:.92
         },
         palette:{
           nColors,
@@ -533,21 +586,27 @@ if (params.get('engine') === 'v4') {
           candidateHex:['#111111','#2a1712','#4b2b20','#70452f','#9a5e42','#bd7956','#d99a72','#e8b694','#f0cfb4','#c77b77','#d95f73','#e47b2c','#d92d35','#2358a6','#283a63','#2f6f73','#7a7a7a'],
           simulationSize:36,maxCombinations:180
         },
-        solve:{maxFibers:p.colorFibers,timeBudgetMs:7000,candidateLimit:p.candidates,maxRepeat:p.repeatColor},
+        solve:{
+          maxFibers,timeBudgetMs,candidateLimit,maxRepeat:p.repeatColor,
+          likeness,detail,colorStrength
+        },
         useDither:true
       },[rgba.buffer],msg=>{
         const total=msg.total||1,done=msg.done||0,phase=msg.phase||'';
-        const pct=phase==='palette'?30:phase==='preprocess'?24:Math.min(97,34+done/total*63);
+        const pct=phase==='palette'?28:phase==='preprocess'?22:Math.min(97,31+done/total*66);
         setStatus(progressText(msg),pct);
       });
       const result=response.result;
       lastResult=result;lastRender=extractLines(result,p,p.size);
+      lastRender.meta.engine='ATS-dense-landmark-contour';
+      lastRender.meta.featureCompletions=result.metrics?.featureCompletions||null;
       window.__saV4LastResult=result;window.__saV4LastRender=lastRender;
       paint(lastRender,lastRender.lines.length);renderMeta(lastRender);
       const palette=lastRender.meta.palette.filter((_,i)=>Number(lastRender.meta.perColor[i]||0)>0).join(' · ');
       $('#sa-user-sequence').textContent='PALETTE '+palette;
       $('#sa-result-tools')?.classList.remove('hidden');
-      setStatus(tr('اكتمل · البورتريه جاهز','COMPLETE · YOUR PORTRAIT IS READY'),100);
+      btn.textContent=tr('إعادة تحسين البورتريه','REFINE PORTRAIT');
+      setStatus(tr('اكتمل · عدّل الشبه أو التفاصيل ثم أعد التحسين إذا أردت','COMPLETE · TUNE LIKENESS OR DETAIL AND REFINE IF NEEDED'),100);
     }catch(error){
       console.error('[ATS V4 GENERATE]',error);
       setStatus(tr('تعذر التوليد: ','GENERATION FAILED: ')+(error?.message||String(error)),100);

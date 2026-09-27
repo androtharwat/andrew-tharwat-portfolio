@@ -25,7 +25,7 @@
       if (engineV4) document.documentElement.dataset.saEngine = 'v4';
 
       const css = stringArt
-        ? ['/project-string-art.css?v=7']
+        ? ['/project-string-art.css?v=8']
         : [
             '/project-story-upgrade.css?v=2',
             '/project-natural-gallery.css?v=1',
@@ -42,7 +42,7 @@
         document.head.appendChild(link);
       }
       if (engineV4) {
-        for (const href of ['/project-string-art-v4-lab.mjs?v=8','/string-art-v4/core.mjs']) {
+        for (const href of ['/project-string-art-v4-lab.mjs?v=9','/string-art-v4/core.mjs']) {
           const link = document.createElement('link');
           link.rel = 'modulepreload';
           link.href = href;
@@ -82,7 +82,7 @@
       window.__ATS_LOAD_STRING_ART_RUNTIME = () => loadScript('/project-string-art.js?v=7');
       window.__ATS_LOAD_STRING_ART_V4 = () => {
         if (!engineV4) return Promise.resolve();
-        if (!window.__atsV4ModulePromise) window.__atsV4ModulePromise = import('/project-string-art-v4-lab.mjs?v=8');
+        if (!window.__atsV4ModulePromise) window.__atsV4ModulePromise = import('/project-string-art-v4-lab.mjs?v=9');
         return window.__atsV4ModulePromise;
       };
 

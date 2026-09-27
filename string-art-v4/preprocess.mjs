@@ -121,6 +121,7 @@ export function prepareMonoTarget(rgb, size, {
 }
 
 
+
 function normalizedFaceBox(faceBox) {
   if (!faceBox) return { x: 0.20, y: 0.08, width: 0.60, height: 0.80 };
   const x = clamp01(Number(faceBox.x ?? 0.20));
@@ -136,132 +137,231 @@ function gaussianFeature(nx, ny, cx, cy, sx, sy) {
   return Math.exp(-0.5 * (dx * dx + dy * dy));
 }
 
-function landmarkLocal(point, box, fallbackX, fallbackY) {
-  if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return { x:fallbackX, y:fallbackY, real:false };
-  return { x:(point.x - box.x) / Math.max(1e-6, box.width), y:(point.y - box.y) / Math.max(1e-6, box.height), real:true };
+const LM = Object.freeze({
+  oval:[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109,10],
+  leftEye:[33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246,33],
+  rightEye:[263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466,263],
+  leftBrow:[70,63,105,66,107,55,65,52,53,46],
+  rightBrow:[300,293,334,296,336,285,295,282,283,276],
+  lipsOuter:[61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146,61],
+  lipsInner:[78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,88,95,78],
+  noseBridge:[168,6,197,195,5,4,1,19,94,2],
+  noseBase:[98,97,2,326,327,294,278,344,440,275,4,45,220,115,48,64,98],
+  jaw:[234,93,132,58,172,136,150,149,176,148,152,377,400,378,379,365,397,288,361,323,454],
+  leftIris:[468,469,470,471,472,468],
+  rightIris:[473,474,475,476,477,473],
+});
+
+function pointFromMesh(mesh, index) {
+  const p = mesh?.[index];
+  if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
+  return { x:p.x, y:p.y };
 }
 
-function buildFeatureGeometry(box, landmarks) {
-  const leftEye = landmarkLocal(landmarks?.leftEye, box, .35, .39);
-  const rightEye = landmarkLocal(landmarks?.rightEye, box, .65, .39);
-  if (leftEye.x > rightEye.x) {
-    const t = { ...leftEye }; Object.assign(leftEye, rightEye); Object.assign(rightEye, t);
+function pointSegmentDistance(px, py, ax, ay, bx, by) {
+  const vx=bx-ax, vy=by-ay, wx=px-ax, wy=py-ay;
+  const vv=vx*vx+vy*vy;
+  const t=vv>1e-12?Math.max(0,Math.min(1,(wx*vx+wy*vy)/vv)):0;
+  const dx=px-(ax+vx*t),dy=py-(ay+vy*t);
+  return Math.hypot(dx,dy);
+}
+
+function splatSegment(map, dirX, dirY, size, a, b, radiusPx, strength=1) {
+  if (!a || !b) return;
+  const ax=a.x*(size-1), ay=a.y*(size-1), bx=b.x*(size-1), by=b.y*(size-1);
+  const minX=Math.max(0,Math.floor(Math.min(ax,bx)-radiusPx-1));
+  const maxX=Math.min(size-1,Math.ceil(Math.max(ax,bx)+radiusPx+1));
+  const minY=Math.max(0,Math.floor(Math.min(ay,by)-radiusPx-1));
+  const maxY=Math.min(size-1,Math.ceil(Math.max(ay,by)+radiusPx+1));
+  const dx=bx-ax,dy=by-ay,mag=Math.hypot(dx,dy)||1,tx=dx/mag,ty=dy/mag;
+  const inv=Math.max(1e-6,1/radiusPx);
+  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
+    const d=pointSegmentDistance(x,y,ax,ay,bx,by);
+    if(d>radiusPx)continue;
+    const v=strength*Math.exp(-2.35*(d*inv)*(d*inv)),p=y*size+x;
+    if(v>map[p]){
+      map[p]=v;
+      if(dirX){dirX[p]=tx;dirY[p]=ty}
+    }
   }
-  const eyeMid = { x:(leftEye.x + rightEye.x) / 2, y:(leftEye.y + rightEye.y) / 2 };
-  const eyeSpan = Math.max(.18, Math.min(.52, Math.abs(rightEye.x - leftEye.x)));
-  const mouth = landmarkLocal(landmarks?.mouth, box, eyeMid.x, Math.max(.66, eyeMid.y + .30));
-  const nose = landmarkLocal(landmarks?.nose, box, eyeMid.x, eyeMid.y + (mouth.y - eyeMid.y) * .48);
-  const browLift = Math.max(.045, eyeSpan * .14);
+}
+
+function splatPolyline(map, dirX, dirY, size, mesh, ids, radiusPx, strength=1) {
+  if(!mesh?.length)return;
+  for(let i=1;i<ids.length;i++){
+    const a=pointFromMesh(mesh,ids[i-1]),b=pointFromMesh(mesh,ids[i]);
+    splatSegment(map,dirX,dirY,size,a,b,radiusPx,strength);
+  }
+}
+
+function splatPoint(map,size,point,radiusPx,strength=1){
+  if(!point)return;
+  const cx=point.x*(size-1),cy=point.y*(size-1);
+  const minX=Math.max(0,Math.floor(cx-radiusPx)),maxX=Math.min(size-1,Math.ceil(cx+radiusPx));
+  const minY=Math.max(0,Math.floor(cy-radiusPx)),maxY=Math.min(size-1,Math.ceil(cy+radiusPx));
+  const inv=Math.max(1e-6,1/radiusPx);
+  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
+    const d=Math.hypot(x-cx,y-cy);if(d>radiusPx)continue;
+    const v=strength*Math.exp(-2.4*(d*inv)*(d*inv)),p=y*size+x;
+    if(v>map[p])map[p]=v;
+  }
+}
+
+function polygonContains(nx,ny,poly){
+  if(!poly?.length)return false;
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const a=poly[i],b=poly[j];
+    if(!a||!b)continue;
+    const hit=((a.y>ny)!==(b.y>ny))&&(nx<(b.x-a.x)*(ny-a.y)/(b.y-a.y+1e-12)+a.x);
+    if(hit)inside=!inside;
+  }
+  return inside;
+}
+
+function namedFeatureGeometry(box, landmarks) {
+  const p=(key,fx,fy)=>{
+    const q=landmarks?.[key];
+    if(q&&Number.isFinite(q.x)&&Number.isFinite(q.y))return q;
+    return {x:box.x+box.width*fx,y:box.y+box.height*fy};
+  };
   return {
-    leftEye, rightEye, eyeMid, eyeSpan, mouth, nose,
-    noseBase:{ x:nose.x, y:nose.real ? nose.y + .075 : eyeMid.y + (mouth.y - eyeMid.y) * .62 },
-    leftBrow:{ x:leftEye.x, y:leftEye.y - browLift },
-    rightBrow:{ x:rightEye.x, y:rightEye.y - browLift },
-    real:Boolean(leftEye.real && rightEye.real),
+    leftEye:p('leftEye',.35,.39),rightEye:p('rightEye',.65,.39),
+    nose:p('nose',.50,.54),mouth:p('mouth',.50,.70)
   };
 }
 
+function buildDenseLandmarkMaps(size, mesh, box, named) {
+  const eyesMap=new Float32Array(size*size),browsMap=new Float32Array(size*size);
+  const noseMap=new Float32Array(size*size),mouthMap=new Float32Array(size*size);
+  const jawMap=new Float32Array(size*size),ovalMap=new Float32Array(size*size);
+  const irisMap=new Float32Array(size*size),featureDirX=new Float32Array(size*size),featureDirY=new Float32Array(size*size);
+  const hasMesh=Array.isArray(mesh)&&mesh.length>=400;
+  if(hasMesh){
+    const eyeR=Math.max(1.15,size*.010), browR=Math.max(1.15,size*.009);
+    const lipR=Math.max(1.15,size*.0105),noseR=Math.max(1.05,size*.0085),jawR=Math.max(1.15,size*.009);
+    splatPolyline(eyesMap,featureDirX,featureDirY,size,mesh,LM.leftEye,eyeR,1.50);
+    splatPolyline(eyesMap,featureDirX,featureDirY,size,mesh,LM.rightEye,eyeR,1.50);
+    splatPolyline(browsMap,featureDirX,featureDirY,size,mesh,LM.leftBrow,browR,1.28);
+    splatPolyline(browsMap,featureDirX,featureDirY,size,mesh,LM.rightBrow,browR,1.28);
+    splatPolyline(mouthMap,featureDirX,featureDirY,size,mesh,LM.lipsOuter,lipR,1.45);
+    splatPolyline(mouthMap,featureDirX,featureDirY,size,mesh,LM.lipsInner,lipR*.82,1.15);
+    splatPolyline(noseMap,featureDirX,featureDirY,size,mesh,LM.noseBridge,noseR,1.10);
+    splatPolyline(noseMap,featureDirX,featureDirY,size,mesh,LM.noseBase,noseR*1.1,1.34);
+    splatPolyline(jawMap,featureDirX,featureDirY,size,mesh,LM.jaw,jawR,1.10);
+    splatPolyline(ovalMap,featureDirX,featureDirY,size,mesh,LM.oval,jawR,1.0);
+    for(const id of [468,473])splatPoint(irisMap,size,pointFromMesh(mesh,id),Math.max(1.3,size*.012),1.7);
+  }else{
+    const g=namedFeatureGeometry(box,named);
+    const left={x:(g.leftEye.x-box.x)/box.width,y:(g.leftEye.y-box.y)/box.height};
+    const right={x:(g.rightEye.x-box.x)/box.width,y:(g.rightEye.y-box.y)/box.height};
+    const eyeSpan=Math.max(.18,Math.abs(right.x-left.x));
+    const addGaussian=(map,cx,cy,sx,sy,a=1)=>{
+      for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+        const nx=x/(size-1),ny=y/(size-1);
+        const v=a*gaussianFeature(nx,ny,cx,cy,sx,sy),p=y*size+x;
+        if(v>map[p])map[p]=v;
+      }
+    };
+    addGaussian(eyesMap,g.leftEye.x,g.leftEye.y,box.width*.09,box.height*.035,1.35);
+    addGaussian(eyesMap,g.rightEye.x,g.rightEye.y,box.width*.09,box.height*.035,1.35);
+    addGaussian(browsMap,g.leftEye.x,g.leftEye.y-box.height*.07,box.width*.11,box.height*.025,1.05);
+    addGaussian(browsMap,g.rightEye.x,g.rightEye.y-box.height*.07,box.width*.11,box.height*.025,1.05);
+    addGaussian(noseMap,g.nose.x,g.nose.y,box.width*.07,box.height*.13,1.0);
+    addGaussian(mouthMap,g.mouth.x,g.mouth.y,box.width*.17,box.height*.035,1.25);
+  }
+  return {eyesMap,browsMap,noseMap,mouthMap,jawMap,ovalMap,irisMap,featureDirX,featureDirY,hasMesh};
+}
+
 export function buildPortraitPriorityMaps(rgb, size, {
-  mask = null, faceBox = null, landmarks = null,
-  backgroundWeight = 0.18, faceBoost = 1.15, edgeBoost = 1.65,
-  featureBoost = 2.15, darkDetailBoost = 0.55, avoidanceBoost = 1,
+  mask = null,
+  faceBox = null,
+  landmarks = null,
+  backgroundWeight = 0.18,
+  faceBoost = 1.15,
+  edgeBoost = 1.65,
+  featureBoost = 2.15,
+  darkDetailBoost = 0.55,
+  avoidanceBoost = 1,
 } = {}) {
   if (rgb.length !== size * size * 3) throw new Error('portrait priority rgb/size mismatch');
-  const box = normalizedFaceBox(faceBox);
-  const featureGeometry = buildFeatureGeometry(box, landmarks);
-  const luminance = new Float32Array(size * size);
-  const gradient = new Float32Array(size * size);
-  const localContrast = new Float32Array(size * size);
-  for (let p = 0; p < luminance.length; p++) luminance[p] = 0.2126 * rgb[p * 3] + 0.7152 * rgb[p * 3 + 1] + 0.0722 * rgb[p * 3 + 2];
-
-  const localMean = gaussianBlurScalar(luminance, size, Math.max(.8, size / 90));
-  let gradMax = 1e-6, contrastMax = 1e-6;
-  for (let y = 1; y < size - 1; y++) for (let x = 1; x < size - 1; x++) {
-    const i = y * size + x;
-    const a = luminance[(y - 1) * size + x - 1], b = luminance[(y - 1) * size + x], cc = luminance[(y - 1) * size + x + 1];
-    const d = luminance[y * size + x - 1], f = luminance[y * size + x + 1];
-    const g = luminance[(y + 1) * size + x - 1], h = luminance[(y + 1) * size + x], j = luminance[(y + 1) * size + x + 1];
-    const gx = -a + cc - 2 * d + 2 * f - g + j;
-    const gy = -a - 2 * b - cc + g + 2 * h + j;
-    const v = Math.sqrt(gx * gx + gy * gy);
-    gradient[i] = v; if (v > gradMax) gradMax = v;
-    const lc = Math.abs(luminance[i] - localMean[i]);
-    localContrast[i] = lc; if (lc > contrastMax) contrastMax = lc;
+  const box=normalizedFaceBox(faceBox);
+  const mesh=landmarks?.mesh||null;
+  const dense=buildDenseLandmarkMaps(size,mesh,box,landmarks);
+  const luminance=new Float32Array(size*size),gradient=new Float32Array(size*size),localContrast=new Float32Array(size*size);
+  for(let p=0;p<luminance.length;p++)luminance[p]=.2126*rgb[p*3]+.7152*rgb[p*3+1]+.0722*rgb[p*3+2];
+  const localMean=gaussianBlurScalar(luminance,size,Math.max(.8,size/92));
+  let gradMax=1e-6,contrastMax=1e-6;
+  for(let y=1;y<size-1;y++)for(let x=1;x<size-1;x++){
+    const i=y*size+x;
+    const a=luminance[(y-1)*size+x-1],b=luminance[(y-1)*size+x],c=luminance[(y-1)*size+x+1];
+    const d=luminance[y*size+x-1],f=luminance[y*size+x+1];
+    const g=luminance[(y+1)*size+x-1],h=luminance[(y+1)*size+x],j=luminance[(y+1)*size+x+1];
+    const gx=-a+c-2*d+2*f-g+j,gy=-a-2*b-c+g+2*h+j,v=Math.hypot(gx,gy);
+    gradient[i]=v;if(v>gradMax)gradMax=v;
+    const lc=Math.abs(luminance[i]-localMean[i]);localContrast[i]=lc;if(lc>contrastMax)contrastMax=lc;
   }
 
-  const importance = new Float32Array(size * size);
-  const avoidance = new Float32Array(size * size);
-  const featureMap = new Float32Array(size * size);
-  const subjectMap = new Float32Array(size * size);
-  const faceMap = new Float32Array(size * size);
-  const edgeMap = new Float32Array(size * size);
-  const contrastMap = new Float32Array(size * size);
-  const structureMap = new Float32Array(size * size);
-  const backgroundPenalty = new Float32Array(size * size);
-  let weightedSum = 0, maskSum = 0;
+  const importance=new Float32Array(size*size),avoidance=new Float32Array(size*size);
+  const featureMap=new Float32Array(size*size),subjectMap=new Float32Array(size*size),faceMap=new Float32Array(size*size);
+  const edgeMap=new Float32Array(size*size),contrastMap=new Float32Array(size*size),structureMap=new Float32Array(size*size);
+  const backgroundPenalty=new Float32Array(size*size),hairMap=new Float32Array(size*size),beardMap=new Float32Array(size*size);
+  const ovalPoly=dense.hasMesh?LM.oval.map(i=>pointFromMesh(mesh,i)).filter(Boolean):null;
+  let weightedSum=0,maskSum=0;
 
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    const p = y * size + x, m = mask ? mask[p] : 1;
-    if (m <= 0.001) continue;
-    const nx = x / Math.max(1, size - 1), ny = y / Math.max(1, size - 1);
-    const ux = (nx - box.x) / box.width, uy = (ny - box.y) / box.height;
-    const ex = (ux - 0.5) / 0.53, ey = (uy - 0.50) / 0.56;
-    const face = Math.exp(-1.52 * (ex * ex + ey * ey)); faceMap[p] = face * m;
-    const hair = gaussianFeature(ux, uy, 0.50, 0.14, 0.36, 0.18);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const p=y*size+x,m=mask?mask[p]:1;if(m<=.001)continue;
+    const nx=x/(size-1),ny=y/(size-1);
+    const ux=(nx-box.x)/box.width,uy=(ny-box.y)/box.height;
+    const ex=(ux-.5)/.54,ey=(uy-.5)/.57;
+    const ellipse=Math.exp(-1.42*(ex*ex+ey*ey));
+    const insideMesh=ovalPoly?polygonContains(nx,ny,ovalPoly):false;
+    const face=clamp01(Math.max(ellipse*.92,insideMesh?1:0));faceMap[p]=face*m;
+    const edge=clamp01(gradient[p]/gradMax*2.8),contrast=clamp01(localContrast[p]/contrastMax*2.35);
+    const dark=Math.pow(clamp01(1-luminance[p]),.84);
+    edgeMap[p]=edge*m;contrastMap[p]=contrast*m;
 
-    const fg = featureGeometry;
-    const eyeSx = Math.max(.060, fg.eyeSpan * .31), eyeSy = Math.max(.036, eyeSx * .48);
-    const browSx = eyeSx * 1.08, browSy = eyeSy * .52;
-    const mouthSx = Math.max(.12, fg.eyeSpan * .67), mouthSy = Math.max(.040, eyeSy * .85);
-    const leftBrow = gaussianFeature(ux, uy, fg.leftBrow.x, fg.leftBrow.y, browSx, browSy);
-    const rightBrow = gaussianFeature(ux, uy, fg.rightBrow.x, fg.rightBrow.y, browSx, browSy);
-    const leftEye = gaussianFeature(ux, uy, fg.leftEye.x, fg.leftEye.y, eyeSx, eyeSy);
-    const rightEye = gaussianFeature(ux, uy, fg.rightEye.x, fg.rightEye.y, eyeSx, eyeSy);
-    const noseBridge = gaussianFeature(ux, uy, fg.eyeMid.x, (fg.eyeMid.y + fg.nose.y) * .5, Math.max(.034, fg.eyeSpan * .13), Math.max(.10, Math.abs(fg.nose.y - fg.eyeMid.y) * .72));
-    const noseBase = gaussianFeature(ux, uy, fg.noseBase.x, fg.noseBase.y, Math.max(.072, fg.eyeSpan * .27), Math.max(.038, eyeSy * .9));
-    const mouth = gaussianFeature(ux, uy, fg.mouth.x, fg.mouth.y, mouthSx, mouthSy);
-    const mouthCorners = gaussianFeature(ux, uy, fg.mouth.x - mouthSx * .78, fg.mouth.y, mouthSx * .30, mouthSy * .82) + gaussianFeature(ux, uy, fg.mouth.x + mouthSx * .78, fg.mouth.y, mouthSx * .30, mouthSy * .82);
-    const beard = gaussianFeature(ux, uy, fg.mouth.x, Math.min(.92, fg.mouth.y + .12), .30, .19);
-    const jaw = gaussianFeature(ux, uy, 0.50, .75, .40, .25);
-    const shoulders = gaussianFeature(ux, uy, 0.50, 1.07, .64, .29);
-    const upperTorso = gaussianFeature(ux, uy, 0.50, 1.24, .52, .35);
-    const subject = clamp01(Math.max(face, .90 * hair, .80 * jaw, .70 * shoulders, .45 * upperTorso));
-    subjectMap[p] = subject * m;
+    const hairRegion=gaussianFeature(ux,uy,.5,.10,.39,.18);
+    const beardRegion=gaussianFeature(ux,uy,.5,.79,.29,.16);
+    hairMap[p]=m*hairRegion*(.16+.84*dark)*(.26+.74*edge);
+    beardMap[p]=m*beardRegion*(.12+.88*dark)*(.30+.70*edge);
 
-    const edge = clamp01(gradient[p] / gradMax * 2.7), contrast = clamp01(localContrast[p] / contrastMax * 2.2);
-    const dark = Math.pow(clamp01(1 - luminance[p]), 0.82);
-    edgeMap[p] = edge * m; contrastMap[p] = contrast * m;
+    const eye=Math.max(dense.eyesMap[p],dense.irisMap[p]);
+    const brow=dense.browsMap[p],nose=dense.noseMap[p],mouth=dense.mouthMap[p],jaw=dense.jawMap[p];
+    const landmarkSignal=Math.min(2.8,1.60*eye+1.18*brow+1.08*nose+1.45*mouth+.72*jaw);
+    const evidence=.30+.72*edge+.62*contrast+.48*dark;
+    const features=Math.min(3.0,landmarkSignal*evidence+.52*beardMap[p]+.34*hairMap[p]);
+    featureMap[p]=features*m;
 
-    const eyeSeed = 1.42 * (leftEye + rightEye), browSeed = 1.02 * (leftBrow + rightBrow);
-    const noseSeed = .82 * noseBridge + 1.02 * noseBase, mouthSeed = 1.22 * mouth + .58 * mouthCorners, beardSeed = .46 * beard;
-    const seed = Math.min(2.35, eyeSeed + browSeed + noseSeed + mouthSeed + beardSeed);
-    const evidence = .22 + .78 * edge + .68 * contrast + .62 * dark;
-    const features = Math.min(2.45, seed * evidence); featureMap[p] = features * m;
+    const shoulders=gaussianFeature(ux,uy,.50,1.10,.66,.28);
+    const subject=clamp01(Math.max(face,.94*hairRegion,.86*beardRegion,.62*shoulders));
+    subjectMap[p]=subject*m;
+    const structure=Math.min(2.0,1.18*dense.ovalMap[p]+.92*jaw+.82*hairMap[p]+.52*beardMap[p]+.34*shoulders*edge);
+    structureMap[p]=structure*m;
 
-    const faceRim = Math.exp(-Math.pow((Math.sqrt(ex * ex + ey * ey) - .92) / .18, 2));
-    const hairStructure = hair * (.35 + .65 * dark) * (.45 + .55 * edge);
-    const jawStructure = jaw * faceRim * (.35 + .65 * edge);
-    const structure = Math.min(1.8, .92 * faceRim + .92 * hairStructure + .70 * jawStructure + .40 * shoulders * edge);
-    structureMap[p] = structure * m;
+    const base=backgroundWeight+faceBoost*face+.28*hairRegion;
+    const detail=edgeBoost*edge*(.16+.84*face)+featureBoost*features+darkDetailBoost*dark*(landmarkSignal+.42*beardMap[p])+.60*structure+.32*contrast*face;
+    const w=Math.max(.015,(base+detail)*m);importance[p]=w;weightedSum+=w;maskSum+=m;
 
-    const base = backgroundWeight + faceBoost * face + .30 * hair;
-    const detail = edgeBoost * edge * (.22 + .78 * face) + featureBoost * features + darkDetailBoost * dark * seed + .55 * structure + .38 * contrast * face;
-    const w = Math.max(.018, (base + detail) * m);
-    importance[p] = w; weightedSum += w; maskSum += m;
-
-    const smoothBright = Math.pow(clamp01(luminance[p]), 1.72) * (1 - .72 * edge) * (1 - .46 * contrast);
-    avoidance[p] = Math.max(0, avoidanceBoost * m * face * smoothBright * (.78 + .22 * clamp01(features)));
-    const dx = (nx - .5) / .5, dy = (ny - .5) / .5, radial = Math.hypot(dx, dy);
-    const interior = 1 - clamp01((radial - .72) / .24);
-    backgroundPenalty[p] = m * interior * Math.pow(1 - subject, 1.4);
+    const smoothBright=Math.pow(clamp01(luminance[p]),1.75)*(1-.76*edge)*(1-.48*contrast);
+    const protectedFace=face*Math.max(0,1-clamp01(features*.52));
+    avoidance[p]=Math.max(0,avoidanceBoost*m*protectedFace*smoothBright);
+    const dx=(nx-.5)/.5,dy=(ny-.5)/.5,radial=Math.hypot(dx,dy);
+    const interior=1-clamp01((radial-.70)/.26);
+    backgroundPenalty[p]=m*interior*Math.pow(1-subject,1.55);
   }
 
-  const mean = weightedSum / Math.max(EPS, maskSum);
-  if (mean > EPS) {
-    const inv = 1 / mean;
-    for (let p = 0; p < importance.length; p++) importance[p] = Math.min(5.5, importance[p] * inv);
+  const mean=weightedSum/Math.max(EPS,maskSum);
+  if(mean>EPS){
+    const inv=1/mean;
+    for(let p=0;p<importance.length;p++)importance[p]=Math.min(6,importance[p]*inv);
   }
-  return { importance, avoidance, featureMap, subjectMap, faceMap, edgeMap, contrastMap, structureMap, backgroundPenalty, faceBox:box, landmarksUsed:featureGeometry.real };
+  return {
+    importance,avoidance,featureMap,subjectMap,faceMap,edgeMap,contrastMap,structureMap,backgroundPenalty,
+    eyesMap:dense.eyesMap,browsMap:dense.browsMap,noseMap:dense.noseMap,mouthMap:dense.mouthMap,jawMap:dense.jawMap,
+    irisMap:dense.irisMap,hairMap,beardMap,featureDirX:dense.featureDirX,featureDirY:dense.featureDirY,
+    faceBox:box,landmarksUsed:dense.hasMesh?'dense-mesh':(landmarks?'sparse':'fallback')
+  };
 }
 
 
