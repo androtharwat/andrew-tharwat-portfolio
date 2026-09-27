@@ -348,3 +348,27 @@ html[data-sa-engine="v4"] .string-art-project .sa-gallery-intro{padding-top:64px
   html[data-sa-engine="v4"] .string-art-project .sa-v4-auto-summary b{grid-column:auto}
   html[data-sa-engine="v4"] .string-art-project .sa-v4-result-meta{grid-template-columns:1fr 1fr}
 }
+
+
+/* ATS V4 ONE-ACTION CLIENT FLOW */
+html[data-sa-engine="v4"] .string-art-project .sa-v4-client-hidden{display:none!important}
+html[data-sa-engine="v4"] .string-art-project .sa-v4-advanced,
+html[data-sa-engine="v4"] .string-art-project .sa-v4-auto-summary{display:none!important}
+html[data-sa-engine="v4"] .string-art-project .sa-lab-controls>.sa-control-group:has([data-sa-mode]),
+html[data-sa-engine="v4"] .string-art-project .sa-lab-controls>.sa-control-group:has([data-sa-quality]),
+html[data-sa-engine="v4"] .string-art-project #sa-v4-color-panel,
+html[data-sa-engine="v4"] .string-art-project .sa-tune-row{display:none!important}
+html[data-sa-engine="v4"] .string-art-project .sa-framing-controls{margin-top:12px}
+html[data-sa-engine="v4"] .string-art-project .sa-generate{margin-top:14px;min-height:54px;font-size:8.5px}
+html[data-sa-engine="v4"] .string-art-project .sa-production-note{text-align:center}
+html[data-sa-engine="v4"] .string-art-project .sa-result-tools.sa-v4-share-tools{display:block;padding:12px}
+html[data-sa-engine="v4"] .string-art-project .sa-result-tools.sa-v4-share-tools.hidden{display:none!important}
+html[data-sa-engine="v4"] .string-art-project .sa-result-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+html[data-sa-engine="v4"] .string-art-project .sa-result-actions button{min-height:44px;border-radius:10px;font-size:6.5px;font-weight:900;letter-spacing:.08em}
+html[data-sa-engine="v4"] .string-art-project #sa-user-share,
+html[data-sa-engine="v4"] .string-art-project #sa-user-video{border-color:rgba(215,173,89,.48);color:#e7cc8e}
+html[data-sa-engine="v4"] .string-art-project #sa-user-download{background:#d7ad59;color:#06131b;border-color:#d7ad59}
+@media(max-width:680px){
+  html[data-sa-engine="v4"] .string-art-project .sa-result-actions{grid-template-columns:1fr}
+  html[data-sa-engine="v4"] .string-art-project .sa-result-actions button{min-height:48px}
+}

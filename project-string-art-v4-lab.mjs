@@ -22,15 +22,23 @@ if (params.get('engine') === 'v4') {
   const tr = (ar, en) => AR() ? ar : en;
   const clamp = (v, lo=0, hi=1) => Math.max(lo, Math.min(hi, v));
 
-  const profile = () => {
-    const q = $('[data-sa-quality].active')?.dataset.saQuality || 'enhanced';
-    if(q === 'quick' || q === 'fast') return { key:'fast', size:128, nails:200, monoFibers:2300, colorFibers:3200, candidates:180, palette:4, detail:.60, crossingMono:.14, crossingColor:.10, opacityMono:.58, opacityColor:.48, repeatMono:2, repeatColor:2, refreshEvery:0, removalEvery:14, removalLimit:120 };
-    if(q === 'share') return { key:'master', size:208, nails:330, monoFibers:6500, colorFibers:9000, candidates:320, palette:5, detail:.80, crossingMono:.20, crossingColor:.15, opacityMono:.46, opacityColor:.38, repeatMono:3, repeatColor:3, refreshEvery:0, removalEvery:8, removalLimit:240 };
-    return { key:'studio', size:176, nails:280, monoFibers:4300, colorFibers:6200, candidates:260, palette:5, detail:.72, crossingMono:.18, crossingColor:.13, opacityMono:.52, opacityColor:.42, repeatMono:3, repeatColor:3, refreshEvery:0, removalEvery:10, removalLimit:180 };
-  };
-
-  const mode = () => $('[data-sa-mode].active')?.dataset.saMode === 'color' ? 'color' : 'mono';
-  const paletteChoice = () => $('[data-sa-colors].active')?.dataset.saColors || 'auto';
+  const FIXED_PROFILE = Object.freeze({
+    key:'portrait',
+    size:192,
+    nails:310,
+    colorFibers:10000,
+    candidates:280,
+    palette:5,
+    detail:.84,
+    crossingColor:.155,
+    opacityColor:.35,
+    repeatColor:4,
+    refreshEvery:0,
+    removalEvery:12,
+    removalLimit:150
+  });
+  const profile = () => FIXED_PROFILE;
+  const mode = () => 'color';
 
   function updateColorPanel(){
     const panel=$('#sa-v4-color-panel');
@@ -104,37 +112,50 @@ if (params.get('engine') === 'v4') {
     const controls=$('.sa-lab-controls');
     if(!controls||controls.dataset.v4Simple)return;
     controls.dataset.v4Simple='1';
-    const head=$('.sa-lab-head h2');if(head)head.textContent=tr('حوّل صورتك إلى String Art.','TURN YOUR PHOTO INTO STRING ART.');
-    const intro=$('.sa-lab-head>p');if(intro)intro.textContent=tr('ارفع الصورة، اضبط وجهًا واحدًا داخل الدائرة، والباقي يتم تلقائيًا.','UPLOAD A PHOTO, KEEP ONE FACE IN THE CIRCLE, AND ATS HANDLES THE REST.');
-    const generate=$('#sa-generate');if(generate)generate.textContent=tr('أنشئ البورتريه','CREATE MY PORTRAIT');
-    const note=$('.sa-production-note');if(note)note.innerHTML=tr('ألوان تلقائية · أولوية للملامح · الصورة لا تغادر جهازك<br><b>© ATS</b>','AUTO COLOR · PORTRAIT-FIRST · IMAGE STAYS ON YOUR DEVICE<br><b>© ATS</b>');
 
-    const upload=$('#sa-upload-zone');
-    if(upload&&!$('.sa-v4-auto-summary')){
-      const card=document.createElement('div');card.className='sa-v4-auto-summary';
-      card.innerHTML='<b>'+tr('إعداد تلقائي ذكي','SMART AUTO SETUP')+'</b><span>● '+tr('ألوان بصرية','OPTICAL COLOR')+'</span><span>● '+tr('أولوية للوجه','FACE PRIORITY')+'</span><span>● '+tr('جودة Studio','STUDIO QUALITY')+'</span>';
-      upload.insertAdjacentElement('afterend',card);
-    }
+    const head=$('.sa-lab-head h2');
+    if(head) head.textContent=tr('ارفع صورتك. اضبط الكادر. ولّد البورتريه.','UPLOAD. FRAME. GENERATE.');
+    const intro=$('.sa-lab-head>p');
+    if(intro) intro.textContent=tr('ATS يختار الألوان وكثافة الخيوط تلقائيًا لإكمال ملامح الوجه بأفضل شكل.','ATS automatically handles color, thread density and portrait detail.');
+    const generate=$('#sa-generate');
+    if(generate) generate.textContent=tr('توليد البورتريه','GENERATE PORTRAIT');
 
-    if(!$('.sa-v4-advanced')){
-      const modeGroup=$$('[data-sa-mode]')?.closest('.sa-control-group');
-      const colorPanel=$('#sa-v4-color-panel');
-      const quality=$$('[data-sa-quality]')?.closest('.sa-control-group');
-      const tuning=$('.sa-tune-row');
-      const details=document.createElement('details');details.className='sa-v4-advanced';
-      const summary=document.createElement('summary');summary.textContent=tr('إعدادات متقدمة','ADVANCED SETTINGS');details.appendChild(summary);
-      [modeGroup,colorPanel,quality,tuning].forEach(el=>{if(el)details.appendChild(el)});
-      const frame=$('.sa-framing-controls');
-      (frame||generate)?.insertAdjacentElement(frame?'afterend':'beforebegin',details);
-    }
+    const modeGroup=$('[data-sa-mode]')?.closest('.sa-control-group');
+    const qualityGroup=$('[data-sa-quality]')?.closest('.sa-control-group');
+    const colorPanel=$('#sa-v4-color-panel');
+    const tuneRow=$('.sa-tune-row');
+    [modeGroup,qualityGroup,colorPanel,tuneRow].forEach(el=>el?.classList.add('sa-v4-client-hidden'));
 
-    const preview=$('#sa-palette-preview'),tools=$('#sa-result-tools'),meta=$('#sa-v4-result-meta');
-    if(preview&&tools&&preview.parentElement!==tools){
-      preview.classList.add('sa-result-palette');
-      if(meta)meta.insertAdjacentElement('afterend',preview);else tools.prepend(preview);
-    }
+    const summary=$('.sa-v4-auto-summary');
+    summary?.remove();
+
+    const note=$('.sa-production-note');
+    if(note) note.innerHTML=tr('ألوان تلقائية · خيوط عالية الكثافة · أولوية كاملة للملامح<br><b>© ATS</b>','AUTO COLOR · HIGH-DENSITY THREADS · PORTRAIT-FIRST<br><b>© ATS</b>');
+
     const hint=$('.sa-source-figure figcaption small');
-    if(hint)hint.textContent=tr('اسحب واضبط وجهًا واحدًا داخل الدائرة','DRAG / ZOOM · KEEP ONE FACE IN THE CIRCLE');
+    if(hint) hint.textContent=tr('اسحب الصورة · استخدم الزوم لضبط الوجه داخل الدائرة','DRAG · ZOOM · KEEP THE FACE INSIDE THE CIRCLE');
+
+    const tools=$('#sa-result-tools');
+    const meta=$('#sa-v4-result-meta');
+    const palette=$('#sa-palette-preview');
+    const sequence=$('.sa-sequence-preview');
+    meta?.classList.add('sa-v4-client-hidden');
+    palette?.classList.add('sa-v4-client-hidden');
+    sequence?.classList.add('sa-v4-client-hidden');
+
+    $('#sa-user-replay')?.classList.add('sa-v4-client-hidden');
+    $('#sa-user-speak')?.classList.add('sa-v4-client-hidden');
+
+    const save=$('#sa-user-download');
+    const video=$('#sa-user-video');
+    const share=$('#sa-user-share');
+    if(save) save.textContent=tr('حفظ صورة ↓','SAVE IMAGE ↓');
+    if(share) share.textContent=tr('مشاركة صورة ↗','SHARE IMAGE ↗');
+    if(video) {
+      video.classList.remove('sa-v4-hidden-action');
+      video.textContent=tr('مشاركة فيديو ●','SHARE VIDEO ●');
+    }
+    tools?.classList.add('sa-v4-share-tools');
   }
 
   function captureFramedRgba(size) {
@@ -142,7 +163,7 @@ if (params.get('engine') === 'v4') {
     if(!src) throw new Error('Source canvas unavailable');
     const c=document.createElement('canvas'); c.width=c.height=size;
     const ctx=c.getContext('2d',{willReadFrequently:true});
-    const contrast=Number($('#sa-contrast')?.value||1.12);
+    const contrast=1.16;
     ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
     ctx.filter='contrast('+contrast+')';
     ctx.drawImage(src,0,0,src.width,src.height,0,0,size,size);
@@ -182,8 +203,7 @@ if (params.get('engine') === 'v4') {
   }
 
   function requestedPaletteSize(rgba,p){
-    const selected=paletteChoice();
-    return selected==='3'||selected==='4'||selected==='5'?Number(selected):(autoPaletteSize(rgba)||p.palette);
+    return autoPaletteSize(rgba)||p.palette;
   }
 
   function pinsAsPairs(count,size){
@@ -346,7 +366,7 @@ if (params.get('engine') === 'v4') {
     btn.disabled=true;$('#sa-result-tools')?.classList.add('hidden');
     try{
       ensureV4Controls();
-      const p=profile(),m=mode(),rgba=captureFramedRgba(p.size),nColors=m==='color'?requestedPaletteSize(rgba,p):1;
+      const p=profile(),m='color',rgba=captureFramedRgba(p.size),nColors=requestedPaletteSize(rgba,p);
       const faceBox=await detectFaceBox();
       setStatus(tr('تحليل الوجه والألوان…','ANALYZING FACE + COLORS…'),22);
       const response=await sendWorker({
@@ -354,16 +374,16 @@ if (params.get('engine') === 'v4') {
         table:{size:p.size,nails:p.nails,minGap:8,canvasMm:600,fiberWidthMm:.12,density:1},
         rgba,mode:m,
         preprocess:{
-          gamma:Number($('#sa-gamma')?.value||.9),detail:p.detail,detailRadius:p.size/30,toneFloor:0,toneCeiling:.985,ditherBlend:.16,colorAffinityTemperature:.07,
-          portraitPriority:true,faceBox,backgroundWeight:.045,faceBoost:1.65,edgeBoost:2.15,featureBoost:3.05,darkDetailBoost:.82,avoidanceBoost:1.42,backgroundSuppress:.76
+          gamma:.90,detail:p.detail,detailRadius:p.size/31,toneFloor:0,toneCeiling:.988,ditherBlend:.15,colorAffinityTemperature:.07,
+          portraitPriority:true,faceBox,backgroundWeight:.035,faceBoost:1.82,edgeBoost:2.30,featureBoost:3.45,darkDetailBoost:.90,avoidanceBoost:1.50,backgroundSuppress:.82
         },
         palette:{nColors,fixedHex:['#111111'],simulationSize:Math.min(42,p.size),maxCombinations:1400},
         solve:{
-          maxFibers:m==='color'?p.colorFibers:p.monoFibers,opacity:m==='color'?p.opacityColor:p.opacityMono,maxRepeat:m==='color'?p.repeatColor:p.repeatMono,allowRemove:true,
-          candidateLimit:p.candidates,refreshEvery:p.refreshEvery,removalEvery:p.removalEvery,removalLimit:p.removalLimit,rescueMultiplier:3,
-          chromaWeight:2.25,crossingPenalty:m==='color'?p.crossingColor:p.crossingMono,affinityStrength:m==='color'?1.4:0,minGain:1e-10
+          maxFibers:p.colorFibers,opacity:p.opacityColor,maxRepeat:p.repeatColor,allowRemove:true,
+          candidateLimit:p.candidates,refreshEvery:p.refreshEvery,removalEvery:p.removalEvery,removalLimit:p.removalLimit,rescueMultiplier:4,
+          chromaWeight:2.30,crossingPenalty:p.crossingColor,affinityStrength:1.45,minGain:1e-11
         },
-        useDither:m==='color'
+        useDither:true
       },[rgba.buffer],msg=>{
         const total=msg.total||1,done=msg.done||0,phase=msg.phase||'';
         const pct=phase==='matrix'?Math.min(24,done/total*24):phase==='palette'?30:phase==='preprocess'?24+done/total*12:Math.min(96,36+done/total*60);
@@ -379,25 +399,155 @@ if (params.get('engine') === 'v4') {
       const usedColors=lastRender.meta.colorsUsed||1;
       setStatus(tr('اكتمل · البورتريه جاهز','COMPLETE · YOUR PORTRAIT IS READY')+' · '+lastRender.lines.length.toLocaleString()+' '+tr('خيط','FIBERS')+' · '+usedColors+' '+tr('ألوان','COLORS'),100);
     }catch(error){
-      console.error('[ATS V4]',error);setStatus(tr('فشل V4: ','V4 FAILED: ')+(error.message||error),100);
+      console.error('[ATS V4 GENERATE]',error);
+      setStatus(tr('تعذر التوليد: ','GENERATION FAILED: ')+(error?.message||String(error)),100);
     }finally{btn.disabled=false}
   }
-  function savePng(ev){
+  function drawShareFrame(canvas,data,count=data.lines.length,{size=1440,footer=150}={}){
+    canvas.width=size;canvas.height=size+footer;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#071923';ctx.fillRect(0,0,size,size+footer);
+
+    const radius=size*.486;
+    ctx.save();
+    ctx.beginPath();ctx.arc(size/2,size/2,radius,0,Math.PI*2);ctx.clip();
+    ctx.fillStyle='#f4f0e8';ctx.fillRect(0,0,size,size);
+
+    const exact=count>=data.lines.length&&Boolean(data.renderedRgb);
+    if(exact){
+      const raster=solverRaster(data);
+      if(raster){ctx.save();ctx.globalAlpha=.94;ctx.imageSmoothingEnabled=true;ctx.drawImage(raster,0,0,size,size);ctx.restore()}
+    }
+
+    const scale=size/data.size;
+    ctx.save();ctx.scale(scale,scale);ctx.globalCompositeOperation='multiply';ctx.lineCap='round';
+    const alpha=exact?.046:.115;
+    for(let i=0;i<Math.min(count,data.lines.length);i++){
+      const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
+      ctx.strokeStyle=hexWithAlpha(l.color,alpha);ctx.lineWidth=.46;
+      ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
+    }
+    ctx.globalCompositeOperation='source-over';ctx.fillStyle='#9a6a16';
+    for(const p of data.pins){ctx.beginPath();ctx.arc(p[0],p[1],.64,0,Math.PI*2);ctx.fill()}
+    ctx.restore();ctx.restore();
+
+    ctx.strokeStyle='#d7ad59';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(size/2,size/2,radius,0,Math.PI*2);ctx.stroke();
+
+    const grad=ctx.createLinearGradient(0,size,0,size+footer);
+    grad.addColorStop(0,'#071923');grad.addColorStop(1,'#031018');
+    ctx.fillStyle=grad;ctx.fillRect(0,size,size,footer);
+    ctx.fillStyle='#d7ad59';ctx.font='900 54px Montserrat,Arial';ctx.textAlign='left';
+    ctx.fillText('ATS',54,size+88);
+    ctx.fillStyle='#e7edf0';ctx.font='800 18px Montserrat,Arial';
+    ctx.fillText('STRING ART · PORTRAIT ENGINE',190,size+68);
+    ctx.fillStyle='#7896a5';ctx.font='700 14px Montserrat,Arial';
+    ctx.fillText(data.meta.lines.toLocaleString()+' FIBERS · '+data.meta.pins+' NAILS · '+data.meta.colorsUsed+' COLORS',190,size+98);
+    ctx.textAlign='right';ctx.fillText('© ATS 2026',size-54,size+86);ctx.textAlign='left';
+  }
+
+  async function imageBlob(){
+    if(!lastRender)return null;
+    const canvas=document.createElement('canvas');
+    drawShareFrame(canvas,lastRender,lastRender.lines.length,{size:1800,footer:170});
+    return await new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
+  }
+
+  function downloadBlob(blob,name){
+    if(!blob)return;
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1800);
+  }
+
+  function bestVideoMime(){
+    if(typeof MediaRecorder==='undefined')return '';
+    const types=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+    return types.find(t=>MediaRecorder.isTypeSupported?.(t))||'';
+  }
+
+  async function videoBlob(){
+    if(!lastRender) return null;
+    if(typeof MediaRecorder==='undefined'||!HTMLCanvasElement.prototype.captureStream) throw new Error('Video export is not supported in this browser');
+
+    const canvas=document.createElement('canvas');
+    const size=1080,footer=120;
+    drawShareFrame(canvas,lastRender,0,{size,footer});
+    const stream=canvas.captureStream(30);
+    const mime=bestVideoMime();
+    const options={videoBitsPerSecond:7000000};
+    if(mime)options.mimeType=mime;
+    const recorder=new MediaRecorder(stream,options),chunks=[];
+    recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+    const stopped=new Promise((resolve,reject)=>{
+      recorder.onstop=resolve;
+      recorder.onerror=e=>reject(e.error||new Error('Video recorder failed'));
+    });
+
+    recorder.start(250);
+    const duration=4800,hold=700,start=performance.now();
+    await new Promise(resolve=>{
+      const tick=now=>{
+        const elapsed=now-start;
+        const t=Math.min(1,elapsed/duration);
+        const reveal=Math.min(1,t/0.84);
+        const eased=1-Math.pow(1-reveal,3);
+        const count=Math.floor(lastRender.lines.length*eased);
+        drawShareFrame(canvas,lastRender,count,{size,footer});
+        if(elapsed<duration+hold)requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+    drawShareFrame(canvas,lastRender,lastRender.lines.length,{size,footer});
+    recorder.stop();
+    await stopped;
+    stream.getTracks().forEach(t=>t.stop());
+    const type=recorder.mimeType||mime||'video/webm';
+    return new Blob(chunks,{type});
+  }
+
+  async function shareFile(blob,baseName,title){
+    if(!blob)return;
+    const ext=blob.type.includes('mp4')?'mp4':blob.type.includes('video')?'webm':'png';
+    const file=new File([blob],baseName+'.'+ext,{type:blob.type});
+    if(navigator.canShare?.({files:[file]})){
+      await navigator.share({files:[file],title});
+      return;
+    }
+    downloadBlob(blob,file.name);
+  }
+
+  async function savePng(ev){
     if(!lastRender)return;
     ev?.preventDefault();ev?.stopImmediatePropagation();
-    const c=$('#sa-user-result');if(!c)return;
-    paint(lastRender,lastRender.lines.length);
-    c.toBlob(blob=>{if(!blob)return;const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='ATS-string-art-V4.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)},'image/png',1);
+    const blob=await imageBlob();
+    downloadBlob(blob,'ATS-string-art-portrait.png');
   }
 
   async function sharePng(ev){
     if(!lastRender)return;
     ev?.preventDefault();ev?.stopImmediatePropagation();
-    const c=$('#sa-user-result');if(!c)return;
-    const blob=await new Promise(r=>c.toBlob(r,'image/png',1));if(!blob)return;
-    const file=new File([blob],'ATS-string-art-V4.png',{type:'image/png'});
-    if(navigator.canShare?.({files:[file]})) await navigator.share({files:[file],title:'ATS String Art V4'});
-    else savePng();
+    const blob=await imageBlob();
+    await shareFile(blob,'ATS-string-art-portrait','ATS String Art Portrait');
+  }
+
+  async function shareVideo(ev){
+    if(!lastRender)return;
+    ev?.preventDefault();ev?.stopImmediatePropagation();
+    const btn=$('#sa-user-video');
+    if(btn)btn.disabled=true;
+    try{
+      setStatus(tr('جاري تجهيز فيديو المشاركة…','CREATING SHARE VIDEO…'),100);
+      const blob=await videoBlob();
+      await shareFile(blob,'ATS-string-art-portrait','ATS String Art Portrait');
+      setStatus(tr('الفيديو جاهز للمشاركة','VIDEO READY TO SHARE'),100);
+    }catch(error){
+      console.error('[ATS V4 VIDEO]',error);
+      setStatus(tr('تعذر إنشاء الفيديو على هذا المتصفح','VIDEO EXPORT IS NOT SUPPORTED ON THIS BROWSER'),100);
+    }finally{
+      if(btn)btn.disabled=false;
+    }
   }
 
   function bindOnce(el,key,type,handler){
@@ -412,9 +562,9 @@ if (params.get('engine') === 'v4') {
     bindOnce($('#sa-user-replay'),'v4Bound','click',e=>{if(!lastRender)return;e.preventDefault();e.stopImmediatePropagation();animate(lastRender)});
     bindOnce($('#sa-user-download'),'v4Bound','click',savePng);
     bindOnce($('#sa-user-share'),'v4Bound','click',sharePng);
+    bindOnce($('#sa-user-video'),'v4Bound','click',shareVideo);
     bindOnce($('#sa-user-file'),'v4WarmBound','change',()=>schedulePrewarm());
     $('#sa-user-speak')?.classList.add('sa-v4-hidden-action');
-    $('#sa-user-video')?.classList.add('sa-v4-hidden-action');
     window.__ATS_STRING_ART_V4_GENERATE=generateV4;
     document.documentElement.dataset.saEngine='v4';
     setStatus(tr('ارفع صورة واحدة · سنضبط الباقي تلقائيًا','UPLOAD ONE PHOTO · ATS HANDLES THE REST'),0);
