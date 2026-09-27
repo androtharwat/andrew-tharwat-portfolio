@@ -135,12 +135,19 @@
 
   async function decide(action,note=null,options={}){
     const id=selectedId;if(!id)return;
-    const {data,error}=await sb.rpc('studio_admin_decide_team_application',{
+    const rpcName=action==='accepted'?'studio_admin_accept_team_application_v2':'studio_admin_decide_team_application';
+    const args=action==='accepted'?{
+      p_application_id:id,p_admin_notes:note||null,
+      p_member_type:options.memberType||'contributor',
+      p_capacity:options.capacity||2,
+      p_can_claim:options.canClaim!==false
+    }:{
       p_application_id:id,p_action:action,p_admin_notes:note||null,
       p_member_type:options.memberType||'contributor',
       p_capacity:options.capacity||2,
       p_can_claim:options.canClaim!==false
-    });
+    };
+    const {data,error}=await sb.rpc(rpcName,args);
     if(error)throw error;
     const row=Array.isArray(data)?data[0]:data;
     toast(action==='accepted'?'Member created in ATS Team Engine':`Application → ${statusLabel(action)}`);
@@ -158,7 +165,7 @@
     if(!a)return;
     const app=apps.find(x=>x.id===selectedId);if(!app)return;
     try{
-      if(a.dataset.action==='accept'){decisionId=app.id;$('#accept-name').textContent=app.full_name;$('#accept-capacity').value='2';$('#accept-member-type').value='contributor';$('#accept-can-claim').checked=true;$('#accept-note').value='';$('#accept-dialog').showModal();return}
+      if(a.dataset.action==='accept'){decisionId=app.id;$('#accept-name').textContent=app.full_name;$('#accept-capacity').value='2';$('#accept-member-type').value='contributor';$('#accept-can-claim').checked=true;$('#accept-note').value='';const err=$('#accept-error');if(err){err.hidden=true;err.textContent=''}$('#accept-dialog').showModal();return}
       if(a.dataset.action==='reject'){decisionId=app.id;$('#reject-name').textContent=app.full_name;$('#reject-note').value='';$('#reject-dialog').showModal();return}
       a.disabled=true;await decide(a.dataset.action);a.disabled=false
     }catch(err){console.error(err);toast(err.message||'Action failed')}
@@ -174,7 +181,7 @@
         canClaim:$('#accept-can-claim').checked
       });
       $('#accept-dialog').close()
-    }catch(e){console.error(e);toast(e.message||'Could not accept application')}
+    }catch(e){console.error(e);const err=$('#accept-error');if(err){err.textContent=e.message||'Could not accept application';err.hidden=false}else{toast(e.message||'Could not accept application')}}
     finally{b.disabled=false;b.textContent='ACCEPT & CREATE MEMBER'}
   });
 
