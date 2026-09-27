@@ -5,9 +5,31 @@
   const state=document.getElementById('form-state');
   const submit=document.getElementById('submit-application');
   const startedAt=Date.now();
-  const sb=(cfg?.supabaseUrl&&cfg?.supabaseKey&&window.supabase)
-    ? window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}})
-    : null;
+  let sb=null;
+  let supabasePromise=null;
+
+  function makeClient(){
+    if(!cfg?.supabaseUrl||!cfg?.supabaseKey||!window.supabase) throw new Error('ATS form configuration unavailable');
+    return window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  }
+
+  function loadSupabase(){
+    if(sb)return Promise.resolve(sb);
+    if(supabasePromise)return supabasePromise;
+    supabasePromise=new Promise((resolve,reject)=>{
+      if(window.supabase){
+        try{sb=makeClient();resolve(sb)}catch(error){reject(error)}
+        return;
+      }
+      const script=document.createElement('script');
+      script.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      script.async=true;
+      script.onload=()=>{try{sb=makeClient();resolve(sb)}catch(error){reject(error)}};
+      script.onerror=()=>reject(new Error('Could not load secure form connection'));
+      document.head.appendChild(script);
+    });
+    return supabasePromise;
+  }
 
   const value=id=>document.getElementById(id)?.value?.trim()||'';
   const checked=(selector)=>[...document.querySelectorAll(selector+ ' input[type="checkbox"]:checked')].map(x=>x.value);
@@ -23,10 +45,12 @@
     try{const u=new URL(v);return ['http:','https:'].includes(u.protocol)?u.toString():null}catch{return false}
   }
 
+  form?.addEventListener('focusin',()=>{loadSupabase().catch(()=>{})},{once:true,passive:true});
+  form?.addEventListener('pointerdown',()=>{loadSupabase().catch(()=>{})},{once:true,passive:true});
+
   form?.addEventListener('submit',async e=>{
     e.preventDefault();
     setState('');
-    if(!sb)return setState('تعذر الاتصال بالنظام. حاول مرة أخرى.');
     if(value('website_confirm'))return;
     if(Date.now()-startedAt<2500)return setState('راجع البيانات ثم أرسل الطلب.');
 
@@ -50,7 +74,8 @@
     submit.textContent='جاري إرسال الطلب…';
 
     try{
-      const {data,error}=await sb.rpc('studio_submit_team_application',{
+      const client=await loadSupabase();
+      const {data,error}=await client.rpc('studio_submit_team_application',{
         p_full_name:full,
         p_email:email,
         p_phone:value('phone')||null,
