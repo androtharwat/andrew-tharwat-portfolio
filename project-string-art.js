@@ -209,9 +209,24 @@
 
   async function generateUser(){
     if(v4Enabled){
+      const btn=$('#sa-generate');
       if(typeof window.__ATS_STRING_ART_V4_GENERATE==='function') return window.__ATS_STRING_ART_V4_GENERATE();
-      setStatus(AR()?'V4 يتم تجهيزه…':'V4 IS INITIALIZING…',0);
-      return;
+      btn && (btn.disabled=true);
+      setStatus(AR()?'جاري تجهيز محرك V4…':'PREPARING V4 ENGINE…',1);
+      try{
+        if(typeof window.__ATS_LOAD_STRING_ART_V4==='function') await window.__ATS_LOAD_STRING_ART_V4();
+        if(typeof window.__ATS_STRING_ART_V4_GENERATE!=='function'){
+          await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        }
+        if(typeof window.__ATS_STRING_ART_V4_GENERATE!=='function') throw new Error('V4 module loaded but generator did not attach');
+        btn && (btn.disabled=false);
+        return window.__ATS_STRING_ART_V4_GENERATE();
+      }catch(error){
+        console.error('[ATS V4 INIT]',error);
+        btn && (btn.disabled=false);
+        setStatus(AR()?'تعذر تشغيل V4 — أعد المحاولة':'V4 LOAD FAILED — TRY AGAIN',100);
+        return;
+      }
     }
     if(!userImage)return;
     const btn=$('#sa-generate');btn.disabled=true;$('#sa-result-tools')?.classList.add('hidden');
@@ -258,7 +273,7 @@
   function speakSequence(){if(!userSequence.length||!('speechSynthesis'in window))return;window.speechSynthesis.cancel();const numbers=userSequence.slice(0,24).map(x=>x.b).join('، '),u=new SpeechSynthesisUtterance(numbers);u.lang=AR()?'ar-EG':'en-US';u.rate=.82;window.speechSynthesis.speak(u)}
 
   function resetFraming(centerOnly=false){framing.panX=0;framing.panY=0;if(!centerOnly){framing.zoom=1;framing.rotation=0;const z=$('#sa-zoom');if(z)z.value='1';const zv=$('#sa-zoom-value');if(zv)zv.textContent='1.00×'}drawSourceEditor()}
-  async function loadFile(file){if(!file||!/^image\//.test(file.type))return;const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);userImage=img;resetFraming();$('#sa-generate').disabled=false;setStatus(AR()?'اسحب الصورة واضبط الكادر':'DRAG + FRAME YOUR PHOTO',0)};img.src=url}
+  async function loadFile(file){if(!file||!/^image\//.test(file.type))return;if(v4Enabled&&typeof window.__ATS_LOAD_STRING_ART_V4==='function')window.__ATS_LOAD_STRING_ART_V4().catch(error=>console.error('[ATS V4 PRELOAD]',error));const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);userImage=img;resetFraming();$('#sa-generate').disabled=false;setStatus(AR()?'اسحب الصورة واضبط الكادر':'DRAG + FRAME YOUR PHOTO',0)};img.src=url}
 
   function initFraming(){
     const canvas=$('#sa-user-source'),wrap=canvas?.parentElement;if(!canvas||!wrap)return;
