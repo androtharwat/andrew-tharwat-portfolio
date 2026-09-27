@@ -97,3 +97,22 @@ test('V4 end-to-end color pipeline picks a palette, solves globally, and returns
   assert.ok(result.metrics.colorsUsed >= 2);
   assert.equal(result.routes.reduce((s,r)=>s+r.selectedFibers,0), result.metrics.fibers);
 });
+
+
+test('portrait priority map boosts facial feature zones and protects bright face regions', () => {
+  const size = 40, rgb = new Float32Array(size * size * 3), mask = core.makeCircularMask(size);
+  rgb.fill(0.88);
+  const maps = pre.buildPortraitPriorityMaps(rgb, size, { mask });
+  const eye = Math.round(size * 0.08 + size * 0.80 * 0.39) * size + Math.round(size * 0.20 + size * 0.60 * 0.35);
+  const edge = Math.round(size * 0.50) * size + 2;
+  assert.ok(maps.importance[eye] > maps.importance[edge], 'facial feature zone should receive more solver weight');
+  assert.ok(maps.avoidance[eye] > 0, 'bright facial detail should receive crossing protection');
+});
+
+test('palette simulation treats white as a no-thread state', () => {
+  const size = 14, rgb = new Float32Array(size * size * 3), mask = core.makeCircularMask(size);
+  rgb.fill(1);
+  const black = [pre.hexToLinearRgb('#111111')];
+  const error = pre.paletteDitherSimulationError(rgb, size, black, { mask, simulationSize:size, blurSigma:.8 });
+  assert.ok(error < 0.01, 'white image should remain achievable without forcing dark thread: ' + error);
+});
