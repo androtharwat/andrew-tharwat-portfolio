@@ -50,6 +50,7 @@
 
 function stringArtMarkup(p,mediaItems){
   const ar=isAr();
+  const v4=new URLSearchParams(location.search).get('engine')==='v4';
   const cover=esc(media(p.cover_url));
   const detailItem=mediaItems.find(m=>m.media_type!=='video');
   const detail=esc(media(detailItem?.url||p.cover_url));
@@ -114,6 +115,11 @@ function stringArtMarkup(p,mediaItems){
     labUpload:'CHOOSE A PHOTO',labDrop:'CLICK OR DROP PHOTO',labPrivacy:'LOCAL ON YOUR DEVICE',labMode:'ENGINE',labMono:'REALISTIC MONO',labColor:'COLOR LAB',labQuality:'QUALITY',labFast:'QUICK',labDetail:'PRO',labShare:'MASTER',labFrame:'FRAME',labZoom:'ZOOM',labFit:'FIT',labCenter:'CENTER',labRotate:'ROTATE',labContrast:'CONTRAST',labGamma:'SHADOW',labGenerate:'BUILD MY PORTRAIT',labReady:'UPLOAD + START',labOriginal:'FRAME PHOTO',labResult:'RESULT',labProgress:'COMPUTING…',labReplay:'REPLAY',labDownload:'HQ PNG',labVideo:'BUILD VIDEO',labShareBtn:'SHARE',labSpeak:'SPEAK PINS',labSequence:'ROUTE',labProd:'MASTER · 360 nails · up to 5,000 lines · auto-stops when new lines stop improving the portrait.',labBrand:'Every saved file carries the ATS mark.',
     finalK:'NOW YOU KNOW THE TRICK',finalH:'READY TO SEE THE THREAD INSTEAD OF THE PICTURE?',finalP:'Move close. Step back. See the thread before the face.'
   };
+  if(v4){
+    copy.labColor='OPTICAL COLOR';
+    copy.labProd=ar?'MASTER · محرك ألوان بصري · أولوية كاملة للملامح · يزيد الخيوط حسب الحاجة حتى اكتمال الصورة.':'MASTER · OPTICAL COLOR · PORTRAIT-FIRST · THREAD BUDGET EXPANDS UNTIL THE IMAGE IS RESOLVED.';
+    copy.labP=ar?'اضبط الكادر. يبدأ V4 تلقائيًا بالألوان وبأعلى دقة.':'Frame the portrait. V4 starts in Optical Color at the highest fidelity.';
+  }
   const steps=copy.steps.map(([n,h,p])=>`<article class="sa-step"><span>${n}</span><div><h3>${esc(h)}</h3><p>${esc(p)}</p></div></article>`).join('');
   const stats=copy.originStats.map(([v,l])=>`<div><strong>${esc(v)}</strong><span>${esc(l)}</span></div>`).join('');
   return `
@@ -144,7 +150,18 @@ function stringArtMarkup(p,mediaItems){
               <input id="sa-user-file" type="file" accept="image/jpeg,image/png,image/webp" />
               <span class="sa-upload-icon">+</span><b>${esc(copy.labDrop)}</b><small>${esc(copy.labPrivacy)}</small>
             </label>
-            <div class="sa-control-group"><span>${esc(copy.labMode)}</span><div class="sa-segmented sa-mono-only"><button type="button" class="active" data-sa-mode="mono">${esc(copy.labMono)}</button></div></div>
+            <div class="sa-control-group"><span>${esc(copy.labMode)}</span><div class="sa-segmented${v4?' sa-v4-modes':' sa-mono-only'}"><button type="button" class="${v4?'':'active'}" data-sa-mode="mono">${esc(copy.labMono)}</button>${v4?`<button type="button" class="active" data-sa-mode="color">${esc(copy.labColor)}</button>`:''}</div></div>
+            ${v4?`<div id="sa-v4-color-panel" class="sa-control-group sa-v4-color-panel">
+              <span>${ar?'ألوان الخيط':'THREAD PALETTE'}</span>
+              <div class="sa-segmented sa-palette-count">
+                <button type="button" data-sa-colors="3">3</button>
+                <button type="button" data-sa-colors="4">4</button>
+                <button type="button" data-sa-colors="5">5</button>
+                <button type="button" class="active" data-sa-colors="auto">${ar?'تلقائي':'AUTO'}</button>
+              </div>
+              <div class="sa-palette-caption">${ar?'المحرك يختار تلقائيًا أفضل ألوان خيوط قابلة للتنفيذ للصورة':'AUTO SIMULATES THE STRONGEST EXECUTABLE THREAD PALETTE FOR THIS PORTRAIT'}</div>
+              <div id="sa-palette-preview" class="sa-palette-preview"><span class="sa-palette-empty">${ar?'ستظهر الألوان وعدد الخيوط لكل لون هنا':'COLORS + FIBERS PER COLOR APPEAR HERE'}</span></div>
+            </div>`:''}
             <div class="sa-control-group"><span>${esc(copy.labQuality)}</span><div class="sa-segmented sa-quality"><button type="button" data-sa-quality="quick">${esc(copy.labFast)}</button><button type="button" data-sa-quality="enhanced">${esc(copy.labDetail)}</button><button type="button" class="active" data-sa-quality="share">${esc(copy.labShare)}</button></div></div>
             <div class="sa-control-group sa-framing-controls"><span>${esc(copy.labFrame)}</span>
               <label class="sa-range sa-zoom-range"><span>${esc(copy.labZoom)} <b id="sa-zoom-value">1.00×</b></span><input id="sa-zoom" type="range" min="1" max="3.2" step="0.02" value="1"></label>
@@ -164,6 +181,12 @@ function stringArtMarkup(p,mediaItems){
             </div>
             <div class="sa-lab-status"><span id="sa-lab-status">${esc(copy.labReady)}</span><b id="sa-lab-progress">0%</b></div>
             <div id="sa-result-tools" class="sa-result-tools hidden">
+              ${v4?`<div id="sa-v4-result-meta" class="sa-v4-result-meta">
+                <div><span>${ar?'الوضع':'MODE'}</span><b data-v4-meta="mode">—</b></div>
+                <div><span>${ar?'الخيوط':'FIBERS'}</span><b data-v4-meta="fibers">—</b></div>
+                <div><span>${ar?'المسامير':'NAILS'}</span><b data-v4-meta="nails">—</b></div>
+                <div><span>${ar?'الألوان':'COLORS'}</span><b data-v4-meta="colors">—</b></div>
+              </div>`:''}
               <div class="sa-sequence-preview"><span>${esc(copy.labSequence)}</span><code id="sa-user-sequence">—</code></div>
               <div class="sa-result-actions">
                 <button id="sa-user-replay" type="button">${esc(copy.labReplay)} ↻</button>
