@@ -22,9 +22,9 @@ if (params.get('engine') === 'v4') {
 
   const profile = () => {
     const q = $('[data-sa-quality].active')?.dataset.saQuality || 'share';
-    if(q === 'quick' || q === 'fast') return { size:132, nails:190, monoFibers:1450, colorFibers:2300, candidates:100, palette:4, detail:.54, crossingMono:.12, crossingColor:.085 };
-    if(q === 'enhanced') return { size:170, nails:250, monoFibers:2550, colorFibers:4100, candidates:125, palette:5, detail:.60, crossingMono:.135, crossingColor:.095 };
-    return { size:208, nails:320, monoFibers:4100, colorFibers:6200, candidates:155, palette:5, detail:.66, crossingMono:.15, crossingColor:.105 };
+    if(q === 'quick' || q === 'fast') return { size:144, nails:220, monoFibers:2400, colorFibers:3400, candidates:120, palette:4, detail:.58, crossingMono:.14, crossingColor:.10, opacityMono:.62, opacityColor:.54, repeatMono:2, repeatColor:2, refreshEvery:640 };
+    if(q === 'enhanced') return { size:184, nails:300, monoFibers:4800, colorFibers:6800, candidates:165, palette:5, detail:.68, crossingMono:.17, crossingColor:.12, opacityMono:.54, opacityColor:.46, repeatMono:3, repeatColor:2, refreshEvery:520 };
+    return { size:224, nails:360, monoFibers:7600, colorFibers:10800, candidates:210, palette:6, detail:.78, crossingMono:.20, crossingColor:.145, opacityMono:.48, opacityColor:.40, repeatMono:3, repeatColor:2, refreshEvery:420 };
   };
 
   const mode = () => $('[data-sa-mode].active')?.dataset.saMode === 'color' ? 'color' : 'mono';
@@ -47,6 +47,12 @@ if (params.get('engine') === 'v4') {
       segmented.appendChild(color);
     }
     mono.textContent=tr('أحادي واقعي','REALISTIC MONO');
+    const colorButton=segmented?.querySelector('[data-sa-mode="color"]');
+    if(segmented && !segmented.dataset.v4Defaulted){
+      segmented.dataset.v4Defaulted='1';
+      mono.classList.remove('active');
+      colorButton?.classList.add('active');
+    }
     const modeGroup=segmented.closest('.sa-control-group');
     if(modeGroup && !$('#sa-v4-color-panel')){
       const panel=document.createElement('div');
@@ -113,7 +119,7 @@ if (params.get('engine') === 'v4') {
       chroma+=cc;sat+=mx>0?cc/mx:0;n++;
     }
     const score=(chroma/Math.max(1,n))*.62+(sat/Math.max(1,n))*.38;
-    return score<.085?3:score<.19?4:5;
+    return score<.065?4:score<.16?5:6;
   }
 
   function requestedPaletteSize(rgba,p){
@@ -234,13 +240,13 @@ if (params.get('engine') === 'v4') {
         table:{size:p.size,nails:p.nails,minGap:8,canvasMm:600,fiberWidthMm:.12,density:1},
         rgba,mode:m,
         preprocess:{
-          gamma:Number($('#sa-gamma')?.value||.9),detail:p.detail,detailRadius:p.size/28,toneFloor:0,toneCeiling:.97,
-          portraitPriority:true,faceBox,backgroundWeight:.16,faceBoost:1.28,edgeBoost:1.78,featureBoost:2.35,darkDetailBoost:.62,avoidanceBoost:1.12
+          gamma:Number($('#sa-gamma')?.value||.9),detail:p.detail,detailRadius:p.size/30,toneFloor:0,toneCeiling:.985,ditherBlend:.18,
+          portraitPriority:true,faceBox,backgroundWeight:.055,faceBoost:1.55,edgeBoost:2.05,featureBoost:2.85,darkDetailBoost:.78,avoidanceBoost:1.38,backgroundSuppress:.72
         },
         palette:{nColors,fixedHex:['#111111'],simulationSize:Math.min(58,p.size),maxCombinations:2500},
         solve:{
-          maxFibers:m==='color'?p.colorFibers:p.monoFibers,opacity:1,maxRepeat:m==='color'?1:2,allowRemove:true,
-          candidateLimit:p.candidates,refreshEvery:1000000000,chromaWeight:1.9,crossingPenalty:m==='color'?p.crossingColor:p.crossingMono
+          maxFibers:m==='color'?p.colorFibers:p.monoFibers,opacity:m==='color'?p.opacityColor:p.opacityMono,maxRepeat:m==='color'?p.repeatColor:p.repeatMono,allowRemove:true,
+          candidateLimit:p.candidates,refreshEvery:p.refreshEvery,chromaWeight:2.15,crossingPenalty:m==='color'?p.crossingColor:p.crossingMono,minGain:1e-10
         },
         useDither:m==='color'
       },[rgba.buffer]);
@@ -287,6 +293,7 @@ if (params.get('engine') === 'v4') {
     bindOnce($('#sa-user-share'),'v4Bound','click',sharePng);
     $('#sa-user-speak')?.classList.add('sa-v4-hidden-action');
     $('#sa-user-video')?.classList.add('sa-v4-hidden-action');
+    window.__ATS_STRING_ART_V4_GENERATE=generateV4;
     document.documentElement.dataset.saEngine='v4';
     setStatus(tr('V4 جاهز · Mono + Optical Color · الصورة لا تغادر جهازك','V4 READY · MONO + OPTICAL COLOR · IMAGE STAYS ON DEVICE'),0);
     return true;
