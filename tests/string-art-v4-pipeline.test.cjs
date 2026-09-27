@@ -184,9 +184,9 @@ test('fast portrait solver uses feature-gain stages without center-starburst dom
     palette:{nColors:4,fixedHex:['#111111'],candidateHex:['#111111','#70452f','#d99a72','#e8b694','#2358a6'],simulationSize:22,maxCombinations:40},
     solve:{maxFibers:420,candidateLimit:34,maxRepeat:2,timeBudgetMs:1800},
   });
-  assert.equal(result.metrics.method,'portrait-multistage-feature-gain');
+  assert.equal(result.metrics.method,'image-residual-identity-hybrid-v1');
   assert.ok(result.metrics.fibers>70,'solver should build a useful portrait');
-  assert.ok(result.metrics.featureCompletion>0,'feature residual should be reduced');
+  assert.ok(result.metrics.mseImprovement>0,'source-image error should be reduced');
   assert.ok(result.metrics.centerCrossingRate<.72,'center crossings should not dominate');
   assert.equal(result.routes.reduce((s,r)=>s+r.selectedFibers,0),result.metrics.fibers);
 });
@@ -242,8 +242,36 @@ test('dense landmark solver closes eye nose mouth residuals without starburst do
     solve:{maxFibers:520,candidateLimit:42,maxRepeat:2,timeBudgetMs:2200,likeness:.9,detail:.75,colorStrength:.5},
   });
   const f=result.metrics.featureCompletions;
-  assert.equal(result.metrics.method,'dense-landmark-contour-solver');
+  assert.equal(result.metrics.method,'image-residual-identity-hybrid-v1');
+  assert.ok(result.metrics.mseImprovement>0.05,'solver must reduce actual source-image error');
   assert.equal(result.portrait.landmarksUsed,'dense-mesh');
   assert.ok(f.eyes>.15&&f.nose>.15&&f.mouth>.15);
   assert.ok(result.metrics.centerCrossingRate<.70);
+});
+
+
+test('hybrid residual solver never lets color override the likeness scaffold', async () => {
+  const fast=await import('../string-art-v4/fast-layered.mjs');
+  const size=48,rgba=new Uint8ClampedArray(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const nx=x/(size-1),ny=y/(size-1),i=(y*size+x)*4;
+    let c=[248,246,242];
+    const face=(((nx-.5)/.27)**2+((ny-.47)/.35)**2)<1;
+    if(face)c=[215,165,132];
+    if(nx<.30&&ny>.22&&ny<.78)c=[35,24,22];
+    if(Math.abs(ny-.40)<.018&&(Math.abs(nx-.35)<.05||Math.abs(nx-.65)<.05))c=[18,15,14];
+    if(Math.abs(ny-.65)<.016&&Math.abs(nx-.52)<.11)c=[120,30,45];
+    rgba[i]=c[0];rgba[i+1]=c[1];rgba[i+2]=c[2];rgba[i+3]=255;
+  }
+  const result=fast.solveFastLayeredPortrait({
+    size,nails:82,minGap:5,rgba,
+    preprocess:{faceBox:{x:.23,y:.10,width:.54,height:.74},backgroundSuppress:.86},
+    palette:{nColors:4,fixedHex:['#111111'],candidateHex:['#111111','#70452f','#d99a72','#d95f73','#2358a6'],simulationSize:20,maxCombinations:30},
+    solve:{maxFibers:360,candidateLimit:32,maxRepeat:2,timeBudgetMs:1600,likeness:1,detail:.8,colorStrength:1}
+  });
+  assert.equal(result.metrics.method,'image-residual-identity-hybrid-v1');
+  assert.ok(result.metrics.mseImprovement>0);
+  assert.ok(result.metrics.blackShare>=.64,'even maximum color must preserve a majority likeness scaffold');
+  assert.ok(result.metrics.colorShare<=.36);
+  assert.ok(result.metrics.centerCrossingRate<.72);
 });

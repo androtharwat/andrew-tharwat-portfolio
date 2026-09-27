@@ -322,8 +322,10 @@ export function buildPortraitPriorityMaps(rgb, size, {
     edgeMap[p]=edge*m;contrastMap[p]=contrast*m;
 
     const hairRegion=gaussianFeature(ux,uy,.5,.10,.39,.18);
+    const sideHairRegion=gaussianFeature(ux,uy,.5,.48,.54,.54);
     const beardRegion=gaussianFeature(ux,uy,.5,.79,.29,.16);
-    hairMap[p]=m*hairRegion*(.16+.84*dark)*(.26+.74*edge);
+    const hairEvidence=(.14+.86*dark)*(.24+.52*edge+.24*contrast);
+    hairMap[p]=m*Math.max(hairRegion*.86,sideHairRegion*.64)*hairEvidence;
     beardMap[p]=m*beardRegion*(.12+.88*dark)*(.30+.70*edge);
 
     const eye=Math.max(dense.eyesMap[p],dense.irisMap[p]);
@@ -334,9 +336,18 @@ export function buildPortraitPriorityMaps(rgb, size, {
     featureMap[p]=features*m;
 
     const shoulders=gaussianFeature(ux,uy,.50,1.10,.66,.28);
-    const subject=clamp01(Math.max(face,.94*hairRegion,.86*beardRegion,.62*shoulders));
+    const expandedHead=gaussianFeature(ux,uy,.50,.50,.62,.80);
+    const silhouetteEvidence=clamp01(.62*dark+.48*edge+.30*contrast);
+    const subject=clamp01(Math.max(
+      face,
+      hairRegion*(.48+.52*silhouetteEvidence),
+      sideHairRegion*(.34+.66*silhouetteEvidence),
+      beardRegion*(.42+.58*silhouetteEvidence),
+      shoulders*(.20+.80*silhouetteEvidence),
+      expandedHead*.58*silhouetteEvidence
+    ));
     subjectMap[p]=subject*m;
-    const structure=Math.min(2.0,1.18*dense.ovalMap[p]+.92*jaw+.82*hairMap[p]+.52*beardMap[p]+.34*shoulders*edge);
+    const structure=Math.min(2.0,1.18*dense.ovalMap[p]+.92*jaw+.96*hairMap[p]+.52*beardMap[p]+.42*shoulders*edge+.30*sideHairRegion*silhouetteEvidence);
     structureMap[p]=structure*m;
 
     const base=backgroundWeight+faceBoost*face+.28*hairRegion;

@@ -16,7 +16,7 @@ if (params.get('engine') === 'v4') {
   let faceDetector = null;
   let mediaPipeFaceLandmarker = null;
   let mediaPipeLoading = null;
-  const tuning = { likeness:84, detail:78, color:56 };
+  const tuning = { likeness:92, detail:90, color:35 };
   let faceDetectToken = 0;
   let faceDetectTimer = 0;
 
@@ -32,10 +32,10 @@ if (params.get('engine') === 'v4') {
 
   const FIXED_PROFILE = Object.freeze({
     key:'portrait',
-    size:176,
-    nails:320,
-    colorFibers:6200,
-    candidates:84,
+    size:196,
+    nails:336,
+    colorFibers:6800,
+    candidates:108,
     palette:5,
     detail:.84,
     crossingColor:.15,
@@ -349,6 +349,67 @@ if (params.get('engine') === 'v4') {
     return {x:(point.x*src.width-cropX)/side,y:(point.y*src.height-cropY)/side};
   }
 
+
+  const ORIENTATION_PROBE_IDS=[
+    33,133,159,145,263,362,386,374,70,105,107,300,334,336,
+    168,6,197,5,4,1,98,97,326,327,61,13,14,291,0,17,
+    234,93,132,58,152,288,361,323,454
+  ];
+
+  function luminanceAt(rgba,size,x,y){
+    x=Math.max(0,Math.min(size-1,x|0));y=Math.max(0,Math.min(size-1,y|0));
+    const k=(y*size+x)*4;
+    return (.2126*rgba[k]+.7152*rgba[k+1]+.0722*rgba[k+2])/255;
+  }
+
+  function landmarkImageEvidence(rgba,size,mesh){
+    if(!Array.isArray(mesh)||mesh.length<400)return 0;
+    let sum=0,n=0;
+    for(const id of ORIENTATION_PROBE_IDS){
+      const p=mesh[id];if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))continue;
+      const x=Math.round(p.x*(size-1)),y=Math.round(p.y*(size-1));
+      if(x<2||x>=size-2||y<2||y>=size-2)continue;
+      const gx=luminanceAt(rgba,size,x+1,y)-luminanceAt(rgba,size,x-1,y);
+      const gy=luminanceAt(rgba,size,x,y+1)-luminanceAt(rgba,size,x,y-1);
+      const center=luminanceAt(rgba,size,x,y);
+      let mean=0;
+      for(let yy=-2;yy<=2;yy+=2)for(let xx=-2;xx<=2;xx+=2)mean+=luminanceAt(rgba,size,x+xx,y+yy);
+      mean/=9;
+      sum+=Math.hypot(gx,gy)*1.8+Math.abs(center-mean)*1.2+(1-center)*.12;
+      n++;
+    }
+    return n?sum/n:0;
+  }
+
+  function reflectLandmarks(landmarks,axisX){
+    if(!landmarks)return landmarks;
+    const out={...landmarks};
+    if(Array.isArray(landmarks.mesh)){
+      out.mesh=landmarks.mesh.map(p=>p?{...p,x:2*axisX-p.x}:p);
+    }
+    for(const key of ['leftEye','rightEye','nose','mouth']){
+      const p=landmarks[key];
+      if(p&&Number.isFinite(p.x))out[key]={...p,x:2*axisX-p.x};
+    }
+    return out;
+  }
+
+  function resolveLandmarkOrientation(rgba,size,landmarks,faceBox){
+    if(!landmarks?.mesh)return landmarks;
+    const axisX=faceBox?faceBox.x+faceBox.width*.5:.5;
+    const original=landmarkImageEvidence(rgba,size,landmarks.mesh);
+    const reflected=reflectLandmarks(landmarks,axisX);
+    const flipped=landmarkImageEvidence(rgba,size,reflected.mesh);
+    const useReflected=flipped>original*1.16&&flipped-original>.008;
+    const chosen=useReflected?reflected:{...landmarks};
+    chosen.orientationCorrected=useReflected;
+    chosen.orientationEvidence={
+      original:Number(original.toFixed(4)),
+      reflected:Number(flipped.toFixed(4))
+    };
+    return chosen;
+  }
+
   function capturePortraitTarget(size,face){
     const src=$('#sa-user-source');
     if(!src)throw new Error('Source canvas unavailable');
@@ -376,7 +437,9 @@ if (params.get('engine') === 'v4') {
     const scale=size/side;
     ctx.save();ctx.filter='contrast(1.10) saturate(1.015)';
     ctx.translate(-cropX*scale,-cropY*scale);ctx.scale(scale,scale);ctx.drawImage(src,0,0);ctx.restore();ctx.filter='none';
-    return {rgba:ctx.getImageData(0,0,size,size).data,faceBox,landmarks,crop:{x:cropX,y:cropY,side}};
+    const imageData=ctx.getImageData(0,0,size,size);
+    if(landmarks?.mesh)landmarks=resolveLandmarkOrientation(imageData.data,size,landmarks,faceBox);
+    return {rgba:imageData.data,faceBox,landmarks,crop:{x:cropX,y:cropY,side}};
   }
 
   function autoPaletteSize(rgba){
@@ -421,7 +484,7 @@ if (params.get('engine') === 'v4') {
     }
     const palette=result.mode==='mono-global'?['#111111']:(result.palette?.hex||[]);
     const colorsUsed=Math.max(1,perColor.filter((n)=>Number(n||0)>0).length);
-    return {pins,lines,size,renderedRgb:result.renderedRgb||null,meta:{mode:result.mode,pins:p.nails,lines:lines.length,palette,perColor,colorsUsed,selectedColors:palette.length,mse:result.metrics?.mse||0,engine:'ATS-dense-landmark-contour'}};
+    return {pins,lines,size,renderedRgb:result.renderedRgb||null,meta:{mode:result.mode,pins:p.nails,lines:lines.length,palette,perColor,colorsUsed,selectedColors:palette.length,mse:result.metrics?.mse||0,engine:'ATS-image-residual-identity-hybrid'}};
   }
 
   function linearToSrgb(v){
@@ -462,7 +525,7 @@ if (params.get('engine') === 'v4') {
     }
 
     ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);ctx.globalCompositeOperation='multiply';ctx.lineCap='round';
-    const alpha=data.meta.mode==='color-global'?(exactColor?.045:.078):.10;
+    const alpha=data.meta.mode==='color-global'?(data.meta.renderAlpha||.055):.10;
     const lineWidth=data.meta.mode==='color-global'?.50:.54;
     for(let i=0;i<Math.min(count,data.lines.length);i++){
       const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
@@ -486,7 +549,7 @@ if (params.get('engine') === 'v4') {
 
   function getWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=3',import.meta.url),{type:'module'});
+    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=4',import.meta.url),{type:'module'});
     worker.onmessage=e=>{
       const msg=e.data,job=pending.get(msg.id);if(!job)return;
       if(msg.type==='progress'){job.onProgress?.(msg);return}
@@ -525,8 +588,7 @@ if (params.get('engine') === 'v4') {
     if(phase==='preprocess') return tr('تحليل الوجه والملامح…','ANALYZING PORTRAIT FEATURES…');
     if(phase==='portrait-stage'){
       if(msg.stage==='structure')return tr('بناء شكل الرأس والشعر والفك…','BUILDING HEAD · HAIR · JAW…');
-      if(msg.stage==='eyes')return tr('بناء العينين والحواجب بدقة…','BUILDING EYES + BROWS…');
-      if(msg.stage==='lower')return tr('بناء الأنف والفم والفك…','BUILDING NOSE + MOUTH + JAW…');
+      if(msg.stage==='identity')return tr('مطابقة هوية الوجه من الصورة الأصلية…','MATCHING PORTRAIT IDENTITY FROM SOURCE…');
       if(msg.stage==='color')return tr('إضافة طبقات اللون…','LAYERING PORTRAIT COLOR…');
       return tr('تحسين الملامح المتبقية…','REFINING FACIAL DETAIL…');
     }
@@ -566,9 +628,9 @@ if (params.get('engine') === 'v4') {
       const target=capturePortraitTarget(p.size,face);
       const rgba=target.rgba,nColors=requestedPaletteSize(rgba,p);
       const likeness=clamp(tuning.likeness/100),detail=clamp(tuning.detail/100),colorStrength=clamp(tuning.color/100);
-      const maxFibers=Math.round(4300+detail*3000);
-      const candidateLimit=Math.round(70+detail*46);
-      const timeBudgetMs=Math.round(5200+detail*4200);
+      const maxFibers=Math.round(4800+detail*2200);
+      const candidateLimit=Math.round(72+detail*40);
+      const timeBudgetMs=Math.round(6500+detail*4500);
       setStatus(tr('قراءة هندسة الوجه والملامح…','READING FACIAL GEOMETRY + CONTOURS…'),16);
       const response=await sendWorker({
         type:'solve-image-v4',
@@ -577,8 +639,8 @@ if (params.get('engine') === 'v4') {
         preprocess:{
           gamma:.90,detail:p.detail,detailRadius:p.size/32,toneFloor:0,toneCeiling:.988,ditherBlend:.10,colorAffinityTemperature:.060,
           portraitPriority:true,faceBox:target.faceBox,landmarks:target.landmarks,
-          backgroundWeight:.018,faceBoost:2.05,edgeBoost:2.55,featureBoost:3.8+likeness*2.0,
-          darkDetailBoost:1.10,avoidanceBoost:1.95,backgroundSuppress:.92
+          backgroundWeight:.018,faceBoost:1.60,edgeBoost:1.95,featureBoost:2.35+likeness*.55,
+          darkDetailBoost:.74,avoidanceBoost:1.85,backgroundSuppress:.86
         },
         palette:{
           nColors,
@@ -598,7 +660,8 @@ if (params.get('engine') === 'v4') {
       });
       const result=response.result;
       lastResult=result;lastRender=extractLines(result,p,p.size);
-      lastRender.meta.engine='ATS-dense-landmark-contour';
+      lastRender.meta.engine='ATS-image-residual-identity-hybrid';
+      lastRender.meta.renderAlpha=Number(result.metrics?.renderAlpha||.055);
       lastRender.meta.featureCompletions=result.metrics?.featureCompletions||null;
       window.__saV4LastResult=result;window.__saV4LastRender=lastRender;
       paint(lastRender,lastRender.lines.length);renderMeta(lastRender);
@@ -630,7 +693,7 @@ if (params.get('engine') === 'v4') {
 
     const scale=size/data.size;
     ctx.save();ctx.scale(scale,scale);ctx.globalCompositeOperation='multiply';ctx.lineCap='round';
-    const alpha=exact?.046:.082;
+    const alpha=data.meta.renderAlpha||.055;
     for(let i=0;i<Math.min(count,data.lines.length);i++){
       const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
       ctx.strokeStyle=hexWithAlpha(l.color,alpha);ctx.lineWidth=.46;
