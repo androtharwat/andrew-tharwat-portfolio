@@ -5,7 +5,7 @@ import {
   solveColorGlobalOptical,
 } from './core.mjs';
 import { buildColorRoutesFromCounts } from './path.mjs';
-import { solveImageV4 } from './pipeline.mjs';
+import { solveFastLayeredPortrait } from './fast-layered.mjs';
 
 const cache = new Map();
 
@@ -59,21 +59,17 @@ self.onmessage = (event) => {
     }
 
     if (msg.type === 'solve-image-v4') {
-      const table = getTable(msg.table, progress);
-      const result = solveImageV4({
-        table,
+      const result = solveFastLayeredPortrait({
+        size: msg.table.size,
+        nails: msg.table.nails,
+        minGap: msg.table.minGap,
         rgba: msg.rgba,
-        mode: msg.mode || 'color',
         preprocess: msg.preprocess || {},
         palette: msg.palette || {},
         solve: msg.solve || {},
-        useDither: msg.useDither !== false,
-        importance: msg.importance || null,
         onProgress: progress,
       });
-      const compact = compactImageResult(result);
-      const transfer = compact.renderedRgb?.buffer ? [compact.renderedRgb.buffer] : [];
-      self.postMessage({ type:'v4-result', id:msg.id, result:compact }, transfer);
+      self.postMessage({ type:'v4-result', id:msg.id, result:compactImageResult(result) });
       return;
     }
 

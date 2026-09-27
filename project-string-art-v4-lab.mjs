@@ -24,15 +24,15 @@ if (params.get('engine') === 'v4') {
 
   const FIXED_PROFILE = Object.freeze({
     key:'portrait',
-    size:168,
-    nails:250,
-    colorFibers:7600,
-    candidates:110,
+    size:160,
+    nails:288,
+    colorFibers:5600,
+    candidates:72,
     palette:5,
-    detail:.82,
+    detail:.84,
     crossingColor:.15,
     opacityColor:.35,
-    repeatColor:5,
+    repeatColor:2,
     refreshEvery:0,
     removalEvery:0,
     removalLimit:0
@@ -274,8 +274,8 @@ if (params.get('engine') === 'v4') {
     }
 
     ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);ctx.globalCompositeOperation='multiply';ctx.lineCap='round';
-    const alpha=data.meta.mode==='color-global'?(exactColor?.045:.11):.10;
-    const lineWidth=data.meta.mode==='color-global'?.46:.54;
+    const alpha=data.meta.mode==='color-global'?(exactColor?.045:.078):.10;
+    const lineWidth=data.meta.mode==='color-global'?.50:.54;
     for(let i=0;i<Math.min(count,data.lines.length);i++){
       const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
       ctx.strokeStyle=hexWithAlpha(l.color,alpha);ctx.lineWidth=lineWidth;
@@ -322,16 +322,12 @@ if (params.get('engine') === 'v4') {
   }
 
   function schedulePrewarm(){
-    const p=profile(),table={size:p.size,nails:p.nails,minGap:8,canvasMm:600,fiberWidthMm:.12,density:1};
-    const key=JSON.stringify(table);if(prewarmed.has(key))return;prewarmed.add(key);
-    setTimeout(()=>sendWorker({type:'prepare-table',table},[],msg=>{
-      if(msg.phase==='matrix'){
-        const pct=Math.min(18,(msg.done/Math.max(1,msg.total))*18);
-        setStatus(tr('تجهيز محرك الخيوط في الخلفية…','PREPARING THREAD ENGINE IN BACKGROUND…'),pct);
-      }
-    }).then(()=>setStatus(tr('جاهز · اضبط الكادر ثم أنشئ البورتريه','READY · FRAME THE FACE, THEN CREATE'),0)).catch(error=>{
-      prewarmed.delete(key);console.error('[ATS V4 PREWARM]',error);
-    }),120);
+    try{
+      getWorker();
+      setStatus(tr('المحرك جاهز · ارفع الصورة واضبط الكادر','ENGINE READY · UPLOAD AND FRAME YOUR PHOTO'),0);
+    }catch(error){
+      console.error('[ATS V4 WARMUP]',error);
+    }
   }
 
   function progressText(msg){
@@ -339,6 +335,7 @@ if (params.get('engine') === 'v4') {
     if(phase==='matrix') return tr('بناء نموذج الخيط الفيزيائي…','BUILDING PHYSICAL THREAD MATRIX…');
     if(phase==='palette') return tr('محاكاة واختيار ألوان الخيط…','SIMULATING THREAD PALETTE…');
     if(phase==='preprocess') return tr('تحليل الوجه والملامح…','ANALYZING PORTRAIT FEATURES…');
+    if(phase==='fast-layer') return tr('توليد طبقات الخيط والملامح…','GENERATING THREAD + PORTRAIT LAYERS…');
     if(phase==='solve-color-fast') return tr('بناء ملامح الوجه وتوزيع الخيوط…','BUILDING PORTRAIT THREAD GEOMETRY…');
     if(phase.includes('color')) return tr('تحسين الخط واللون والملامح…','OPTIMIZING COLOR + PORTRAIT DETAIL…');
     if(phase.includes('mono')) return tr('تحسين توزيع الخيوط والملامح عالميًا…','GLOBAL THREAD + PORTRAIT OPTIMIZATION…');
@@ -372,18 +369,19 @@ if (params.get('engine') === 'v4') {
       setStatus(tr('تحليل الوجه والألوان…','ANALYZING FACE + COLORS…'),22);
       const response=await sendWorker({
         type:'solve-image-v4',
-        table:{size:p.size,nails:p.nails,minGap:8,canvasMm:600,fiberWidthMm:.12,density:1},
+        table:{size:p.size,nails:p.nails,minGap:8},
         rgba,mode:m,
         preprocess:{
           gamma:.90,detail:p.detail,detailRadius:p.size/31,toneFloor:0,toneCeiling:.988,ditherBlend:.15,colorAffinityTemperature:.07,
           portraitPriority:true,faceBox,backgroundWeight:.035,faceBoost:1.82,edgeBoost:2.30,featureBoost:3.45,darkDetailBoost:.90,avoidanceBoost:1.50,backgroundSuppress:.82
         },
-        palette:{nColors,fixedHex:['#111111'],simulationSize:Math.min(42,p.size),maxCombinations:1400},
+        palette:{nColors:5,fixedHex:['#111111'],simulationSize:34,maxCombinations:120},
         solve:{
-          maxFibers:p.colorFibers,opacity:p.opacityColor,maxRepeat:p.repeatColor,allowRemove:true,
-          fastColorGeometry:true,timeBudgetMs:7000,geometryOpacity:.82,
-          candidateLimit:p.candidates,refreshEvery:0,removalEvery:0,removalLimit:0,rescueMultiplier:2,
-          chromaWeight:2.30,crossingPenalty:p.crossingColor,affinityStrength:1.45,minGain:1e-11
+          maxFibers:p.colorFibers,
+          timeBudgetMs:6500,
+          candidateLimit:p.candidates,
+          maxRepeat:p.repeatColor,
+          depletion:.055
         },
         useDither:true
       },[rgba.buffer],msg=>{
@@ -399,7 +397,7 @@ if (params.get('engine') === 'v4') {
       $('#sa-user-sequence').textContent=(m==='color'?'PALETTE '+palette+'  ·  ':'')+lastRender.lines.slice(0,10).map(x=>String(x.a).padStart(3,'0')+'→'+String(x.b).padStart(3,'0')).join(' · ');
       $('#sa-result-tools')?.classList.remove('hidden');
       const usedColors=lastRender.meta.colorsUsed||1;
-      setStatus(tr('اكتمل · البورتريه جاهز','COMPLETE · YOUR PORTRAIT IS READY')+' · '+lastRender.lines.length.toLocaleString()+' '+tr('خيط','FIBERS')+' · '+usedColors+' '+tr('ألوان','COLORS'),100);
+      setStatus(tr('اكتمل · البورتريه جاهز','COMPLETE · YOUR PORTRAIT IS READY')+' · '+lastRender.lines.length.toLocaleString()+' '+tr('خيط','FIBERS'),100);
     }catch(error){
       console.error('[ATS V4 GENERATE]',error);
       setStatus(tr('تعذر التوليد: ','GENERATION FAILED: ')+(error?.message||String(error)),100);
@@ -423,7 +421,7 @@ if (params.get('engine') === 'v4') {
 
     const scale=size/data.size;
     ctx.save();ctx.scale(scale,scale);ctx.globalCompositeOperation='multiply';ctx.lineCap='round';
-    const alpha=exact?.046:.115;
+    const alpha=exact?.046:.082;
     for(let i=0;i<Math.min(count,data.lines.length);i++){
       const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
       ctx.strokeStyle=hexWithAlpha(l.color,alpha);ctx.lineWidth=.46;
