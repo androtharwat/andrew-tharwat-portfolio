@@ -594,6 +594,70 @@
     state.discoveryCase=up.data;state.discoveryAnswers.unshift(ins.data);await logLeadActivity('discovery_signal_added',{question_key:key,source_channel:source,answer_preview:answer.slice(0,220)});renderLeadDiagnosis();void runDiagnosticEngine(true);
   }
 
+  function setLeadFocusMode(on){
+    const dialog=$('#lead-dialog');if(!dialog)return;
+    dialog.classList.toggle('focus-mode',!!on);
+    const btn=$('#lead-view-toggle');if(btn)btn.textContent=on?'SHOW DETAILS':'FOCUS MODE';
+  }
+
+  function renderLeadExecutionPath(ctx={}){
+    const lead=state.currentLead;if(!lead)return;
+    const proposal=ctx.proposal||null,deposit=ctx.deposit||null,project=ctx.project||null,taskCount=Number(ctx.taskCount||0);
+    const leadReady=['qualified','proposal_sent','negotiation','won'].includes(lead.status);
+    const proposalAccepted=proposal?.status==='accepted';
+    const depositPaid=deposit?.status==='paid';
+    const steps=[
+      {label:'01 · QUALIFY',value:leadReady?'Ready':'Not ready',done:leadReady,current:!leadReady},
+      {label:'02 · PROPOSAL',value:proposal?String(proposal.status||'draft').replaceAll('_',' '):'Not created',done:proposalAccepted,current:leadReady&&!proposalAccepted},
+      {label:'03 · DEPOSIT',value:deposit?String(deposit.status||'pending'):'Waiting',done:depositPaid,current:proposalAccepted&&!depositPaid},
+      {label:'04 · EXECUTION',value:project?(taskCount+' task'+(taskCount===1?'':'s')):'No project yet',done:!!project,current:depositPaid&&!project}
+    ];
+    $('#lead-execution-steps').innerHTML=steps.map(s=>'<div class="lead-execution-step '+(s.done?'done ':s.current?'current ':'')+'"><span>'+esc(s.label)+'</span><b>'+esc(s.value)+'</b></div>').join('');
+    const title=$('#lead-execution-title'),copy=$('#lead-execution-copy'),btn=$('#lead-execution-primary');
+    btn.dataset.action='';btn.dataset.id='';
+    if(project){
+      title.textContent='Project is live · distribute the work';
+      copy.textContent=(project.project_code||'Project')+' · '+(project.title||'')+' · '+taskCount+' team task'+(taskCount===1?'':'s')+'.';
+      btn.textContent=taskCount?'OPEN TEAM & TASKS →':'CREATE FIRST TASK →';btn.dataset.action='open-tasks';btn.dataset.id=project.id;
+    }else if(proposalAccepted&&deposit&&!depositPaid){
+      title.textContent='Commercial gate ready';
+      copy.textContent='Confirm the deposit only after payment is actually received. The system will create the Client + Project automatically.';
+      btn.textContent='CONFIRM DEPOSIT →';btn.dataset.action='confirm-deposit';btn.dataset.id=deposit.id;
+    }else if(proposal?.status==='sent'){
+      title.textContent='Waiting for proposal decision';
+      copy.textContent='Once the client accepts, create the deposit request and move directly toward project start.';
+      btn.textContent='ACCEPT PROPOSAL →';btn.dataset.action='accept-proposal';btn.dataset.id=proposal.id;
+    }else if(proposal){
+      title.textContent='Finish the proposal';
+      copy.textContent='The case is ready commercially. Open the proposal, complete the scope, then send it.';
+      btn.textContent='OPEN PROPOSAL →';btn.dataset.action='open-proposal';btn.dataset.id=proposal.id;
+    }else if(leadReady){
+      title.textContent='Turn the qualified case into a project';
+      copy.textContent='Create one proposal. After acceptance + confirmed deposit, ATS creates the live project automatically.';
+      btn.textContent='CREATE PROPOSAL →';btn.dataset.action='create-proposal';
+    }else{
+      title.textContent='Finish the decision first';
+      copy.textContent='Validate the diagnosis and qualify the lead. Commercial and execution steps stay hidden until the case is ready.';
+      btn.textContent='COMPLETE DIAGNOSIS →';btn.dataset.action='diagnosis';
+    }
+  }
+
+  async function refreshLeadExecutionPath(){
+    const lead=state.currentLead;if(!lead)return;
+    const [pr,pay,proj]=await Promise.all([
+      sb().from('studio_proposals').select('id,proposal_code,title,status,created_at').eq('lead_id',lead.id).order('created_at',{ascending:false}).limit(1).maybeSingle(),
+      sb().from('studio_payments').select('id,payment_code,status,payment_type,created_at').eq('lead_id',lead.id).eq('payment_type','deposit').order('created_at',{ascending:false}).limit(1).maybeSingle(),
+      sb().from('studio_projects').select('id,project_code,title,status,stage,source_lead_id').eq('source_lead_id',lead.id).order('created_at',{ascending:false}).limit(1).maybeSingle()
+    ]);
+    const failed=[pr,pay,proj].find(x=>x.error);if(failed){renderLeadExecutionPath();return}
+    let taskCount=0;
+    if(proj.data){
+      const q=await sb().from('studio_project_tasks').select('id',{count:'exact',head:true}).eq('project_id',proj.data.id);
+      if(!q.error)taskCount=q.count||0;
+    }
+    renderLeadExecutionPath({proposal:pr.data,deposit:pay.data,project:proj.data,taskCount});
+  }
+
   function updateLeadWorkspaceState(){
     const status=$('#lead-status').value||'new',x=state.currentLead,gate=diagnosisGateState();
     $('#lead-workspace-status').className='status-chip '+status;$('#lead-workspace-status').textContent=leadStatusLabels[status]||status;
@@ -629,7 +693,7 @@
     $('#lead-last-contact').textContent=x.last_contacted_at?'Last contact '+fmt(x.last_contacted_at):'No contact logged';
     const mail=$('#lead-email-link');mail.href=x.email?'mailto:'+encodeURIComponent(x.email):'#';mail.classList.toggle('hidden',!x.email);
     const wa=$('#lead-wa-link');const digits=String(x.phone||'').replace(/\D/g,'');wa.href=digits?'https://wa.me/'+digits:'#';wa.classList.toggle('hidden',!digits);
-    updateLeadWorkspaceState();$('#lead-dialog').showModal();await Promise.all([loadLeadTimeline(x.id),loadLeadDiagnosis(x.id)]);
+    updateLeadWorkspaceState();setLeadFocusMode(['qualified','proposal_sent','negotiation','won'].includes(x.status));$('#lead-dialog').showModal();await Promise.all([loadLeadTimeline(x.id),loadLeadDiagnosis(x.id)]);await refreshLeadExecutionPath();
   }
   function renderClientAccessCode(data){
     const x=state.currentLead,code=$('#client-access-code'),stateEl=$('#client-access-code-state'),copy=$('#copy-client-access-code'),share=$('#share-client-access-wa');
@@ -689,7 +753,7 @@
     const i=state.leads.findIndex(v=>v.id===x.id);if(i>=0)state.leads[i]=r.data;state.currentLead=r.data;
     if(before.status!==r.data.status)await logLeadActivity('lead_status_changed',{from:before.status,to:r.data.status});
     if(before.next_action!==r.data.next_action||String(before.next_action_due_at||'')!==String(r.data.next_action_due_at||''))await logLeadActivity('lead_next_action_changed',{next_action:r.data.next_action,due_at:r.data.next_action_due_at});
-    notify('Lead workspace saved');renderLeads();state.loaded.dashboard=false;void loadDashboard(true);updateLeadWorkspaceState();
+    notify('Lead workspace saved');renderLeads();state.loaded.dashboard=false;void loadDashboard(true);updateLeadWorkspaceState();setLeadFocusMode(['qualified','proposal_sent','negotiation','won'].includes(r.data.status));void refreshLeadExecutionPath();
     if(close)$('#lead-dialog').close();
     return true;
   }
@@ -907,6 +971,17 @@
   $('#save-lead')?.addEventListener('click',()=>saveLead(true));
   $('#lead-save-open')?.addEventListener('click',()=>saveLead(false));
   $('#lead-start-discovery')?.addEventListener('click',startDiscovery);
+  $('#lead-view-toggle')?.addEventListener('click',()=>setLeadFocusMode(!$('#lead-dialog')?.classList.contains('focus-mode')));
+  $('#lead-execution-primary')?.addEventListener('click',async()=>{
+    const btn=$('#lead-execution-primary'),action=btn?.dataset.action,id=btn?.dataset.id;
+    if(!action)return;
+    if(action==='diagnosis'){setLeadFocusMode(false);$('.diagnosis-workspace-card')?.scrollIntoView({behavior:'smooth',block:'start'});return}
+    if(action==='create-proposal'){$('#lead-create-proposal')?.click();return}
+    if(action==='open-proposal'){const leadId=state.currentLead?.id;$('#lead-dialog')?.close();await loadProposals(true);openProposal(id||null,leadId);return}
+    if(action==='accept-proposal'){await loadProposals(true);await acceptProposal(id);await refreshLeadExecutionPath();return}
+    if(action==='confirm-deposit'){await loadPayments(true);await markPaid(id);await loadProjects(true);await refreshLeadExecutionPath();return}
+    if(action==='open-tasks'){location.href='/admin/team-tasks?project='+encodeURIComponent(id);return}
+  });
   $('#lead-log-contact')?.addEventListener('click',logLeadContact);
   $('#issue-client-access-code')?.addEventListener('click',issueClientAccessCode);
   $('#copy-client-access-code')?.addEventListener('click',copyClientAccessCode);
@@ -953,6 +1028,7 @@
   $('#send-project-message')?.addEventListener('click',sendProjectMessage);
   $('#upload-project-file')?.addEventListener('click',uploadProjectFile);
   $('#refresh-project-workspace')?.addEventListener('click',()=>loadProjectWorkspace());
+  $('#open-project-team-tasks')?.addEventListener('click',()=>{if(state.currentProject?.id)location.href='/admin/team-tasks?project='+encodeURIComponent(state.currentProject.id)});
   $('#project-message-input')?.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();sendProjectMessage()}});
   $('#save-v9-layout')?.addEventListener('click',saveV9);
   $('#v9-work-columns')?.addEventListener('change',e=>{if(state.v9)state.v9.work.columns=Number(e.target.value)});
