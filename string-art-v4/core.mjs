@@ -208,6 +208,7 @@ export function solveMonoSparse({
   candidateLimit = 0,
   refreshEvery = 32,
   rescueMultiplier = 3,
+  timeBudgetMs = 0,
   seed = 12345,
   onProgress,
 }) {
@@ -217,8 +218,14 @@ export function solveMonoSparse({
   const incident = continuity === 'path' ? buildIncidentIndex(table) : null;
   let currentNail = 0;
   const moves = [];
+  const startedAt = Date.now();
+  let timedOut = false;
   let acceptedAdds = 0, acceptedRemoves = 0, lastGain = 0;
   for (let step = 0; step < maxFibers; step++) {
+    if (timeBudgetMs > 0 && step > 0 && step % 16 === 0 && Date.now() - startedAt >= timeBudgetMs) {
+      timedOut = true;
+      break;
+    }
     let candidates;
     if (continuity === 'path') {
       candidates = incident[currentNail];
@@ -268,6 +275,8 @@ export function solveMonoSparse({
       acceptedRemoves,
       lastGain,
       continuity,
+      timedOut,
+      elapsedMs: Date.now() - startedAt,
     },
   };
 }

@@ -24,18 +24,18 @@ if (params.get('engine') === 'v4') {
 
   const FIXED_PROFILE = Object.freeze({
     key:'portrait',
-    size:192,
-    nails:310,
-    colorFibers:10000,
-    candidates:280,
+    size:168,
+    nails:250,
+    colorFibers:7600,
+    candidates:110,
     palette:5,
-    detail:.84,
-    crossingColor:.155,
+    detail:.82,
+    crossingColor:.15,
     opacityColor:.35,
-    repeatColor:4,
+    repeatColor:5,
     refreshEvery:0,
-    removalEvery:12,
-    removalLimit:150
+    removalEvery:0,
+    removalLimit:0
   });
   const profile = () => FIXED_PROFILE;
   const mode = () => 'color';
@@ -339,7 +339,8 @@ if (params.get('engine') === 'v4') {
     if(phase==='matrix') return tr('بناء نموذج الخيط الفيزيائي…','BUILDING PHYSICAL THREAD MATRIX…');
     if(phase==='palette') return tr('محاكاة واختيار ألوان الخيط…','SIMULATING THREAD PALETTE…');
     if(phase==='preprocess') return tr('تحليل الوجه والملامح…','ANALYZING PORTRAIT FEATURES…');
-    if(phase.includes('color')) return tr('تحسين الخط واللون والملامح عالميًا…','GLOBAL LINE + COLOR + PORTRAIT OPTIMIZATION…');
+    if(phase==='solve-color-fast') return tr('بناء ملامح الوجه وتوزيع الخيوط…','BUILDING PORTRAIT THREAD GEOMETRY…');
+    if(phase.includes('color')) return tr('تحسين الخط واللون والملامح…','OPTIMIZING COLOR + PORTRAIT DETAIL…');
     if(phase.includes('mono')) return tr('تحسين توزيع الخيوط والملامح عالميًا…','GLOBAL THREAD + PORTRAIT OPTIMIZATION…');
     return tr('تشغيل محرك V4…','RUNNING ATS V4…');
   }
@@ -380,7 +381,8 @@ if (params.get('engine') === 'v4') {
         palette:{nColors,fixedHex:['#111111'],simulationSize:Math.min(42,p.size),maxCombinations:1400},
         solve:{
           maxFibers:p.colorFibers,opacity:p.opacityColor,maxRepeat:p.repeatColor,allowRemove:true,
-          candidateLimit:p.candidates,refreshEvery:p.refreshEvery,removalEvery:p.removalEvery,removalLimit:p.removalLimit,rescueMultiplier:4,
+          fastColorGeometry:true,timeBudgetMs:7000,geometryOpacity:.82,
+          candidateLimit:p.candidates,refreshEvery:0,removalEvery:0,removalLimit:0,rescueMultiplier:2,
           chromaWeight:2.30,crossingPenalty:p.crossingColor,affinityStrength:1.45,minGain:1e-11
         },
         useDither:true
@@ -568,6 +570,7 @@ if (params.get('engine') === 'v4') {
     window.__ATS_STRING_ART_V4_GENERATE=generateV4;
     document.documentElement.dataset.saEngine='v4';
     setStatus(tr('ارفع صورة واحدة · سنضبط الباقي تلقائيًا','UPLOAD ONE PHOTO · ATS HANDLES THE REST'),0);
+    schedulePrewarm();
     return true;
   }
 
