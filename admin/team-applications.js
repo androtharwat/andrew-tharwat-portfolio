@@ -3,7 +3,7 @@
   const DEVICE_KEY='andrew_portfolio_device_v2';
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
-  let device=null,sb=null,poll=null,apps=[],selectedId=null,filter='all',query='',decisionId=null;
+  let device=null,sb=null,poll=null,apps=[],selectedId=new URLSearchParams(location.search).get('application'),filter='all',query='',decisionId=null;
 
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const fmtDate=v=>v?new Date(v).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
@@ -89,9 +89,10 @@
   function renderDetail(){
     const a=apps.find(x=>x.id===selectedId);
     if(!a){$('#application-detail').innerHTML='<div class="empty-detail"><div><span>◎</span><h2>Select an application</h2><p>Open an applicant to review skills, proof of work, availability and the signed ATS Team Policy.</p></div></div>';return}
+    const safeUrl=v=>{try{const u=new URL(v);return ['https:','http:'].includes(u.protocol)?u.href:null}catch{return null}};
     const links=[
       ['Portfolio',a.portfolio_url],['LinkedIn',a.linkedin_url],['GitHub',a.github_url],['Website',a.website_url]
-    ].filter(x=>x[1]);
+    ].map(([n,u])=>[n,safeUrl(u)]).filter(x=>x[1]);
     const actions=[];
     if(a.status==='new')actions.push('<button class="button button-secondary" data-action="reviewing">START REVIEW</button>');
     if(['new','reviewing'].includes(a.status))actions.push('<button class="button button-secondary" data-action="shortlisted">SHORTLIST</button>');
@@ -102,8 +103,9 @@
         <div class="detail-actions">${actions.join('')}<span class="status-pill status-${esc(a.status)}">${esc(statusLabel(a.status))}</span></div>
       </div>
 
-      ${a.status==='accepted'?'<div class="accepted-note"><b>ATS MEMBER CREATED</b><br>Application converted to the live Team Engine. Member ID: '+esc(a.accepted_member_id||'—')+'. Account access is activated separately when the member login is connected.</div>':''}
+      ${a.status==='accepted'?'<div class="accepted-note"><b>ATS MEMBER CREATED</b><br>Application converted to the live Team Engine. Member ID: '+esc(a.accepted_member_id||'—')+'. The member signs in with the approved application email. First verified login links the account automatically.</div>':''}
 
+      <div class="detail-actions">${a.accepted_member_id?'<a class="button button-primary" href="/admin/studio-v9?member='+encodeURIComponent(a.accepted_member_id)+'#team">OPEN MEMBER & TASKS</a>':''}<a class="button button-secondary" href="/team-v9/">MEMBER LOGIN</a><a class="button button-secondary" href="/team-policy/">TEAM POLICY</a></div>
       <div class="detail-grid">
         <div class="info-card"><small>EMAIL</small><a href="mailto:${esc(a.email)}">${esc(a.email)}</a></div>
         <div class="info-card"><small>PHONE / WHATSAPP</small><b>${esc(a.phone||'—')}</b></div>
