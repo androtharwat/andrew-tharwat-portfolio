@@ -2,8 +2,11 @@ const EPS = 1e-9;
 const clamp01 = (v) => v < 0 ? 0 : v > 1 ? 1 : v;
 
 export const DEFAULT_THREAD_CANDIDATES = [
-  '#111111', '#f5f1e8', '#d92d35', '#f2c84b', '#2358a6', '#29a8c7',
-  '#c63786', '#2f7d4b', '#e47b2c', '#72452d', '#283a63', '#7a7a7a',
+  '#111111', '#2a1712', '#4b2b20', '#70452f', '#9a5e42', '#bd7956',
+  '#d99a72', '#e8b694', '#f0cfb4', '#f5e6d6', '#c77b77', '#d95f73',
+  '#c63786', '#8e365b', '#e47b2c', '#d92d35', '#f2c84b', '#6f7e3a',
+  '#2f7d4b', '#2f6f73', '#29a8c7', '#2358a6', '#283a63', '#72558d',
+  '#7a7a7a', '#b5aaa0',
 ];
 
 export function srgbChannelToLinear(v) {
@@ -167,6 +170,7 @@ export function buildPortraitPriorityMaps(rgb, size, {
   const importance = new Float32Array(size * size);
   const avoidance = new Float32Array(size * size);
   const featureMap = new Float32Array(size * size);
+  const subjectMap = new Float32Array(size * size);
   let weightedSum = 0, maskSum = 0;
 
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
@@ -190,6 +194,10 @@ export function buildPortraitPriorityMaps(rgb, size, {
     const mouth = gaussianFeature(ux, uy, 0.50, 0.70, 0.19, 0.060);
     const beard = gaussianFeature(ux, uy, 0.50, 0.79, 0.29, 0.18);
     const jaw = gaussianFeature(ux, uy, 0.50, 0.72, 0.39, 0.24);
+    const shoulders = gaussianFeature(ux, uy, 0.50, 1.06, 0.62, 0.28);
+    const upperTorso = gaussianFeature(ux, uy, 0.50, 1.22, 0.50, 0.34);
+    const subject = clamp01(Math.max(face, 0.88 * hair, 0.78 * jaw, 0.66 * shoulders, 0.42 * upperTorso));
+    subjectMap[p] = subject * m;
 
     const features = Math.min(1.9,
       0.88 * (leftBrow + rightBrow) +
@@ -219,7 +227,7 @@ export function buildPortraitPriorityMaps(rgb, size, {
     for (let p = 0; p < importance.length; p++) importance[p] = Math.min(5, importance[p] * inv);
   }
 
-  return { importance, avoidance, featureMap, faceBox: box };
+  return { importance, avoidance, featureMap, subjectMap, faceBox: box };
 }
 
 function mixOptical(colors, strengths) {
