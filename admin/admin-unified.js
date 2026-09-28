@@ -1419,8 +1419,9 @@
       const level=Math.max(0,...state.teamSkills.filter(s=>s.member_id===m.id&&s.skill===domain.lead_skill).map(s=>Number(s.level||0)));
       const load=state.projectTasks.filter(t=>t.owner_id===m.id&&['assigned','in_progress','review'].includes(t.status)).length;
       return {...m,level,load};
-    }).sort((a,b)=>b.level-a.level||a.load-b.load||a.full_name.localeCompare(b.full_name));
-    return rows.map(m=>'<option value="'+esc(m.id)+'" '+(domain.lead_member_id===m.id?'selected':'')+'>'+esc(m.full_name+(m.level?' · '+domain.lead_skill+' L'+m.level:'')+' · '+m.load+'/'+m.capacity)+'</option>').join('');
+    }).filter(m=>m.id===domain.lead_member_id||(m.available&&m.level>0))
+      .sort((a,b)=>b.level-a.level||a.load-b.load||a.full_name.localeCompare(b.full_name));
+    return rows.map(m=>'<option value="'+esc(m.id)+'" '+(domain.lead_member_id===m.id?'selected':'')+'>'+esc(m.full_name+' · '+domain.lead_skill+' L'+m.level+' · '+m.load+'/'+m.capacity)+'</option>').join('');
   }
   function renderProjectDomains(){
     const el=$('#project-domain-list');if(!el)return;
@@ -1472,9 +1473,9 @@
     const current=state.projectDomains.find(x=>x.id===id);
     let reason='';
     if(current?.lead_member_id&&current.lead_member_id!==memberId)reason=prompt('Reason for changing the accountable Domain Lead:')||'';
-    const r=await sb().rpc('studio_domain_command',{p_action:'assign_lead',p_payload:{workstream_id:id,member_id:memberId,reason}});
+    const r=await sb().rpc('studio_admin_assign_domain_lead',{p_workstream_id:id,p_member_id:memberId,p_reason:reason||null});
     if(r.error)return notify(r.error.message,'error');
-    await loadProjectWorkspace();notify('Domain Lead assigned.');
+    await loadProjectWorkspace();notify('Domain Lead assigned · blueprint tasks and dependencies synchronized.');
   }
   async function acceptDomain(id){
     const r=await sb().rpc('studio_domain_command',{p_action:'accept_domain',p_payload:{workstream_id:id}});
@@ -1544,9 +1545,11 @@
         try{blueprint=await ensureDeliveryBlueprint(p.lead_id,{force:false,silent:true})}catch(_){}
         if(blueprint?.status==='needs_evidence'){
           notify('Project created, but team activation is paused until the missing evidence is resolved.','error');
+        }else if(!['approved','activated'].includes(String(blueprint?.status||''))){
+          notify('Project created, but team activation is paused until Admin confirms the Delivery Blueprint.','error');
         }else{
           const built=await sb().rpc('studio_admin_build_delivery_system',{p_project_id:converted.data.project_id});
-          if(built.error)notify('Project created, but delivery system needs a manual refresh: '+built.error.message,'error');
+          if(built.error)notify('Project created, but delivery activation is blocked: '+built.error.message,'error');
         }
       }
     }
