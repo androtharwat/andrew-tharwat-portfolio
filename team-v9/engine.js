@@ -5,13 +5,14 @@
   const $ = (s, r = document) => r.querySelector(s);
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const admin = !!$('#app');
-  let sb, root, loading = false, active = false, tab = admin ? 'board' : 'available';
+  let sb, root, loading = false, active = false, tab = admin ? 'domains' : 'available';
   let rows = {tasks:[],members:[],skills:[],streams:[],ledger:[],events:[],projects:[],dependencies:[],context:[]};
   let me = null, email = '';
   let memberLinkOpened=false;
   const params=new URLSearchParams(location.search);
   const requestedMember=params.get('member');
   const requestedProject=params.get('project');
+  const requestedDomain=params.get('domain');
   const requestedNewTask=params.get('newTask')==='1';
   let requestedTaskOpened=false;
   const intake=[];
@@ -23,6 +24,12 @@
   const context = id => rows.context.find(c=>c.task_id===id)||{};
   const stream = id => rows.streams.find(w=>w.id===id)?.name || '';
   const load = id => rows.tasks.filter(t=>t.owner_id===id && openStates.includes(t.status)).length;
+  const domain = id => rows.streams.find(w=>w.id===id)||null;
+  const myDomains = () => rows.streams.filter(w=>w.lead_member_id===me);
+  const isDomainLead = workstreamId => !!me && domain(workstreamId)?.lead_member_id===me;
+  const domainTasks = id => rows.tasks.filter(t=>t.workstream_id===id);
+  const domainProgress = id => {const all=domainTasks(id),done=all.filter(t=>['accepted','closed'].includes(t.status)).length;return {all,done,pct:all.length?Math.round(done/all.length*100):0}};
+
   const overdue = t => !['accepted','closed'].includes(t.status) && Date.parse(t.due_at)<Date.now();
   const escalated = t => t.status==='available' && Date.parse(t.available_since)+t.escalate_hours*3600000<Date.now();
   const metric = (title,n) => `<div class="team-metric"><b>${esc(n)}</b><span>${esc(title)}</span></div>`;
@@ -65,13 +72,15 @@
   }
   function render() {
     const tasks=rows.tasks;
-    $('#team-tabs',root).innerHTML=(admin?[['board','Task board'],['attention','Needs attention'],['tasks','All tasks'],['members','Team load'],['wallet','Token ledger']]:[['available','Available tasks'],['mine','My work'],['reviews','My reviews'],['wallet','Wallet'],['history','History']]).map(([v,l])=>`<button type="button" data-team-tab="${v}" aria-current="${tab===v}">${l}</button>`).join('');
+    const memberTabs=(myDomains().length?[['domains','My domains']]:[]).concat([['available','Available tasks'],['mine','My work'],['reviews','My reviews'],['wallet','Wallet'],['history','History']]);
+    $('#team-tabs',root).innerHTML=(admin?[['domains','Domain delivery'],['board','Task board'],['attention','Needs attention'],['tasks','All tasks'],['members','Team load'],['wallet','Token ledger']]:memberTabs).map(([v,l])=>`<button type="button" data-team-tab="${v}" aria-current="${tab===v}">${l}</button>`).join('');
     const own=admin?tasks:tasks.filter(t=>t.owner_id===me);
-    if(admin){const overview=$('#team-overview');if(overview)overview.innerHTML=`<div><p class="overline">TEAM EXECUTION</p><h2>${tasks.filter(t=>t.status==='review'||overdue(t)||escalated(t)||t.rework_reason).length} items need attention</h2><p>${tasks.filter(t=>t.status==='available').length} unassigned · ${tasks.filter(t=>t.status==='review').length} awaiting review · ${tasks.filter(overdue).length} overdue</p></div><a class="button button-primary" href="#team">OPEN TEAM & TASKS</a>`;}
+    if(admin){const overview=$('#team-overview');if(overview)overview.innerHTML=`<div><p class="overline">TEAM EXECUTION</p><h2>${rows.streams.filter(w=>w.status==='review').length} domain outcomes · ${tasks.filter(t=>t.status==='review'||overdue(t)||escalated(t)||t.rework_reason).length} task exceptions need attention</h2><p>${rows.streams.filter(w=>w.status==='review').length} awaiting founder acceptance · ${tasks.filter(t=>t.status==='available').length} unassigned team tasks · ${tasks.filter(overdue).length} overdue</p></div><a class="button button-primary" href="#team">OPEN DOMAIN DELIVERY</a>`;}
     $('#team-metrics',root).innerHTML=admin?
       metric('Unassigned',tasks.filter(t=>t.status==='available').length)+metric('Active',tasks.filter(t=>openStates.includes(t.status)).length)+metric('Awaiting review',tasks.filter(t=>t.status==='review').length)+metric('Overdue',tasks.filter(overdue).length)+metric('Open rework',tasks.filter(t=>t.rework_reason).length)+metric('Founder queue',tasks.filter(escalated).length):
-      metric('Active / capacity',`${load(me)} / ${rows.members.find(m=>m.id===me)?.capacity??'—'}`)+metric('In review',own.filter(t=>t.status==='review').length)+metric('Accepted',own.filter(t=>['accepted','closed'].includes(t.status)).length)+metric('Overdue',own.filter(overdue).length);
+      metric('My domains',myDomains().filter(w=>!['accepted'].includes(w.status)).length)+metric('Active / capacity',`${load(me)} / ${rows.members.find(m=>m.id===me)?.capacity??'—'}`)+metric('In review',own.filter(t=>t.status==='review').length)+metric('Accepted',own.filter(t=>['accepted','closed'].includes(t.status)).length)+metric('Overdue',own.filter(overdue).length);
     const content=$('#team-content',root);
+    if(tab==='domains'){renderDomains(content);return;}
     if(tab==='board'){renderTaskBoard(content);return;}
     if(tab==='members'){content.innerHTML=rows.members.length?`<div class="team-grid">${rows.members.map(m=>`<article class="team-card"><h3>${esc(m.full_name)}</h3><p class="muted">${esc(m.email)} · ${esc(label(m.member_type))}</p><p>${load(m.id)} / ${m.capacity} active tasks · ${m.active?(m.available?'Available':'Unavailable'):'Inactive'}</p><progress value="${load(m.id)}" max="${Math.max(m.capacity,load(m.id))}"></progress><p>${rows.skills.filter(s=>s.member_id===m.id).map(s=>`${esc(s.skill)} · L${s.level}`).join(' / ')||'No skills recorded'}</p><small>${m.auth_user_id?'Account linked':'Waiting for first verified login'}</small><div class="team-actions">${button('Edit member','member',m.id)}${intake.filter(a=>a.accepted_member_id===m.id).map(a=>`<a href="/admin/team-applications?application=${encodeURIComponent(a.id)}">Application & policy acknowledgement</a>`).join('')}</div></article>`).join('')}</div>`:'<div class="team-empty">Add your first member to set up skills, capacity and task reviewers.</div>';return;}
     if(tab==='wallet'){renderWallet(content);return;}
@@ -84,6 +93,108 @@
     list=[...list].sort((a,b)=>Number(overdue(b))-Number(overdue(a))||Date.parse(a.due_at)-Date.parse(b.due_at));
     content.innerHTML=list.length?`<div class="team-grid">${list.map(taskCard).join('')}</div>`:`<div class="team-empty">${tab==='available'?'No tasks available for your skills, level and remaining capacity.':tab==='attention'?'No tasks need attention right now.':'No tasks in this view yet.'}</div>`;
   }
+  function projectTitleForDomain(w){
+    const first=domainTasks(w.id)[0];
+    return first?context(first.id).project_title||'Client project':'Client project';
+  }
+  function domainTaskRow(t){
+    const ctx=context(t.id),lead=isDomainLead(t.workstream_id);
+    let actions=button('Details','details',t.id);
+    if(lead){
+      if(t.status==='available')actions+=button('Assign','domain-assign-task',t.id,'primary');
+      if(['assigned','in_progress','review'].includes(t.status))actions+=button('Change deadline','domain-deadline-task',t.id);
+      if(['assigned','in_progress'].includes(t.status))actions+=button('Release','domain-unassign-task',t.id);
+      if(t.status==='review')actions+=button('Accept','accept',t.id,'primary')+button('Rework','rework',t.id);
+    }else if(!admin){
+      if(t.owner_id===me&&t.status==='assigned')actions+=button('Start','start',t.id,'primary');
+      if(t.owner_id===me&&t.status==='in_progress')actions+=button('Submit','submit',t.id,'primary');
+    }
+    return `<div class="domain-task-row"><div><span class="team-badge ${esc(t.status)}">${esc(label(t.status))}</span><b>${esc(t.title)}</b><small>${esc(ctx.owner_name||name(t.owner_id))} · ${esc(t.required_skill)} · Due ${esc(date(t.due_at))}</small></div><div class="team-actions">${actions}</div></div>`;
+  }
+  function domainCard(w){
+    const p=domainProgress(w.id),leadName=admin?name(w.lead_member_id):(w.lead_member_id===me?'You':'Domain Lead');
+    const allDone=p.all.length&&p.all.every(t=>['accepted','closed'].includes(t.status));
+    let actions='';
+    if(admin){
+      if(w.status==='review')actions+=button('Accept outcome','domain-accept',w.id,'primary')+button('Rework','domain-rework',w.id);
+    }else if(w.lead_member_id===me){
+      actions+=button('+ Team task','domain-new-task',w.id);
+      if(allDone&&['active','rework'].includes(w.status))actions+=button('Submit domain outcome','domain-submit',w.id,'primary');
+    }
+    const teamRows=admin?'':`<div class="domain-team-list">${p.all.length?p.all.map(domainTaskRow).join(''):'<div class="team-empty">No team tasks yet. Create the minimum tasks needed to reach the domain outcome.</div>'}</div>`;
+    return `<article class="domain-mission-card ${esc(w.status)}"><div class="domain-mission-head"><div><p class="overline">${esc((w.domain_key||'delivery').replaceAll('_',' '))}</p><h3>${esc(w.name)}</h3><small>${esc(projectTitleForDomain(w))}</small></div><span class="team-badge ${esc(w.status)}">${esc(label(w.status))}</span></div><div class="domain-accountability"><div><span>ACCOUNTABLE</span><b>${esc(leadName)}</b></div><div><span>TEAM PROGRESS</span><b>${p.done}/${p.all.length} accepted · ${p.pct}%</b></div></div><div class="domain-outcome"><span>OUTCOME YOU OWN</span><p>${esc(w.expected_outcome||'Outcome not defined.')}</p></div>${w.rework_reason?`<p class="team-message error">Admin rework: ${esc(w.rework_reason)}</p>`:''}${w.submission?`<div class="domain-submission"><span>DOMAIN DELIVERY</span><p>${esc(w.submission)}</p></div>`:''}${teamRows}<div class="team-actions domain-actions">${actions}</div></article>`;
+  }
+  function renderDomains(content){
+    let list=admin?rows.streams:myDomains();
+    if(requestedProject)list=list.filter(w=>w.project_id===requestedProject);
+    if(requestedDomain)list=list.filter(w=>w.id===requestedDomain);
+    list=[...list].sort((a,b)=>String(a.status).localeCompare(String(b.status))||String(a.name).localeCompare(String(b.name)));
+    const intro=admin
+      ?'<div class="domain-view-intro"><div><p class="overline">ACCOUNTABILITY LAYER</p><h2>One lead per domain</h2><p>You accept domain outcomes. Domain Leads manage the task detail with their teams.</p></div></div>'
+      :'<div class="domain-view-intro"><div><p class="overline">YOUR ACCOUNTABILITY</p><h2>Own the outcome, manage the team</h2><p>Break the domain outcome into team tasks, review their work, then submit one consolidated result to Admin.</p></div></div>';
+    content.innerHTML=intro+(list.length?'<div class="domain-mission-grid">'+list.map(domainCard).join('')+'</div>':'<div class="team-empty">No Domain Missions assigned to you yet.</div>');
+  }
+
+  async function domainCommand(action,payload){const q=await sb.rpc('studio_domain_command',{p_action:action,p_payload:payload});if(q.error)throw q.error;return q.data;}
+  async function domainCandidates(workstreamId,skill){
+    const q=await sb.rpc('studio_domain_candidates',{p_workstream_id:workstreamId,p_required_skill:skill||null});
+    if(q.error)throw q.error;return Array.isArray(q.data)?q.data:[];
+  }
+  async function domainNewTask(workstreamId){
+    const w=domain(workstreamId);if(!w)return;
+    const due=w.due_at?localDate(w.due_at):localDate(new Date(Date.now()+7*86400000).toISOString());
+    modal('New team task · '+w.name,
+      field('title','Task name','','text','required maxlength="200"')+
+      field('required_skill','Required skill',w.lead_skill||'','text','required maxlength="80"')+
+      field('required_level','Minimum level',1,'number','min="1" max="5" required')+
+      field('base_tokens','Tokens',10,'number','min="1" max="100000" required')+
+      field('due_at','Deadline',due,'datetime-local','required')+
+      area('expected_output','Expected output')+
+      area('acceptance_criteria','Done when'),
+      async fd=>{
+        await domainCommand('create_task',{workstream_id:w.id,title:fd.get('title'),required_skill:fd.get('required_skill'),required_level:Number(fd.get('required_level')),base_tokens:Number(fd.get('base_tokens')),due_at:new Date(fd.get('due_at')).toISOString(),expected_output:fd.get('expected_output'),acceptance_criteria:fd.get('acceptance_criteria')});
+      },'Create team task');
+  }
+  async function domainAssignTask(taskId){
+    const t=rows.tasks.find(x=>x.id===taskId);if(!t)return;
+    const candidates=await domainCandidates(t.workstream_id,t.required_skill);
+    const eligible=candidates.filter(x=>x.eligible);
+    if(!eligible.length)return message('No available team member currently matches '+t.required_skill+' at the required capacity.',true);
+    modal('Assign · '+t.title,
+      select('member_id','Team member',eligible.map(m=>[m.id,m.full_name+' · '+m.skill+' L'+m.level+' · '+m.active_load+'/'+m.capacity]),eligible[0]?.id,'required'),
+      async fd=>{await domainCommand('assign_task',{workstream_id:t.workstream_id,id:t.id,member_id:fd.get('member_id')});},
+      'Assign task');
+  }
+  async function domainSubmit(wid){
+    const w=domain(wid);if(!w)return;
+    const items=domainTasks(w.id).filter(t=>['accepted','closed'].includes(t.status));
+    const seed=items.map((t,i)=>(i+1)+'. '+t.title+(t.submission?'\n   '+t.submission:'')).join('\n\n');
+    modal('Submit domain outcome · '+w.name,
+      '<div class="wide"><p class="muted">Admin receives this consolidated outcome — not your internal task-by-task management.</p></div>'+
+      area('submission','Domain result / deliverable',seed||'',true),
+      async fd=>{await domainCommand('submit_domain',{workstream_id:w.id,submission:fd.get('submission')});},
+      'Submit to Admin');
+  }
+  async function domainAdminAction(action,wid){
+    const w=domain(wid);if(!w)return;
+    if(action==='domain-rework'){
+      modal('Return domain for rework',area('reason','What must change?','',true),async fd=>{await domainCommand('rework_domain',{workstream_id:w.id,reason:fd.get('reason')});},'Send rework');
+    }else{
+      await domainCommand('accept_domain',{workstream_id:w.id});
+      if(await refresh())message('Domain outcome accepted.');
+    }
+  }
+  async function domainTaskManage(action,taskId){
+    const t=rows.tasks.find(x=>x.id===taskId);if(!t)return;
+    if(action==='domain-assign-task')return domainAssignTask(taskId);
+    if(action==='domain-unassign-task'){
+      return modal('Release team task',area('reason','Reason','',true),async fd=>{await domainCommand('unassign_task',{workstream_id:t.workstream_id,id:t.id,reason:fd.get('reason')});},'Release');
+    }
+    if(action==='domain-deadline-task'){
+      return modal('Change deadline',field('due_at','New deadline',localDate(t.due_at),'datetime-local','required')+area('reason','Reason','',true),async fd=>{await domainCommand('deadline_task',{workstream_id:t.workstream_id,id:t.id,due_at:new Date(fd.get('due_at')).toISOString(),reason:fd.get('reason')});},'Change deadline');
+    }
+  }
+
   function renderTaskBoard(content){
     const scoped=requestedProject?rows.tasks.filter(t=>t.project_id===requestedProject):rows.tasks;
     const p=requestedProject?rows.projects.find(x=>x.id===requestedProject):null;
@@ -108,7 +219,8 @@
       if(['accepted','closed'].includes(t.status))actions+=button('Bonus','bonus',t.id);
       if(t.status==='accepted')actions+=button('Close task','close',t.id);
     }else{
-      if(t.status==='available'&&t.reviewer_id!==me)actions+=button('Take task','claim',t.id,'primary');
+      if(isDomainLead(t.workstream_id)&&t.status==='available')actions+=button('Assign','domain-assign-task',t.id,'primary');
+      else if(t.status==='available'&&t.reviewer_id!==me)actions+=button('Take task','claim',t.id,'primary');
       if(t.owner_id===me&&t.status==='assigned')actions+=button('Start task','start',t.id,'primary');
       if(t.owner_id===me&&t.status==='in_progress')actions+=button('Submit for review','submit',t.id,'primary');
       if(t.reviewer_id===me&&t.status==='review'){actions+=button('Return for rework','rework',t.id);if(!t.admin_acceptance)actions+=button('Accept','accept',t.id,'primary');}
@@ -181,7 +293,14 @@
     const t=e.target.closest('[data-team-tab]');if(t){tab=t.dataset.teamTab;render();return;}
     const b=e.target.closest('[data-team-action]');if(!b)return;
     const a=b.dataset.teamAction,id=b.dataset.id;
-    if(a==='refresh')return refresh();if(a==='member')return memberForm(id);if(a==='task')return taskForm(id);taskAction(a,id);
+    if(a==='refresh')return refresh();
+    if(a==='member')return memberForm(id);
+    if(a==='task')return taskForm(id);
+    if(a==='domain-new-task')return domainNewTask(id);
+    if(a==='domain-assign-task'||a==='domain-unassign-task'||a==='domain-deadline-task')return domainTaskManage(a,id);
+    if(a==='domain-submit')return domainSubmit(id);
+    if(a==='domain-accept'||a==='domain-rework')return domainAdminAction(a,id);
+    taskAction(a,id);
   }
   function showAdmin() {
     if(!active||location.hash!=='#team')return;
@@ -197,7 +316,7 @@
     active=true;await refresh();showAdmin();
     if(requestedProject){
       const p=rows.projects.find(x=>x.id===requestedProject);
-      if(p){tab='board';render();message('Project ready for execution: '+p.title+'. Follow the board from To Assign → Done.');}
+      if(p){tab=requestedDomain?'domains':'domains';render();message('Project accountability loaded: '+p.title+'. Review Domain Leads and outcomes first; task detail stays underneath each domain.');}
     }
     if(requestedNewTask&&requestedProject&&!requestedTaskOpened&&rows.projects.some(x=>x.id===requestedProject)){
       requestedTaskOpened=true;setTimeout(()=>taskForm(null),80);
@@ -208,7 +327,7 @@
     sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{storageKey:'ats-team-auth-v1',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
     root=$('#team-member-root');initRoot();
     const authMessage=(text)=>{$('#team-auth-message').textContent=text;};
-    async function activate(){try{const r=await command('activate',{});me=r.member_id;$('#team-auth').hidden=true;root.hidden=false;$('#team-signout').hidden=false;active=true;await refresh();}catch(e){authMessage(e.message);$('#team-signout').hidden=false;}}
+    async function activate(){try{const r=await command('activate',{});me=r.member_id;$('#team-auth').hidden=true;root.hidden=false;$('#team-signout').hidden=false;active=true;await refresh();if(myDomains().length){tab='domains';render();}}catch(e){authMessage(e.message);$('#team-signout').hidden=false;}}
     $('#team-email-form').onsubmit=async e=>{e.preventDefault();const b=$('button',e.target);b.disabled=true;email=e.target.elements.email.value.trim();try{const r=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});if(r.error)throw r.error;$('#team-code-form').hidden=false;$('#team-email-form').hidden=true;authMessage('Enter the login code from your email.');}catch(ex){authMessage(ex.message);}finally{b.disabled=false;}};
     $('#team-code-form').onsubmit=async e=>{e.preventDefault();const b=$('button',e.target);b.disabled=true;try{const r=await sb.auth.verifyOtp({email,token:e.target.elements.code.value.trim(),type:'email'});if(r.error)throw r.error;await activate();}catch(ex){authMessage(ex.message);}finally{b.disabled=false;}};
     $('#team-change-email').onclick=()=>{$('#team-code-form').hidden=true;$('#team-email-form').hidden=false;$('#team-code-form').reset();authMessage('');};
