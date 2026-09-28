@@ -94,6 +94,7 @@
     content.innerHTML=list.length?`<div class="team-grid">${list.map(taskCard).join('')}</div>`:`<div class="team-empty">${tab==='available'?'No tasks available for your skills, level and remaining capacity.':tab==='attention'?'No tasks need attention right now.':'No tasks in this view yet.'}</div>`;
   }
   function projectTitleForDomain(w){
+    if(admin)return project(w.project_id);
     const first=domainTasks(w.id)[0];
     return first?context(first.id).project_title||'Client project':'Client project';
   }
