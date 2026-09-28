@@ -210,7 +210,7 @@
         '<label class="wide">PRIMARY GOAL<textarea name="primary_goal" placeholder="Sales, leads, awareness, engagement…">'+esc(values.primary_goal||'')+'</textarea></label>'+
         '<label class="wide">PRODUCTS / SERVICES<textarea name="products_services">'+esc(values.products_services||'')+'</textarea></label>'+
         '<label>RESPONSIBLE OWNER<select name="responsible_member_id">'+memberOptions(values.responsible_member_id,false)+'</select></label>'+
-        '<label>REVIEWER<select name="reviewer_member_id">'+memberOptions(values.reviewer_member_id,true)+'</select></label>'+
+        '<label>REVIEWER<select name="reviewer_member_id" '+(values.source_task_id?'disabled':'')+'>'+memberOptions(values.reviewer_member_id,true)+'</select>'+(values.source_task_id?'<input type="hidden" name="reviewer_member_id" value="'+esc(values.reviewer_member_id||'')+'">':'')+'</label>'+
         '<label class="wide">PLATFORMS<div class="social-checks">'+['facebook','instagram','tiktok','linkedin','youtube','x'].map(p=>'<label><input type="checkbox" name="platforms" value="'+p+'" '+((values.platforms||[]).includes(p)?'checked':'')+'> '+p+'</label>').join('')+'</div></label>'+
         '<label class="wide">NOTES<textarea name="content_notes">'+esc(values.content_notes||'')+'</textarea></label>'+
       '</form>'+
