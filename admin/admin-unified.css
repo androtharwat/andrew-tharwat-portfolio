@@ -220,3 +220,26 @@ linear-gradient(145deg,#081f2d,#061923)!important}
   .lead-simple-grid{grid-template-columns:1fr}
   .lead-execution-steps{grid-template-columns:1fr 1fr}
 }
+
+/* ATS task execution workspace */
+.lead-task-workspace-dialog{width:min(860px,94vw);max-height:88vh;padding:0;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:#071b28;color:#eef6fa;box-shadow:0 28px 90px rgba(0,0,0,.55)}
+.lead-task-workspace-dialog::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(5px)}
+.lead-task-dialog-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:22px 24px;border-bottom:1px solid rgba(255,255,255,.08)}
+.lead-task-dialog-head span{display:block;color:#ff6679;font-size:7px;font-weight:900;letter-spacing:1.2px}
+.lead-task-dialog-head h3{margin:7px 0 5px;font-size:18px;line-height:1.45}
+.lead-task-dialog-head small{color:#76909e;font-size:8px}
+.lead-task-dialog-head>button{border:0;background:transparent;color:#fff;font-size:24px;cursor:pointer}
+.lead-task-exec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:18px 24px 0}
+.lead-task-exec-grid article{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:#091f2d}
+.lead-task-exec-grid article.wide{grid-column:1/-1}
+.lead-task-exec-grid span,.lead-task-result>span{display:block;color:#69bfe6;font-size:7px;font-weight:900;letter-spacing:1px}
+.lead-task-exec-grid p{margin:7px 0 0;color:#dbe8ee;font-size:10px;line-height:1.65;white-space:pre-wrap}
+.lead-task-result{display:block;padding:18px 24px}
+.lead-task-result textarea{width:100%;min-height:150px;margin-top:9px;padding:13px 14px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#061722;color:#edf5f8;resize:vertical;box-sizing:border-box;font:inherit;font-size:10px;line-height:1.6}
+.lead-task-dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 24px 22px;flex-wrap:wrap}
+.lead-task-dialog-actions button{min-height:38px}
+.lead-plan-item.current{border-color:rgba(255,93,111,.45);background:rgba(239,35,60,.06)}
+.lead-plan-item.current>span{color:#ff7181}
+.lead-plan-item.done{border-color:rgba(65,196,135,.3);background:rgba(65,196,135,.06);opacity:.82}
+.lead-plan-item.done>span{color:#7cddb0}
+@media(max-width:720px){.lead-task-exec-grid{grid-template-columns:1fr}.lead-task-exec-grid article.wide{grid-column:auto}.lead-task-dialog-actions{justify-content:stretch}.lead-task-dialog-actions button{flex:1}}
