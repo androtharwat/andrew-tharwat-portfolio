@@ -13,6 +13,7 @@
   const requestedMember=params.get('member');
   const requestedProject=params.get('project');
   const requestedDomain=params.get('domain');
+  const requestedTask=params.get('task');
   const requestedNewTask=params.get('newTask')==='1';
   let requestedTaskOpened=false;
   const intake=[];
@@ -325,10 +326,19 @@
   }
   async function initMember() {
     const cfg=window.PORTFOLIO_CONFIG;if(!window.supabase||!cfg){$('#team-auth-message').textContent='Connection library unavailable. Please reload.';return;}
-    sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{storageKey:'ats-team-auth-v1',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+    sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{storageKey:'ats-team-auth-v1',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     root=$('#team-member-root');initRoot();
     const authMessage=(text)=>{$('#team-auth-message').textContent=text;};
-    async function activate(){try{const r=await command('activate',{});me=r.member_id;$('#team-auth').hidden=true;root.hidden=false;$('#team-signout').hidden=false;active=true;await refresh();if(myDomains().length){tab='domains';render();}}catch(e){authMessage(e.message);$('#team-signout').hidden=false;}}
+    async function activate(){try{const r=await command('activate',{});me=r.member_id;$('#team-auth').hidden=true;root.hidden=false;$('#team-signout').hidden=false;active=true;await refresh();
+      if(requestedTask&&rows.tasks.some(t=>t.id===requestedTask)){
+        const target=rows.tasks.find(t=>t.id===requestedTask);
+        tab=isDomainLead(target.workstream_id)?'domains':target.owner_id===me?'mine':'available';
+        render();
+        setTimeout(()=>taskAction('details',requestedTask),100);
+      }else if(requestedDomain&&myDomains().some(w=>w.id===requestedDomain)){
+        tab='domains';render();
+      }else if(myDomains().length){tab='domains';render();}
+    }catch(e){authMessage(e.message);$('#team-signout').hidden=false;}}
     $('#team-email-form').onsubmit=async e=>{e.preventDefault();const b=$('button',e.target);b.disabled=true;email=e.target.elements.email.value.trim();try{const r=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});if(r.error)throw r.error;$('#team-code-form').hidden=false;$('#team-email-form').hidden=true;authMessage('Enter the login code from your email.');}catch(ex){authMessage(ex.message);}finally{b.disabled=false;}};
     $('#team-code-form').onsubmit=async e=>{e.preventDefault();const b=$('button',e.target);b.disabled=true;try{const r=await sb.auth.verifyOtp({email,token:e.target.elements.code.value.trim(),type:'email'});if(r.error)throw r.error;await activate();}catch(ex){authMessage(ex.message);}finally{b.disabled=false;}};
     $('#team-change-email').onclick=()=>{$('#team-code-form').hidden=true;$('#team-email-form').hidden=false;$('#team-code-form').reset();authMessage('');};
