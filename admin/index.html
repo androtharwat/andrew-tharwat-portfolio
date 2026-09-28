@@ -11,7 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin.css?v=5" />
   <link rel="stylesheet" href="/ats-brand.css?v=2" />
-  <link rel="stylesheet" href="/admin/admin-unified.css?v=10" />\n  <link rel="stylesheet" href="/admin/social-os.css?v=1" />
+  <link rel="stylesheet" href="/admin/admin-unified.css?v=10" />
+  <link rel="stylesheet" href="/admin/social-os.css?v=1" />
   <link rel="stylesheet" href="/admin/admin-i18n.css?v=1" />
 </head>
 <body>
@@ -47,6 +48,8 @@
         <button data-tab="studio-projects">▣ <span>Client Projects</span></button>
         <button data-tab="proposals">▤ <span>Proposals</span></button>
         <button data-tab="payments">£ <span>Payments</span></button>
+        <small class="nav-section">SOCIAL OPERATIONS</small>
+        <button data-tab="social">◉ <span>Social Media</span></button>
         <small class="nav-section">TEAM OPERATIONS</small><a href="/admin/team-applications" style="display:block;padding:12px;color:inherit">◎ طلبات الانضمام</a><a href="/admin/team-tasks#team" style="display:block;padding:12px;color:inherit">◈ الفريق والمهام</a><a href="/team-policy" style="display:block;padding:12px;color:inherit">سياسة الفريق</a><small class="nav-section">WEBSITE</small>
         <button data-tab="projects">◆ <span>Website Projects</span></button>
         <button data-tab="categories">◈ <span>Categories</span></button>
@@ -118,7 +121,11 @@
         <div id="ops-payments-list"><div class="loading-line">Open Payments to load live data.</div></div>
       </section>
 
-      <section class="tab-panel" data-panel="social">\n        <div id="social-os-root"><div class="panel-card"><div class="loading-line">Open Social Media to load Social OS.</div></div></div>\n      </section>\n\n      <section class="tab-panel" data-panel="projects">
+      <section class="tab-panel" data-panel="social">
+        <div id="social-os-root"><div class="panel-card"><div class="loading-line">Open Social Media to load Social OS.</div></div></div>
+      </section>
+
+      <section class="tab-panel" data-panel="projects">
         <div class="toolbar"><input id="project-search" placeholder="Search projects..." /><select id="project-filter"><option value="all">All status</option><option value="published">Published</option><option value="draft">Draft</option></select><button id="add-project" class="primary">+ ADD PROJECT</button></div>
         <div id="projects-list" class="projects-list"></div>
       </section>
