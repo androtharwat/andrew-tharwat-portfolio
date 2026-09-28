@@ -192,16 +192,56 @@ Deno.serve(async(req:Request)=>{
     }
     if(!caseId)return json({error:'case_id or lead_id is required'},400)
 
-    if(!force){
-      const cached=await admin.from('studio_delivery_blueprints').select('*').eq('case_id',caseId).maybeSingle()
-      if(cached.error)return json({error:cached.error.message},500)
-      if(cached.data)return json({ok:true,cached:true,blueprint:cached.data})
-    }
-
     const cq=await admin.from('studio_discovery_cases').select('*').eq('id',caseId).maybeSingle()
     if(cq.error||!cq.data)return json({error:'Discovery case not found'},404)
     const caseRow=cq.data
     leadId=caseRow.lead_id
+
+    const cached=await admin.from('studio_delivery_blueprints').select('*').eq('case_id',caseId).maybeSingle()
+    if(cached.error)return json({error:cached.error.message},500)
+    if(cached.data?.status==='activated')return json({ok:true,cached:true,blueprint:cached.data})
+
+    const decisionStage=clean(caseRow.decision_stage||'needs_evidence',60)
+    if(decisionStage==='needs_evidence'){
+      const ar=/[\u0600-\u06ff]/.test(JSON.stringify(caseRow))
+      const labels:any={
+        current_state:ar?'الوضع الحالي':'current situation',
+        impact:ar?'التأثير':'impact',
+        evidence:ar?'الدليل':'evidence',
+        affected_people:ar?'الأشخاص المتأثرون':'affected people',
+        process_point:ar?'نقطة ظهور المشكلة':'process point',
+        prior_attempts:ar?'المحاولات السابقة':'previous attempts',
+        desired_outcome:ar?'النتيجة المطلوبة':'desired outcome',
+        constraints:ar?'القيود':'constraints'
+      }
+      const explicit=clean(caseRow.system_next_question?.question,1200)
+      const gaps:string[]=[]
+      if(explicit)gaps.push(explicit)
+      for(const key of Object.keys(labels)){
+        if(!clean(caseRow[key],100)&&!gaps.includes(labels[key]))gaps.push(labels[key])
+      }
+      const now=new Date().toISOString()
+      const blockedBlueprint={
+        summary:ar?'الفهم غير مكتمل بعد. لا يتم تحويل الطلب إلى الفريق قبل إغلاق المعلومات المؤثرة على القرار.':'Understanding is not complete yet. The request will not be handed to the team until decision-critical evidence gaps are closed.',
+        readiness:'needs_evidence',
+        evidence_gaps:gaps.slice(0,6),
+        domains:[]
+      }
+      const blocked=await admin.from('studio_delivery_blueprints').upsert({
+        case_id:caseId,lead_id:leadId,status:'needs_evidence',blueprint:blockedBlueprint,
+        source_snapshot:{decision_stage:decisionStage,system_next_question:caseRow.system_next_question||null,case_updated_at:caseRow.updated_at||null},
+        model:'operating-gate',generation_notes:'Blocked before team handoff because ATS diagnosis still requires evidence.',
+        generated_at:now,approved_at:null,updated_at:now
+      },{onConflict:'case_id'}).select('*').single()
+      if(blocked.error)return json({error:blocked.error.message},500)
+      return json({ok:true,cached:false,blocked:true,blueprint:blocked.data})
+    }
+
+    if(!force&&cached.data&&cached.data.status!=='needs_evidence'){
+      const generatedAt=Date.parse(cached.data.generated_at||cached.data.updated_at||0)
+      const caseUpdatedAt=Date.parse(caseRow.updated_at||0)
+      if(!caseUpdatedAt||generatedAt>=caseUpdatedAt)return json({ok:true,cached:true,blueprint:cached.data})
+    }
     const [leadQ,answersQ,causesQ,tasksQ,sourcesQ]=await Promise.all([
       admin.from('studio_leads').select('*').eq('id',leadId).maybeSingle(),
       admin.from('studio_discovery_answers').select('*').eq('case_id',caseId).order('created_at',{ascending:true}),
@@ -234,7 +274,8 @@ Deno.serve(async(req:Request)=>{
         process_point:caseRow.process_point,constraints:caseRow.constraints,root_problem:caseRow.root_problem,
         diagnosis_summary:caseRow.diagnosis_summary,system_problem_statement:caseRow.system_problem_statement,
         system_diagnosis_summary:caseRow.system_diagnosis_summary,system_confidence:caseRow.system_confidence,
-        decision_stage:caseRow.decision_stage,analysis_state:caseRow.analysis_state
+        decision_stage:caseRow.decision_stage,analysis_state:caseRow.analysis_state,
+        system_next_question:caseRow.system_next_question,system_next_action:caseRow.system_next_action
       },
       answers:(answersQ.data||[]).map((x:any)=>({question_key:x.question_key,answer:x.answer,source_channel:x.source_channel})),
       root_causes:(causesQ.data||[]).map((x:any)=>({statement:x.statement,status:x.status,confidence:x.confidence,validation_method:x.validation_method})),
@@ -273,6 +314,9 @@ RULES:
 13. Define acceptance_criteria as an observable condition, not "admin is satisfied".
 14. Dependencies must refer to task keys in the same blueprint.
 15. Assume the project team is lean. Prefer clear ownership and fewer handoffs.
+16. When decision_stage="needs_validation", convert the required validation into the FIRST executable delivery tasks under the appropriate Domain Lead. Do not send Admin back into a diagnostic checklist.
+17. Pre-project discovery remains private to Admin + Client. Team members receive only the approved domain outcome, task context, acceptance criteria, dependencies, and evidence needed to execute their work.
+18. The blueprint is an execution proposal until Admin approves it. Never imply that AI approval alone authorizes team activation.
 
 CASE SNAPSHOT:
 ${JSON.stringify(snapshot)}`
