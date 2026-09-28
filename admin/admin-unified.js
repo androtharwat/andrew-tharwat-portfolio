@@ -642,6 +642,7 @@
     if(!lead||!c?.id)return notify('Open a lead with an active discovery case first.','error');
     if(String(c.analysis_state||'')!=='ready')return notify('Run ATS Understanding first so the request is based on the latest case evidence.','error');
     if(!items.length)return notify('No missing client information is currently identified.','error');
+    const whatsappPopup=normalizeWhatsAppNumber(lead.phone)?window.open('about:blank','_blank'):null;
     const arabic=/[\u0600-\u06ff]/.test(String(lead.project_goal||lead.ats_understanding||lead.full_name||''));
     const question=(arabic?'مطلوب من ATS علشان نكمل تقييم الطلب بدقة:\n':'ATS needs the following to complete the assessment accurately:\n')+items.map((x,i)=>(i+1)+'. '+x).join('\n');
     const reason=arabic?'جاوب بالمعلومات المتاحة وارفع الصور أو الفيديوهات أو الملفات المرتبطة مباشرة بالطلب. مش مطلوب منك تجهيز بريف جديد.':'Reply with what you know and upload any directly relevant photos, videos or files. You do not need to prepare a new brief.';
@@ -657,11 +658,11 @@
     let accessCode=null;
     try{
       const issued=await sb().rpc('studio_admin_issue_client_access_code',{p_lead_id:lead.id,p_ttl_minutes:1440});
-      if(!issued.error&&issued.data?.code){accessCode=issued.data;renderClientAccessCode(issued.data)}
-    }catch(_){}
+      if(!issued.error&&issued.data?.code){accessCode=issued.data;renderClientAccessCode(issued.data);openClientAccessWhatsApp(issued.data,whatsappPopup)}
+    }catch(_){try{whatsappPopup?.close()}catch(__){}}
     await logLeadActivity('client_portal_request_published',{summary:'Evidence request published to Client Portal',requested_items:items,published_at:publishedAt});
     renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
-    notify(accessCode?.code?'Request published · Client Access code generated in Details.':'Request published to Client Portal.');
+    notify(accessCode?.code?(normalizeWhatsAppNumber(lead.phone)?'Request published · WhatsApp message is ready to send.':'Request published · add WhatsApp number to send access.'):'Request published to Client Portal.');
   }
 
   async function approveSuggestedNextSteps(){
@@ -734,7 +735,7 @@
       '<div class="lead-simple-grid">'+
         '<article class="lead-simple-card understood"><span>ATS UNDERSTANDS</span><b>'+esc(understanding||'Still analyzing the request…')+'</b><small>'+esc((lead.service||'Client request')+' · '+Number(c.system_confidence||c.diagnosis_confidence||0)+'% confidence')+'</small></article>'+
         '<article class="lead-simple-card next"><span>NEED NOW</span><b>'+esc(needTitle)+'</b><small>'+esc(needDetail)+'</small>'+
-          (!portalRequestOpen&&missing.length&&!gate.coverage?'<button type="button" class="secondary" data-exec-action="publish-evidence">SEND TO CLIENT PORTAL</button>':'')+
+          (!portalRequestOpen&&missing.length&&!gate.coverage?'<button type="button" class="secondary" data-exec-action="publish-evidence">SEND TO CLIENT PORTAL</button>':portalRequestOpen?'<button type="button" class="secondary" data-exec-action="whatsapp-access">SEND ACCESS ON WHATSAPP</button>':'')+
         '</article>'+
       '</div>';
 
@@ -773,7 +774,7 @@
     }else if(String(c.analysis_state||'')==='analyzing'){
       btn.textContent='ATS IS ANALYZING…';btn.disabled=true;
     }else if(portalRequestOpen){
-      btn.textContent='REQUEST SENT · WAITING FOR CLIENT';btn.disabled=true;
+      btn.textContent='SEND / RESEND ACCESS ON WHATSAPP →';btn.dataset.action='whatsapp-access';
     }else if(missing.length&&!gate.coverage){
       btn.textContent='SEND TO CLIENT PORTAL →';btn.dataset.action='publish-evidence';
     }else if(!String(c.root_problem||'').trim()&&String(c.system_problem_statement||'').trim()){
@@ -842,6 +843,39 @@
     const wa=$('#lead-wa-link');const digits=String(x.phone||'').replace(/\D/g,'');wa.href=digits?'https://wa.me/'+digits:'#';wa.classList.toggle('hidden',!digits);
     updateLeadWorkspaceState();setLeadFocusMode(true);$('#lead-dialog').showModal();await Promise.all([loadLeadTimeline(x.id),loadLeadDiagnosis(x.id)]);await refreshLeadExecutionPath();
   }
+  function normalizeWhatsAppNumber(raw){
+    let digits=String(raw||'').replace(/\D/g,'');
+    if(digits.startsWith('00'))digits=digits.slice(2);
+    if(/^01\d{9}$/.test(digits))digits='20'+digits.slice(1);
+    return digits;
+  }
+
+  function clientAccessWhatsAppUrl(data,lead=state.currentLead){
+    const digits=normalizeWhatsAppNumber(lead?.phone);
+    if(!digits||!data?.code)return '';
+    const email=String(lead?.email||'').trim().toLowerCase();
+    const link=location.origin+'/client-access/?email='+encodeURIComponent(email);
+    const arabic=/[\u0600-\u06ff]/.test(String(lead?.full_name||lead?.project_goal||''));
+    const firstName=String(lead?.full_name||'').trim()||'';
+    const msg=arabic
+      ?'أهلاً '+firstName+'،\n\nATS محتاج منك استكمال بعض المعلومات الخاصة بطلبك.\n\nافتح مساحة العميل من هنا:\n'+link+'\n\nكود الدخول: '+data.code+'\n\nالكود صالح لمدة 24 ساعة ويستخدم مرة واحدة. بعد الدخول هتلاقي طلب ATS وتقدر ترد وترفع الصور والفيديوهات والملفات المطلوبة من نفس الصفحة.'
+      :'Hi '+firstName+',\n\nATS needs a few details to continue your request.\n\nOpen your Client Access here:\n'+link+'\n\nAccess code: '+data.code+'\n\nThe code is valid for 24 hours and can be used once. Inside Client Access you can reply and upload the requested photos, videos and files.';
+    return 'https://wa.me/'+digits+'?text='+encodeURIComponent(msg);
+  }
+
+  function openClientAccessWhatsApp(data,popup=null){
+    const url=clientAccessWhatsAppUrl(data);
+    if(!url){try{popup?.close()}catch(_){ } return false}
+    try{
+      if(popup&&!popup.closed)popup.location.href=url;
+      else window.open(url,'_blank','noopener');
+      return true;
+    }catch(_){
+      try{popup?.close()}catch(__){}
+      return false;
+    }
+  }
+
   function renderClientAccessCode(data){
     const x=state.currentLead,code=$('#client-access-code'),stateEl=$('#client-access-code-state'),copy=$('#copy-client-access-code'),share=$('#share-client-access-wa');
     state.clientAccessCode=data||null;
@@ -850,13 +884,29 @@
     const exp=data.expires_at?new Date(data.expires_at):null;
     stateEl.textContent=exp?'Valid until '+exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' · one-time use · max 5 attempts':'One-time access code';
     copy.classList.remove('hidden');
-    const digits=String(x?.phone||'').replace(/\D/g,'');
-    const link=location.origin+'/client-access/';
-    if(digits){
-      const msg='ATS Client Access\n\nEmail: '+(x?.email||'')+'\nAccess Code: '+data.code+'\nOpen: '+link+'\n\nThis code is one-time and expires automatically.';
-      share.href='https://wa.me/'+digits+'?text='+encodeURIComponent(msg);share.classList.remove('hidden');
-    }else share.classList.add('hidden');
+    const url=clientAccessWhatsAppUrl(data,x);
+    if(url){share.href=url;share.textContent='SEND ACCESS ON WHATSAPP →';share.classList.remove('hidden')}
+    else share.classList.add('hidden');
   }
+
+  async function issueAndOpenClientAccessWhatsApp(){
+    const lead=state.currentLead;if(!lead)return;
+    if(!lead.email)return notify('Add the client email first.','error');
+    if(!normalizeWhatsAppNumber(lead.phone))return notify('Add the client WhatsApp number first.','error');
+    const popup=window.open('about:blank','_blank');
+    try{
+      const {data,error}=await sb().rpc('studio_admin_issue_client_access_code',{p_lead_id:lead.id,p_ttl_minutes:1440});
+      if(error)throw error;
+      renderClientAccessCode(data);
+      const opened=openClientAccessWhatsApp(data,popup);
+      notify(opened?'WhatsApp message is ready to send.':'Access code generated · open WhatsApp from Details.');
+      await loadLeadTimeline(lead.id);
+    }catch(error){
+      try{popup?.close()}catch(_){}
+      notify(error.message||'Could not prepare WhatsApp access.','error');
+    }
+  }
+
   async function issueClientAccessCode(){
     const x=state.currentLead;if(!x)return;
     if(!x.email)return notify('Add an email before generating Client Access','error');
@@ -1093,6 +1143,7 @@
       const action=exec.dataset.execAction;
       if(action==='analysis'){void runDiagnosticEngine(false);return}
       if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
+      if(action==='whatsapp-access'){void issueAndOpenClientAccessWhatsApp();return}
       if(action==='approve-plan'){void approveSuggestedNextSteps();return}
       if(action==='accept-diagnosis'){void acceptSystemDiagnosis();return}
       if(action==='evidence'){setLeadFocusMode(false);const fold=$('#fold-discovery');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
@@ -1137,6 +1188,7 @@
     if(!action)return;
     if(action==='analysis'){void runDiagnosticEngine(false);return}
     if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
+      if(action==='whatsapp-access'){void issueAndOpenClientAccessWhatsApp();return}
     if(action==='approve-plan'){void approveSuggestedNextSteps();return}
     if(action==='accept-diagnosis'){void acceptSystemDiagnosis();return}
     if(action==='causes'){setLeadFocusMode(false);const fold=$('#fold-root-causes');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
