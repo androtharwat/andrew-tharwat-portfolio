@@ -889,8 +889,11 @@
     }
     d.close();
     await syncDiagnosisPhase();
+    if(state.currentLead?.id){
+      try{await ensureDeliveryBlueprint(state.currentLead.id,{force:true,silent:true})}catch(_){}
+    }
     renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
-    notify(next?'Task completed from evidence · next ATS task started.':'Task completed from evidence.');
+    notify(next?'Task completed · next validation task started.':'Validation complete · ATS delivery plan refreshed.');
   }
 
 
