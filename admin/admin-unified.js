@@ -1122,6 +1122,7 @@
     if(action==='causes'){setLeadFocusMode(false);const fold=$('#fold-root-causes');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
     if(action==='verification'){setLeadFocusMode(false);const fold=$('#fold-solution-tasks');fold?.setAttribute('open','');if($('#solution-task-type'))$('#solution-task-type').value='verification';fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
     if(action==='diagnosis'){setLeadFocusMode(false);$('.diagnosis-workspace-card')?.scrollIntoView({behavior:'smooth',block:'start'});return}
+    if(action==='qualify'){if($('#lead-status'))$('#lead-status').value='qualified';if($('#lead-next-action'))$('#lead-next-action').value='Prepare proposal';updateLeadWorkspaceState();await saveLead(false);await refreshLeadExecutionPath();return}
     if(action==='create-proposal'){$('#lead-create-proposal')?.click();return}
     if(action==='open-proposal'){const leadId=state.currentLead?.id;$('#lead-dialog')?.close();await loadProposals(true);openProposal(id||null,leadId);return}
     if(action==='accept-proposal'){await loadProposals(true);await acceptProposal(id);await refreshLeadExecutionPath();return}
