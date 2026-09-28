@@ -72,14 +72,18 @@
     const p=await client.from('studio_projects').select('*').eq('id',projectId).single();
     if(p.error)throw p.error;
     const project=p.data;
-    const [cl,lead,proposal,tasks,streams]=await Promise.all([
+    const proposalQuery=project.source_proposal_id
+      ?client.from('studio_proposals').select('*').eq('id',project.source_proposal_id).maybeSingle()
+      :(project.source_lead_id?client.from('studio_proposals').select('*').eq('lead_id',project.source_lead_id).order('created_at',{ascending:false}).limit(1).maybeSingle():Promise.resolve({data:null}));
+    const [cl,lead,proposal,tasks,streams,files]=await Promise.all([
       client.from('studio_clients').select('*').eq('id',project.client_id).maybeSingle(),
       project.source_lead_id?client.from('studio_leads').select('*').eq('id',project.source_lead_id).maybeSingle():Promise.resolve({data:null}),
-      project.source_proposal_id?client.from('studio_proposals').select('*').eq('id',project.source_proposal_id).maybeSingle():Promise.resolve({data:null}),
+      proposalQuery,
       client.from('studio_project_tasks').select('*').eq('project_id',project.id).order('created_at',{ascending:true}),
-      client.from('studio_project_workstreams').select('*').eq('project_id',project.id)
+      client.from('studio_project_workstreams').select('*').eq('project_id',project.id),
+      client.from('studio_files').select('*').eq('project_id',project.id).order('created_at',{ascending:false})
     ]);
-    const bad=[cl,lead,proposal,tasks,streams].find(x=>x?.error); if(bad)throw bad.error;
+    const bad=[cl,lead,proposal,tasks,streams,files].find(x=>x?.error); if(bad)throw bad.error;
     let discovery=null,answers=[],solutions=[];
     if(project.source_lead_id){
       const dc=await client.from('studio_discovery_cases').select('*').eq('lead_id',project.source_lead_id).order('created_at',{ascending:false}).limit(1).maybeSingle();
@@ -97,7 +101,7 @@
     const projectTasks=(tasks.data||[]).map(t=>({...t,workstream_name:streamMap[t.workstream_id]||''}));
     const brand=await client.from('studio_social_brands').select('*').eq('project_id',project.id).maybeSingle();
     if(brand.error)throw brand.error;
-    return {project,client:cl.data||null,lead:lead.data||null,proposal:proposal.data||null,discovery,answers,solutions,projectTasks,brand:brand.data||null};
+    return {project,client:cl.data||null,lead:lead.data||null,proposal:proposal.data||null,discovery,answers,solutions,projectTasks,projectFiles:files.data||[],brand:brand.data||null};
   }
 
   function eligible(ctx){
@@ -142,7 +146,8 @@
       discovery:ctx.discovery,
       discovery_answers:ctx.answers,
       approved_solution_tasks:ctx.solutions,
-      project_tasks:ctx.projectTasks
+      project_tasks:ctx.projectTasks,
+      project_files:ctx.projectFiles
     };
   }
 
@@ -159,7 +164,8 @@
       ctx.lead?.ats_understanding?'ATS understanding: '+ctx.lead.ats_understanding:'',
       ctx.discovery?.diagnosis_summary?'Diagnosis: '+ctx.discovery.diagnosis_summary:'',
       ctx.discovery?.constraints?'Constraints: '+ctx.discovery.constraints:'',
-      ctx.lead?.current_assets?.length?'Available assets: '+ctx.lead.current_assets.join(', '):''
+      ctx.lead?.current_assets?.length?'Available assets: '+ctx.lead.current_assets.join(', '):'',
+      ctx.projectFiles?.length?'Project files: '+ctx.projectFiles.map(x=>x.file_name||x.category||'file').join(', '):''
     ].filter(Boolean).join('\n');
     const reason=socialSignal([ctx.lead?.service,ctx.lead?.project_goal,ctx.proposal?.scope].join(' '))?'client_request':'project_task';
     return {
