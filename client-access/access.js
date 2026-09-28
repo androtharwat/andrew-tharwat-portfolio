@@ -5,7 +5,7 @@
   const fmt = v => v ? new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)) : '—';
   const esc = (v='') => String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const OTP_LENGTH = Number(window.ATS_AUTH?.accessCodeLength || window.ATS_AUTH?.otpLength || 6);
-  let sb = null, context = null, diagnosticRefreshPromise = null, leadEvidenceFiles = [];
+  let sb = null, context = null, diagnosticRefreshPromise = null, leadEvidenceFiles = [], adminRequestUploads = 0;
 
   function fileSize(v){const n=Number(v||0);if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';return (n/1048576).toFixed(1)+' MB'}
   function renderLeadEvidenceFiles(files=[]){
@@ -133,6 +133,11 @@
     return ar>en?'ar':'en';
   }
 
+  function isAdminPortalRequest(q){
+    const text=String(q?.question||'').trim();
+    return text.startsWith('مطلوب من ATS')||text.startsWith('ATS needs the following');
+  }
+
   function evidencePrompt(key,l='en'){
     const ar={
       current_state:['لو عندك حاجة بتوضح الوضع الحالي، هتفيدنا.','صورة، Screenshot، لينك أو ملف بسيط ممكن يساعدنا نشوف نفس اللي أنت شايفه.'],
@@ -172,7 +177,7 @@
     const known=labels.filter(([,v])=>String(v||'').trim());
     $('#discovery-known').innerHTML=known.length?known.map(([k,v])=>'<article><span>'+esc(k.toUpperCase())+'</span><p>'+esc(v)+'</p></article>').join(''):'<div class="discovery-file-empty">'+(l==='ar'?'لسه بنكوّن الصورة من كلامك.':'ATS is still building the picture from what you shared.')+'</div>';
 
-    const q=discovery.next_question,locked=!!proposal;
+    const q=discovery.next_question,locked=!!proposal,adminRequest=isAdminPortalRequest(q);
     $('#discovery-file-picker')?.classList.toggle('hidden',locked);
     const card=$('#discovery-question-card'),waiting=$('#discovery-waiting'),nudge=$('#evidence-nudge');
     card.classList.toggle('hidden',!q||locked);
