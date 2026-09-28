@@ -1,3 +1,4 @@
+-- ATS Domain Delivery V1 · Admin → Domain Lead → Team → Domain Outcome
 alter table public.studio_project_workstreams
   add column if not exists domain_key text,
   add column if not exists lead_skill text,
