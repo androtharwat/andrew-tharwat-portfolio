@@ -119,6 +119,8 @@
     if(admin){
       if(w.status==='review')actions+=button('Accept outcome','domain-accept',w.id,'primary')+button('Rework','domain-rework',w.id);
     }else if(w.lead_member_id===me){
+      const available=p.all.filter(t=>t.status==='available').length;
+      if(available)actions+=button('Auto distribute '+available,'domain-auto-distribute',w.id,'primary');
       actions+=button('+ Team task','domain-new-task',w.id);
       if(allDone&&['active','rework'].includes(w.status))actions+=button('Submit domain outcome','domain-submit',w.id,'primary');
     }
@@ -137,6 +139,15 @@
   }
 
   async function domainCommand(action,payload){const q=await sb.rpc('studio_domain_command',{p_action:action,p_payload:payload});if(q.error)throw q.error;return q.data;}
+  async function domainAutoDistribute(workstreamId){
+    const q=await sb.rpc('studio_domain_auto_distribute',{p_workstream_id:workstreamId});
+    if(q.error)throw q.error;
+    const assigned=Number(q.data?.assigned||0),skipped=Array.isArray(q.data?.skipped)?q.data.skipped:[];
+    await refresh();
+    if(skipped.length)message(assigned+' task'+(assigned===1?'':'s')+' assigned automatically · '+skipped.length+' need manual attention.',true);
+    else message(assigned+' task'+(assigned===1?'':'s')+' distributed automatically.');
+  }
+
   async function domainCandidates(workstreamId,skill){
     const q=await sb.rpc('studio_domain_candidates',{p_workstream_id:workstreamId,p_required_skill:skill||null});
     if(q.error)throw q.error;return Array.isArray(q.data)?q.data:[];
@@ -298,6 +309,7 @@
     if(a==='member')return memberForm(id);
     if(a==='task')return taskForm(id);
     if(a==='domain-new-task')return domainNewTask(id);
+    if(a==='domain-auto-distribute')return domainAutoDistribute(id);
     if(a==='domain-assign-task'||a==='domain-unassign-task'||a==='domain-deadline-task')return domainTaskManage(a,id);
     if(a==='domain-submit')return domainSubmit(id);
     if(a==='domain-accept'||a==='domain-rework')return domainAdminAction(a,id);
