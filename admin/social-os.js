@@ -38,6 +38,26 @@
     const list=reviewer?state.members.filter(m=>m.active):socialMembers();
     return '<option value="">'+(reviewer?'Choose reviewer':'Unassigned')+'</option>'+list.map(m=>'<option value="'+esc(m.id)+'" '+(selected===m.id?'selected':'')+'>'+esc(memberLabel(m.id)+(m.available?'':' · unavailable'))+'</option>').join('');
   }
+  async function syncOwnerAssignment(brand,newOwnerId){
+    if(!brand?.source_task_id)return;
+    let task=state.teamTasks.find(t=>t.id===brand.source_task_id);
+    if(!task){
+      const q=await sb().from('studio_project_tasks').select('id,owner_id,status,required_skill').eq('id',brand.source_task_id).maybeSingle();
+      if(q.error)throw q.error;task=q.data;
+    }
+    if(!task||task.owner_id===newOwnerId)return;
+    if(['accepted','closed'].includes(task.status))throw new Error('The linked Social Operations task is already closed. Create a new follow-up task before changing its owner.');
+    if(task.owner_id&&['assigned','in_progress','review'].includes(task.status)){
+      const un=await sb().rpc('studio_team_command',{p_action:'unassign',p_payload:{id:task.id,reason:'Owner changed from Social OS'}});
+      if(un.error)throw un.error;
+      task.owner_id=null;task.status='available';
+    }
+    if(newOwnerId&&task.status==='available'){
+      const asn=await sb().rpc('studio_team_command',{p_action:'assign',p_payload:{id:task.id,member_id:newOwnerId,override_capacity:false,reason:'Assigned from Social OS'}});
+      if(asn.error)throw asn.error;
+      task.owner_id=newOwnerId;task.status=asn.data?.status||'assigned';
+    }
+  }
 
   function platformPills(arr){
     return (arr||[]).map(x=>'<span class="social-pill">'+esc(x)+'</span>').join('');
@@ -206,6 +226,9 @@
     if(!fd.get('name')?.trim())return notify('Brand name is required.','error');
     if(!platforms.length)return notify('Choose at least one platform.','error');
     const payload={name:fd.get('name').trim(),handle:fd.get('handle')||null,industry:fd.get('industry')||null,audience:fd.get('audience')||null,brand_voice:fd.get('brand_voice')||null,language:fd.get('language')||'ar',primary_goal:fd.get('primary_goal')||null,products_services:fd.get('products_services')||null,content_notes:fd.get('content_notes')||null,responsible_member_id:fd.get('responsible_member_id')||null,reviewer_member_id:fd.get('reviewer_member_id')||null,platforms,updated_at:new Date().toISOString()};
+    if(brand&&brand.responsible_member_id!==payload.responsible_member_id){
+      try{await syncOwnerAssignment(brand,payload.responsible_member_id)}catch(e){return notify(e.message||'Could not change task owner.','error')}
+    }
     const q=brand?sb().from('studio_social_brands').update(payload).eq('id',brand.id).select().single():sb().from('studio_social_brands').insert(payload).select().single();
     const r=await q;if(r.error)return notify(r.error.message,'error');
     state.brandId=r.data.id;d.close();notify('Brand saved.');await load();
