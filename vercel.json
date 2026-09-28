@@ -71,7 +71,8 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": true
+      "main": true,
+      "feature/ats-evidence-engine-v1": true
     }
   }
 }
