@@ -295,3 +295,30 @@ linear-gradient(145deg,#081f2d,#061923)!important}
   .task-check-body,.task-check-evidence,.task-human-gate>div{grid-template-columns:1fr}
   .task-check-controls button{flex:1}
 }
+
+/* ATS Domain Delivery V1 */
+.domain-delivery-head{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:0 0 10px;padding:12px 14px;border:1px solid rgba(255,255,255,.07);border-radius:11px;background:#071d2a}
+.domain-delivery-head b{display:block;font-size:10px}.domain-delivery-head small{display:block;margin-top:4px;color:#78909c;font-size:7px;line-height:1.45}
+.project-domain-list{display:grid;gap:10px;margin-bottom:20px}
+.project-domain-card{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:#071d2a}
+.project-domain-card.review{border-color:rgba(239,35,60,.32);background:rgba(239,35,60,.035)}
+.project-domain-card.accepted{border-color:rgba(72,193,132,.25);background:rgba(72,193,132,.035)}
+.project-domain-card.rework{border-color:rgba(255,166,67,.28);background:rgba(255,166,67,.04)}
+.project-domain-top,.project-domain-accountable,.project-domain-progress{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.project-domain-top span,.project-domain-accountable span,.project-domain-outcome span,.project-domain-submission span{display:block;color:#7595a5;font-size:6.4px;font-weight:900;letter-spacing:.9px}
+.project-domain-top h3{margin:4px 0 0;font-size:12px}
+.project-domain-accountable{margin-top:11px;padding:10px;border:1px solid rgba(255,255,255,.055);border-radius:9px;background:#091f2d}
+.project-domain-accountable b{display:block;margin-top:4px;font-size:9px}
+.domain-lead-picker{display:flex;gap:6px;align-items:center}.domain-lead-picker select{min-width:240px;padding:8px 9px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:#061722;color:#dbe7ec;font-size:8px}
+.project-domain-outcome,.project-domain-submission{margin-top:10px;padding:10px 11px;border-left:2px solid rgba(77,181,226,.35);background:rgba(77,181,226,.035);border-radius:7px}
+.project-domain-outcome p,.project-domain-submission p{margin:5px 0 0;color:#c9d7dd;font-size:8.5px;line-height:1.55;white-space:pre-wrap}
+.project-domain-progress{margin-top:11px}.project-domain-progress b{display:block;font-size:8px}.project-domain-progress small{display:block;margin-top:3px;color:#78909c;font-size:7px}
+.project-domain-progress progress{width:min(260px,38%);height:7px}
+.project-domain-card>.row-actions{margin-top:12px;justify-content:flex-end}
+.domain-empty{display:grid;gap:5px}.domain-empty b{font-size:10px}.domain-empty span{color:#78909c;font-size:8px}
+@media(max-width:760px){
+  .domain-delivery-head,.project-domain-accountable,.project-domain-progress{align-items:stretch;flex-direction:column}
+  .domain-lead-picker{align-items:stretch;flex-direction:column}
+  .domain-lead-picker select{min-width:0;width:100%}
+  .project-domain-progress progress{width:100%}
+}
