@@ -422,7 +422,8 @@
       if(error)throw error;
       await loadLeadDiagnosis(lead.id,{autoAnalyze:false});
       if(String(state.discoveryCase?.analysis_state||'')==='ready'){
-        try{await ensureDeliveryBlueprint(lead.id,{force:!data?.cached,silent:true})}catch(_){}
+        const regenerateBlocked=state.deliveryBlueprint?.status==='needs_evidence'&&String(state.discoveryCase?.decision_stage||'needs_evidence')!=='needs_evidence';
+        try{await ensureDeliveryBlueprint(lead.id,{force:!data?.cached||regenerateBlocked,silent:true})}catch(_){}
       }
       await loadLeadTimeline(lead.id);
       if(!silent)notify(data?.cached?'Diagnosis already current':'ATS diagnosis refreshed · delivery plan updated');
@@ -583,8 +584,11 @@
     renderLeadDiagnosis();updateLeadWorkspaceState();
     if(autoAnalyze&&state.currentLead?.id===leadId&&['never_analyzed','stale'].includes(String(state.discoveryCase?.analysis_state||''))){
       void runDiagnosticEngine(true);
-    }else if(autoAnalyze&&state.currentLead?.id===leadId&&String(state.discoveryCase?.analysis_state||'')==='ready'&&!state.deliveryBlueprint){
-      void ensureDeliveryBlueprint(leadId,{force:false,silent:true});
+    }else if(
+      autoAnalyze&&state.currentLead?.id===leadId&&String(state.discoveryCase?.analysis_state||'')==='ready'&&
+      (!state.deliveryBlueprint||(state.deliveryBlueprint.status==='needs_evidence'&&String(state.discoveryCase?.decision_stage||'needs_evidence')!=='needs_evidence'))
+    ){
+      void ensureDeliveryBlueprint(leadId,{force:state.deliveryBlueprint?.status==='needs_evidence',silent:true});
     }
   }
   async function syncDiagnosisPhase(){
@@ -1351,6 +1355,7 @@
       sent_at:status==='sent'?(state.currentProposal?.sent_at||new Date().toISOString()):state.currentProposal?.sent_at||null
     };
     if(!payload.title||!payload.scope||!payload.deliverables.length)return notify('Title, scope and deliverables are required','error');
+    if(status==='sent'&&payload.total_amount<=0)return notify('Add the project price before sending the proposal. You can keep it as Draft until pricing is decided.','error');
     let r;
     if(state.currentProposal)r=await sb().from('studio_proposals').update(payload).eq('id',state.currentProposal.id).select('*').single();
     else r=await sb().from('studio_proposals').insert(payload).select('*').single();
