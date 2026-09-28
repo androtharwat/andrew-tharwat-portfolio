@@ -41,9 +41,14 @@ function classify(text:string){
     add('product_ux');add('accessibility');add('web_performance')
   }
   if(/performance|speed|lcp|inp|cls|load time|سرعة|أداء/.test(x))add('web_performance')
+  if(/brand|branding|identity|logo|positioning|هوية|براند|علامة/.test(x))add('brand')
+  if(/content|copy|caption|script|storytelling|article|post|نص|محتوى|كابشن|سيناريو/.test(x))add('content')
+  if(/marketing|advertis|campaign|social media|promotion|claim|influencer|تسويق|اعلان|إعلان|حملة|سوشيال/.test(x))add('marketing')
+  if(/\bai\b|artificial intelligence|generative|genai|llm|model output|prompt|story ai|ذكاء اصطناعي|توليد/.test(x))add('ai_systems')
   if(!domains.length)add('risk_management')
   const high=domains.includes('hse')||domains.includes('software_security')
-  return {domains,risk_level:high?'high':domains.includes('risk_management')?'medium':'medium',human_gate_required:high}
+  const aiGate=domains.includes('ai_systems')
+  return {domains,risk_level:high?'high':aiGate?'medium':domains.includes('risk_management')?'medium':'medium',human_gate_required:high||aiGate}
 }
 function refsFor(sources:any[]){
   return sources.map(s=>({
@@ -107,6 +112,36 @@ function fallback(task:any,domains:string[],sources:any[],risk:string,gate:boole
       ['Human gate','Require qualified review before claiming the application or control is secure/compliant.','Human security review is recorded.','critical']
     ].map((v,i)=>({id:'C'+(i+1),section:v[0],action:v[1],how_to_test:v[1],pass_criteria:v[2],evidence_type:['note','screenshot_or_log'],required:true,allows_na:false,severity_if_failed:v[3],source_keys:sourceKeys}))
     evidence.push({type:'human_review',description:'Security reviewer sign-off before client-facing assurance or production risk acceptance.',required:true})
+  }else if(domains.includes('ai_systems')){
+    method='AI / Generative AI evidence and risk verification'
+    objective='Evaluate the AI-enabled workflow in its real use context, test known and plausible failure modes, document limitations, and require accountable human review before client-facing reliance.'
+    checklist=[
+      ['Purpose','Confirm the intended AI use, user, decision or output, and what the AI is explicitly not allowed to decide.','The AI purpose, boundary and accountable human owner are explicit.','high'],
+      ['Inputs / data','Identify the data and prompts entering the system, including personal, confidential, copyrighted or child-related data where relevant.','Sensitive inputs and their handling requirements are documented.','high'],
+      ['Evaluation set','Define representative examples including normal, edge and failure cases before judging quality.','The task is tested on more than one convenient example.','high'],
+      ['Output quality','Test factuality, consistency, relevance and instruction following against the task acceptance criteria.','Material output claims are verified against evidence rather than accepted because the model produced them.','high'],
+      ['Harm / misuse','Test plausible harmful, inappropriate, biased or unintended outputs relevant to the actual users and context.','Material misuse and harm pathways are recorded and mitigated or escalated.','critical'],
+      ['Human oversight','Verify where a human reviews, corrects, rejects or overrides AI output before consequential use.','A named accountable human can intervene before harmful or client-facing reliance.','critical'],
+      ['Privacy / IP','Check whether outputs or inputs create privacy, confidentiality, consent or intellectual-property concerns requiring specialist review.','Potential data/IP risks are documented and unresolved high-impact issues are blocked from release.','high'],
+      ['Failure handling','Trigger a safe failure or unavailable-model path and verify fallback, error messaging and recovery.','The workflow fails safely and does not silently fabricate success.','high'],
+      ['Monitoring','Define what will be logged or sampled after release to detect quality or risk drift.','There is a practical monitoring and escalation point.','medium'],
+      ['Human gate','Record qualified human review before final client-facing or production reliance on the AI result.','Human review is recorded with unresolved risks clearly stated.','critical']
+    ].map((v,i)=>({id:'C'+(i+1),section:v[0],action:v[1],how_to_test:v[1],pass_criteria:v[2],evidence_type:['note','test_result'],required:true,allows_na:false,severity_if_failed:v[3],source_keys:sourceKeys}))
+    evidence.push({type:'human_review',description:'Accountable human review of AI findings and unresolved risks before production/client reliance.',required:true})
+  }else if(domains.includes('content')||domains.includes('marketing')||domains.includes('brand')){
+    method='Audience, claim and brand evidence review'
+    objective='Create or evaluate communication against the intended audience and objective, verify objective claims, preserve brand intent, and document evidence before publication.'
+    checklist=[
+      ['Objective','Confirm the communication goal, intended audience and desired next action.','The piece has one explicit audience and purpose.','medium'],
+      ['Audience fit','Check whether language, structure and detail match the audience context and likely knowledge.','The intended reader can find and understand the needed information.','medium'],
+      ['Clarity','Apply plain-language structure, concrete wording and useful hierarchy to the core message.','The main message and next action can be understood without unnecessary interpretation.','medium'],
+      ['Claims','Identify objective, comparative, performance, safety, health, environmental or other sensitive claims.','Every material objective claim has an evidence basis or is removed/qualified.','high'],
+      ['Brand fit','Check the content/creative against the defined brand promise, positioning and intended stakeholder perception.','The execution supports the brand objective rather than relying on aesthetic preference alone.','medium'],
+      ['Responsible marketing','Check for misleading framing, hidden material conditions, inappropriate targeting or unsupported urgency/scarcity.','The communication is transparent and does not materially mislead the intended audience.','high'],
+      ['Digital accessibility','For digital text/content, check readable structure, meaningful link/CTA text and relevant accessibility requirements.','No obvious accessibility blocker is introduced by the communication.','medium'],
+      ['Channel fit','Check format, CTA, disclosure and interaction against the intended channel/platform and applicable local requirements.','The content is publishable in its intended context with required disclosures/conditions visible.','high'],
+      ['Measurement','Define the metric or qualitative evidence that will show whether the communication achieved its objective.','Success/failure can be evaluated after release.','medium']
+    ].map((v,i)=>({id:'C'+(i+1),section:v[0],action:v[1],how_to_test:v[1],pass_criteria:v[2],evidence_type:['note','source_or_asset'],required:true,allows_na:i===6,severity_if_failed:v[3],source_keys:sourceKeys}))
   }else{
     checklist=[
       ['Context','Confirm the objective, scope, stakeholders and constraints.','The task has an explicit decision target.','medium'],
