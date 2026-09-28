@@ -63,10 +63,11 @@
     if(tab==='projects'){lazyScript('bilingual','/admin/bilingual-fields.js?v=1');lazyScript('ai','/admin/ai-project-assist.js?v=4');lazyScript('access','/admin/page-access-control.js?v=1')}
     if(tab==='media')lazyScript('media-editor','/admin/media-content-editor.js?v=3');
     if(tab==='content')lazyScript('content-manager','/admin/content-manager.js?v=1');
+    if(tab==='social')lazyScript('social-os','/admin/social-os.js?v=1');
   }
   $$('#admin-nav button').forEach(b=>b.addEventListener('click',()=>{switchTab(b.dataset.tab);loadEnhancementsFor(b.dataset.tab)}));
   $$('[data-goto]').forEach(b=>b.addEventListener('click',()=>{switchTab(b.dataset.goto);loadEnhancementsFor(b.dataset.goto)}));
-  function switchTab(tab){const names={dashboard:'Dashboard',leads:'Leads',inbox:'Client Inbox',clients:'Clients','studio-projects':'Client Projects',proposals:'Proposals',payments:'Payments',projects:'Website Projects',categories:'Categories',content:'Site Content',v9:'V9 Layout',media:'Media Library'};$$('#admin-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$$('.tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===tab));$('#page-title').textContent=names[tab]||tab;if(tab==='media')loadMedia();}
+  function switchTab(tab){const names={dashboard:'Dashboard',leads:'Leads',inbox:'Client Inbox',clients:'Clients','studio-projects':'Client Projects',proposals:'Proposals',payments:'Payments',social:'Social Media',projects:'Website Projects',categories:'Categories',content:'Site Content',v9:'V9 Layout',media:'Media Library'};$$('#admin-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$$('.tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===tab));$('#page-title').textContent=names[tab]||tab;$('#quick-add')?.classList.toggle('hidden',tab==='social');if(tab==='media')loadMedia();}
 
   async function refreshAll(){await Promise.all([loadCategories(),loadProjects(),loadSettings()]);renderDashboard();}
   async function loadCategories(){const {data,error}=await sb.from('portfolio_categories').select('*').order('sort_order');if(error)return notify(error.message,'error');state.categories=data||[];renderCategories();renderCategoryOptions();}
