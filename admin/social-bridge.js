@@ -112,8 +112,7 @@
   }
   function socialTask(ctx){
     const open=x=>!['accepted','closed'].includes(String(x.status||''));
-    return ctx.projectTasks.find(t=>open(t)&&String(t.required_skill||'').toLowerCase()==='social media') ||
-      ctx.projectTasks.find(t=>open(t)&&socialSignal([t.title,t.required_skill,t.workstream_name].join(' '))) || null;
+    return ctx.projectTasks.find(t=>open(t)&&String(t.required_skill||'').toLowerCase()==='social media') || null;
   }
 
   async function teamData(){
@@ -341,11 +340,11 @@
   }
 
   async function resolveCurrentProject(){
-    if(currentProjectId)return currentProjectId;
     const code=$('#studio-project-code')?.textContent?.trim();
-    if(!code||code==='PROJECT'||!sb())return null;
-    const r=await sb().from('studio_projects').select('id').eq('project_code',code).maybeSingle();
-    if(!r.error&&r.data)currentProjectId=r.data.id;
+    if(code&&code!=='PROJECT'&&sb()){
+      const r=await sb().from('studio_projects').select('id').eq('project_code',code).maybeSingle();
+      if(!r.error&&r.data){currentProjectId=r.data.id;return currentProjectId;}
+    }
     return currentProjectId;
   }
   async function refreshProjectButton(){
