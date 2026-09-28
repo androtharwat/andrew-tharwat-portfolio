@@ -41,6 +41,11 @@ create index if not exists studio_project_workstreams_project_status_idx
 create index if not exists studio_project_tasks_workstream_status_idx
   on public.studio_project_tasks(workstream_id,status);
 
+create index if not exists studio_project_workstreams_source_case_idx
+  on public.studio_project_workstreams(source_case_id);
+create index if not exists studio_project_tasks_created_by_idx
+  on public.studio_project_tasks(created_by_member_id);
+
 CREATE OR REPLACE FUNCTION ats_team_private.build_delivery_system(p_project uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
