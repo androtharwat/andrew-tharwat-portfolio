@@ -71,7 +71,8 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": true
+      "main": true,
+      "feature/diagnostic-stale-recovery-v1": true
     }
   }
 }
