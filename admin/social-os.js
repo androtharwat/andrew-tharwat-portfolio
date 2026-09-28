@@ -25,17 +25,20 @@
   const memberSocialLevel = id => Math.max(0,...state.skills.filter(s=>s.member_id===id&&String(s.skill||'').toLowerCase()==='social media').map(s=>Number(s.level||0)));
   const memberLabel = id => {
     const m=member(id); if(!m)return 'Not assigned';
+    if(m.member_type==='founder')return m.full_name+' · Founder / Admin';
     return m.full_name+' · '+memberLoad(id)+'/'+m.capacity+(memberSocialLevel(id)?' · Social L'+memberSocialLevel(id):'');
   };
-  function socialMembers(){
-    return state.members.filter(m=>m.active&&memberSocialLevel(m.id)>0).sort((a,b)=>
+  function responsibleOwners(){
+    return state.members.filter(m=>m.active).sort((a,b)=>
+      Number(b.member_type==='founder')-Number(a.member_type==='founder') ||
       Number(b.available)-Number(a.available) ||
       memberSocialLevel(b.id)-memberSocialLevel(a.id) ||
-      memberLoad(a.id)-memberLoad(b.id)
+      memberLoad(a.id)-memberLoad(b.id) ||
+      String(a.full_name||'').localeCompare(String(b.full_name||''))
     );
   }
   function memberOptions(selected,reviewer=false){
-    const list=reviewer?state.members.filter(m=>m.active):socialMembers();
+    const list=reviewer?state.members.filter(m=>m.active):responsibleOwners();
     return '<option value="">'+(reviewer?'Choose reviewer':'Unassigned')+'</option>'+list.map(m=>'<option value="'+esc(m.id)+'" '+(selected===m.id?'selected':'')+'>'+esc(memberLabel(m.id)+(m.available?'':' · unavailable'))+'</option>').join('');
   }
   async function syncOwnerAssignment(brand,newOwnerId){
@@ -197,7 +200,8 @@
 
   function openBrand(brand=null){
     const d=ensureDialog('social-brand-dialog');
-    const values=brand||{platforms:['facebook','instagram'],language:'ar',status:'active'};
+    const founder=state.members.find(m=>m.active&&m.member_type==='founder');
+    const values=brand||{platforms:['facebook','instagram'],language:'ar',status:'active',responsible_member_id:founder?.id||null};
     d.innerHTML=
       '<div class="social-dialog-head"><div><span>BRAND BRAIN</span><h3>'+(brand?'Edit Brand':'Add Brand')+'</h3></div><button type="button" data-social-close>×</button></div>'+
       '<form class="social-form" id="social-brand-form">'+
@@ -227,7 +231,10 @@
     if(!platforms.length)return notify('Choose at least one platform.','error');
     const payload={name:fd.get('name').trim(),handle:fd.get('handle')||null,industry:fd.get('industry')||null,audience:fd.get('audience')||null,brand_voice:fd.get('brand_voice')||null,language:fd.get('language')||'ar',primary_goal:fd.get('primary_goal')||null,products_services:fd.get('products_services')||null,content_notes:fd.get('content_notes')||null,responsible_member_id:fd.get('responsible_member_id')||null,reviewer_member_id:fd.get('reviewer_member_id')||null,platforms,updated_at:new Date().toISOString()};
     if(brand&&brand.responsible_member_id!==payload.responsible_member_id){
-      try{await syncOwnerAssignment(brand,payload.responsible_member_id)}catch(e){return notify(e.message||'Could not change task owner.','error')}
+      const nextOwner=member(payload.responsible_member_id);
+      if(nextOwner?.member_type!=='founder'){
+        try{await syncOwnerAssignment(brand,payload.responsible_member_id)}catch(e){return notify(e.message||'Could not change task owner.','error')}
+      }
     }
     const q=brand?sb().from('studio_social_brands').update(payload).eq('id',brand.id).select().single():sb().from('studio_social_brands').insert(payload).select().single();
     const r=await q;if(r.error)return notify(r.error.message,'error');
