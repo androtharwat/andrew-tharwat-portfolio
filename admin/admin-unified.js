@@ -838,6 +838,8 @@
     }
 
     const summary=summarizePlaybook(task,pb.data,progress,humanReviewer);
+    const pbSummary=await sb().from('studio_task_playbooks').update({result_summary:summary,updated_at:now}).eq('id',playbook.id);
+    if(pbSummary.error)return notify(pbSummary.error.message,'error');
     const taskPatch={result_summary:summary,status:'done',completed_at:now,updated_at:now};
     const r=await sb().from('studio_solution_tasks').update(taskPatch).eq('id',task.id).select('*').single();
     if(r.error)return notify(r.error.message,'error');
@@ -848,7 +850,10 @@
       pass:progress.filter(x=>x.status==='pass').length,
       issues:progress.filter(x=>x.status==='issue').length,
       na:progress.filter(x=>x.status==='na').length,
-      human_reviewer:humanReviewer||null
+      risk_level:playbook.risk_level||null,
+      human_gate_required:!!playbook.human_gate_required,
+      human_reviewer:humanReviewer||null,
+      source_keys:(Array.isArray(playbook.source_refs)?playbook.source_refs:[]).map(x=>x.source_key).filter(Boolean)
     });
 
     const next=state.solutionTasks
