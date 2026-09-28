@@ -641,22 +641,94 @@
       .sort((a,b)=>Number(a.sort_order||999)-Number(b.sort_order||999));
   }
 
+  function currentInternalLeadTask(){
+    return state.solutionTasks.find(x=>['ats','shared'].includes(String(x.owner_type||''))&&x.status==='in_progress')||null;
+  }
+
+  function ensureLeadTaskWorkspace(){
+    let d=$('#lead-task-workspace-dialog');
+    if(d)return d;
+    d=document.createElement('dialog');
+    d.id='lead-task-workspace-dialog';
+    d.className='lead-task-workspace-dialog';
+    document.body.appendChild(d);
+    return d;
+  }
+
+  function renderLeadTaskWorkspace(task){
+    const d=ensureLeadTaskWorkspace();
+    if(!task)return;
+    const started=task.started_at?new Date(task.started_at).toLocaleString():'Just started';
+    d.innerHTML=
+      '<div class="lead-task-dialog-head"><div><span>CURRENT ATS TASK</span><h3>'+esc(task.title)+'</h3><small>'+esc((task.task_type||'task').replaceAll('_',' '))+' · '+esc(task.priority||'medium')+' · Started '+esc(started)+'</small></div><button type="button" data-lead-task-close>×</button></div>'+
+      '<div class="lead-task-exec-grid">'+
+        '<article><span>WHAT TO DO</span><p>'+esc(task.rationale||task.title)+'</p></article>'+
+        '<article><span>DONE WHEN</span><p>'+esc(task.acceptance_criteria||'The result is documented and reviewed before moving to the next step.')+'</p></article>'+
+        '<article class="wide"><span>EXPECTED EFFECT</span><p>'+esc(task.expected_effect||'Reduce uncertainty and improve the next decision.')+'</p></article>'+
+      '</div>'+
+      '<label class="lead-task-result"><span>RESULT / WHAT DID WE FIND?</span><textarea id="lead-task-result-summary" placeholder="Write the outcome, findings, blockers or evidence from this task…">'+esc(task.result_summary||'')+'</textarea></label>'+
+      '<div class="lead-task-dialog-actions"><button type="button" class="secondary" data-lead-task-close>CLOSE</button><button type="button" class="secondary" id="lead-task-save">SAVE PROGRESS</button><button type="button" class="primary" id="lead-task-complete">COMPLETE & START NEXT →</button></div>';
+    $('[data-lead-task-close]',d).forEach(b=>b.onclick=()=>d.close());
+    $('#lead-task-save',d).onclick=()=>saveLeadTaskProgress(task,false,d);
+    $('#lead-task-complete',d).onclick=()=>saveLeadTaskProgress(task,true,d);
+  }
+
+  async function openCurrentLeadTaskWorkspace(taskId=null){
+    const task=(taskId?state.solutionTasks.find(x=>x.id===taskId):currentInternalLeadTask())||internalLeadTasks().find(x=>x.status==='todo');
+    if(!task)return notify('No active ATS task found.','error');
+    if(task.status==='todo'){
+      const now=new Date().toISOString();
+      const r=await sb().from('studio_solution_tasks').update({status:'in_progress',started_at:now,updated_at:now}).eq('id',task.id).eq('status','todo').select('*').single();
+      if(r.error)return notify(r.error.message,'error');
+      const i=state.solutionTasks.findIndex(x=>x.id===task.id);if(i>=0)state.solutionTasks[i]=r.data;
+      await logLeadActivity('solution_task_started',{task_id:r.data.id,title:r.data.title,task_type:r.data.task_type});
+      renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
+      renderLeadTaskWorkspace(r.data);
+    }else{
+      renderLeadTaskWorkspace(task);
+    }
+    ensureLeadTaskWorkspace().showModal();
+  }
+
+  async function saveLeadTaskProgress(task,complete,d){
+    const summary=$('#lead-task-result-summary',d)?.value.trim()||'';
+    if(complete&&summary.length<10)return notify('Add a short result before completing the task.','error');
+    const now=new Date().toISOString();
+    const payload=complete
+      ?{result_summary:summary,status:'done',completed_at:now,updated_at:now}
+      :{result_summary:summary||null,updated_at:now};
+    const r=await sb().from('studio_solution_tasks').update(payload).eq('id',task.id).select('*').single();
+    if(r.error)return notify(r.error.message,'error');
+    let i=state.solutionTasks.findIndex(x=>x.id===task.id);if(i>=0)state.solutionTasks[i]=r.data;
+    if(!complete){
+      await logLeadActivity('solution_task_progress_saved',{task_id:r.data.id,title:r.data.title});
+      renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
+      return notify('Task progress saved.');
+    }
+    await logLeadActivity('solution_task_completed',{task_id:r.data.id,title:r.data.title,result_summary:summary.slice(0,500)});
+    const next=state.solutionTasks
+      .filter(x=>['ats','shared'].includes(String(x.owner_type||''))&&x.status==='todo')
+      .sort((a,b)=>Number(a.sort_order||999)-Number(b.sort_order||999))[0]||null;
+    if(next){
+      const started=await sb().from('studio_solution_tasks').update({status:'in_progress',started_at:now,updated_at:now}).eq('id',next.id).eq('status','todo').select('*').single();
+      if(!started.error&&started.data){
+        i=state.solutionTasks.findIndex(x=>x.id===next.id);if(i>=0)state.solutionTasks[i]=started.data;
+        await logLeadActivity('solution_task_started',{task_id:started.data.id,title:started.data.title,task_type:started.data.task_type,auto_started_after:r.data.id});
+      }
+    }
+    d.close();
+    await syncDiagnosisPhase();
+    renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
+    notify(next?'Task completed · next ATS task started.':'Task completed.');
+  }
+
   async function startInternalLeadWork(){
     const tasks=internalLeadTasks();
     const active=tasks.find(x=>x.status==='in_progress');
-    if(active){
-      setLeadFocusMode(false);
-      const fold=$('#fold-solution-tasks');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});
-      return;
-    }
+    if(active)return openCurrentLeadTaskWorkspace(active.id);
     const task=tasks.find(x=>x.status==='todo');
     if(!task)return notify('Approve the next steps first.','error');
-    const r=await sb().from('studio_solution_tasks').update({status:'in_progress'}).eq('id',task.id).eq('status','todo').select('*').single();
-    if(r.error)return notify(r.error.message,'error');
-    const i=state.solutionTasks.findIndex(x=>x.id===task.id);if(i>=0)state.solutionTasks[i]=r.data;
-    await logLeadActivity('solution_task_started',{task_id:r.data.id,title:r.data.title,task_type:r.data.task_type});
-    renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
-    notify('ATS task started.');
+    return openCurrentLeadTaskWorkspace(task.id);
   }
 
   function leadUnderstanding(){
@@ -796,7 +868,7 @@
     if(visiblePlan.length){
       plan.innerHTML=
         '<div class="lead-plan-head"><div><span>ATS WORK PLAN</span><b>'+visiblePlan.length+' next step'+(visiblePlan.length===1?'':'s')+'</b></div><small>Only justified work is shown here.</small></div>'+
-        '<div class="lead-plan-items">'+visiblePlan.map((x,i)=>'<article class="lead-plan-item '+(x.status==='proposed'?'suggested':'approved')+'"><span>'+(x.status==='proposed'?'SUGGESTED':'APPROVED')+' · '+esc((x.task_type||'task').replaceAll('_',' '))+'</span><b>'+(i+1)+'. '+esc(x.title)+'</b><small>'+esc(x.owner_type||'ATS')+(x.acceptance_criteria?' · '+esc(String(x.acceptance_criteria).slice(0,100)):'')+'</small></article>').join('')+'</div>';
+        '<div class="lead-plan-items">'+visiblePlan.map((x,i)=>{const label=x.status==='proposed'?'SUGGESTED':x.status==='in_progress'?'IN PROGRESS':x.status==='done'?'DONE':'APPROVED';const cls=x.status==='proposed'?'suggested':x.status==='in_progress'?'current':x.status==='done'?'done':'approved';return '<article class="lead-plan-item '+cls+'"><span>'+label+' · '+esc((x.task_type||'task').replaceAll('_',' '))+'</span><b>'+(i+1)+'. '+esc(x.title)+'</b><small>'+esc(x.owner_type||'ATS')+(x.acceptance_criteria?' · '+esc(String(x.acceptance_criteria).slice(0,100)):'')+'</small></article>'}).join('')+'</div>';
     }else{
       plan.innerHTML='<div class="lead-plan-head"><div><span>ATS WORK PLAN</span><b>No work should be created yet</b></div><small>ATS will derive the next tasks after it has enough evidence.</small></div>';
     }
