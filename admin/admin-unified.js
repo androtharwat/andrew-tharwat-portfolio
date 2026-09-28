@@ -572,6 +572,8 @@
     renderLeadDiagnosis();
     if(autoAnalyze&&state.currentLead?.id===leadId&&['never_analyzed','stale'].includes(String(state.discoveryCase?.analysis_state||''))){
       void runDiagnosticEngine(true);
+    }else if(autoAnalyze&&state.currentLead?.id===leadId&&String(state.discoveryCase?.analysis_state||'')==='ready'&&!state.deliveryBlueprint){
+      void ensureDeliveryBlueprint(leadId,{force:false,silent:true});
     }
   }
   async function syncDiagnosisPhase(){
@@ -1045,7 +1047,7 @@
     if(deliveryReady){
       plan.innerHTML=
         '<div class="lead-plan-head"><div><span>DELIVERY BLUEPRINT</span><b>'+deliveryDomains.length+' accountable domain'+(deliveryDomains.length===1?'':'s')+'</b></div><small>Admin owns domain outcomes. Domain Leads own team-task detail after project activation.</small></div>'+
-        '<div class="lead-plan-items">'+deliveryDomains.map((d,i)=>'<article class="lead-plan-item approved"><span>DOMAIN '+(i+1)+' · '+esc(String(d.domain_key||'delivery').replaceAll('_',' ').toUpperCase())+'</span><b>'+esc(d.name||d.domain_key||'Delivery')+'</b><small>'+esc(d.expected_outcome||'Defined outcome')+' · '+((Array.isArray(d.tasks)?d.tasks.length:0))+' team task'+((Array.isArray(d.tasks)?d.tasks.length:0)===1?'':'s')+'</small></article>').join('')+'</div>';
+        '<div class="lead-plan-items">'+deliveryDomains.map((d,i)=>'<article class="lead-plan-item approved"><span>DOMAIN '+(i+1)+' · '+esc(String(d.domain_key||'delivery').replaceAll('_',' ').toUpperCase())+'</span><b>'+esc(d.name||d.domain_key||'Delivery')+'</b><small>'+esc(d.expected_outcome||'Defined outcome')+'</small><small>Accountable skill: '+esc(d.lead_skill||'project management')+(d.human_gate_required?' · Human review required':'')+'</small></article>').join('')+'</div>';
     }else{
       const visiblePlan=state.solutionTasks.filter(x=>x.status!=='rejected').slice(0,5);
       if(visiblePlan.length){
