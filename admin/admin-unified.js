@@ -4,7 +4,7 @@
   const esc=(v='')=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const money=v=>window.ATS_I18N?.formatNumber?.(v)??new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt=v=>v?(window.ATS_I18N?.formatDate?.(v,{day:'2-digit',month:'short',year:'numeric'})??new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v))):'—';
-  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[],diagnosticRun:null,clientAccessCode:null};
+  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],projectDomains:[],projectTasks:[],teamMembers:[],teamSkills:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[],diagnosticRun:null,clientAccessCode:null};
   let executionCtx={};
   let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
@@ -1336,18 +1336,94 @@
   async function loadProjectWorkspace(project=state.currentProject){
     if(!project)return;
     $('#project-message-thread').innerHTML='<div class="loading-line">Loading messages…</div>';$('#project-file-list').innerHTML='<div class="loading-line">Loading files…</div>';$('#project-review-list').innerHTML='<div class="loading-line">Loading reviews…</div>';
-    const [messages,files,reviews,revisions]=await Promise.all([
+    $('#project-domain-list').innerHTML='<div class="loading-line">Loading domain delivery…</div>';
+    const [messages,files,reviews,revisions,domains,tasks,members,skills]=await Promise.all([
       sb().from('studio_messages').select('*').eq('project_id',project.id).order('created_at',{ascending:true}).limit(150),
       sb().from('studio_files').select('*').eq('project_id',project.id).order('created_at',{ascending:false}),
       sb().from('studio_reviews').select('*').eq('project_id',project.id).order('published_at',{ascending:false}),
-      sb().from('studio_revisions').select('*').eq('project_id',project.id).order('submitted_at',{ascending:false})
+      sb().from('studio_revisions').select('*').eq('project_id',project.id).order('submitted_at',{ascending:false}),
+      sb().from('studio_project_workstreams').select('*').eq('project_id',project.id).order('name'),
+      sb().from('studio_project_tasks').select('*').eq('project_id',project.id).order('created_at'),
+      sb().from('studio_team_members').select('id,full_name,email,active,available,capacity').eq('active',true).order('full_name'),
+      sb().from('studio_member_skills').select('*')
     ]);
-    const failed=[messages,files,reviews,revisions].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
+    const failed=[messages,files,reviews,revisions,domains,tasks,members,skills].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
     state.projectMessages=messages.data||[];state.projectFiles=files.data||[];state.projectReviews=reviews.data||[];state.projectRevisions=revisions.data||[];
+    state.projectDomains=domains.data||[];state.projectTasks=tasks.data||[];state.teamMembers=members.data||[];state.teamSkills=skills.data||[];
     const unread=state.projectMessages.filter(x=>x.sender_type==='client'&&!x.is_read_by_admin).map(x=>x.id);if(unread.length)await sb().from('studio_messages').update({is_read_by_admin:true}).in('id',unread);
     renderProjectWorkspace();state.loaded.inbox=false;state.loaded.dashboard=false;
   }
+  function domainLeadName(id){return state.teamMembers.find(m=>m.id===id)?.full_name||'Unassigned'}
+  function domainLeadOptions(domain){
+    const rows=state.teamMembers.map(m=>{
+      const level=Math.max(0,...state.teamSkills.filter(s=>s.member_id===m.id&&s.skill===domain.lead_skill).map(s=>Number(s.level||0)));
+      const load=state.projectTasks.filter(t=>t.owner_id===m.id&&['assigned','in_progress','review'].includes(t.status)).length;
+      return {...m,level,load};
+    }).sort((a,b)=>b.level-a.level||a.load-b.load||a.full_name.localeCompare(b.full_name));
+    return rows.map(m=>'<option value="'+esc(m.id)+'" '+(domain.lead_member_id===m.id?'selected':'')+'>'+esc(m.full_name+(m.level?' · '+domain.lead_skill+' L'+m.level:'')+' · '+m.load+'/'+m.capacity)+'</option>').join('');
+  }
+  function renderProjectDomains(){
+    const el=$('#project-domain-list');if(!el)return;
+    if(!state.projectDomains.length){
+      el.innerHTML='<div class="ops-empty domain-empty"><b>No Domain Missions yet.</b><span>Build the delivery system after the approved diagnosis is converted into a live project.</span></div>';
+      return;
+    }
+    el.innerHTML=state.projectDomains.map(d=>{
+      const tasks=state.projectTasks.filter(t=>t.workstream_id===d.id);
+      const done=tasks.filter(t=>['accepted','closed'].includes(t.status)).length;
+      const pct=tasks.length?Math.round(done/tasks.length*100):0;
+      const lead=d.lead_member_id?domainLeadName(d.lead_member_id):'Needs Domain Lead';
+      const options=domainLeadOptions(d);
+      let actions='<button type="button" class="row-action" data-domain-open-team="'+esc(d.id)+'">OPEN TEAM →</button>';
+      if(d.status==='review')actions+='<button type="button" class="row-action primary-action" data-domain-accept="'+esc(d.id)+'">ACCEPT OUTCOME</button><button type="button" class="row-action" data-domain-rework="'+esc(d.id)+'">REWORK</button>';
+      return '<article class="project-domain-card '+esc(d.status)+'">'+
+        '<div class="project-domain-top"><div><span>'+esc((d.domain_key||'delivery').replaceAll('_',' ').toUpperCase())+'</span><h3>'+esc(d.name)+'</h3></div>'+chip(d.status)+'</div>'+
+        '<div class="project-domain-accountable"><div><span>ACCOUNTABLE LEAD</span><b>'+esc(lead)+'</b></div><div class="domain-lead-picker"><select data-domain-lead-select="'+esc(d.id)+'"><option value="">Choose lead…</option>'+options+'</select><button type="button" class="row-action" data-domain-assign="'+esc(d.id)+'">'+(d.lead_member_id?'CHANGE':'ASSIGN')+'</button></div></div>'+
+        '<div class="project-domain-outcome"><span>EXPECTED OUTCOME</span><p>'+esc(d.expected_outcome||'Outcome not defined yet.')+'</p></div>'+
+        '<div class="project-domain-progress"><div><b>'+done+'/'+tasks.length+' team tasks accepted</b><small>'+pct+'% team completion'+(d.due_at?' · Due '+fmt(d.due_at):'')+'</small></div><progress value="'+pct+'" max="100"></progress></div>'+
+        (d.submission?'<div class="project-domain-submission"><span>DOMAIN LEAD DELIVERY</span><p>'+esc(d.submission)+'</p></div>':'')+
+        (d.rework_reason?'<div class="team-message error">Rework: '+esc(d.rework_reason)+'</div>':'')+
+        '<div class="row-actions">'+actions+'</div>'+
+      '</article>';
+    }).join('');
+  }
+  async function buildProjectDelivery(){
+    const p=state.currentProject;if(!p)return;
+    const btn=$('#build-project-delivery');if(btn){btn.disabled=true;btn.textContent='BUILDING…'}
+    try{
+      const r=await sb().rpc('studio_admin_build_delivery_system',{p_project_id:p.id});
+      if(r.error)throw r.error;
+      await loadProjectWorkspace(p);
+      const missing=Array.isArray(r.data?.unassigned_domains)?r.data.unassigned_domains.length:0;
+      notify(missing?'Delivery system built · '+missing+' domain'+(missing===1?' needs':'s need')+' a lead.':'Delivery system built and Domain Leads assigned.');
+    }catch(e){notify(e.message||'Could not build the delivery system.','error')}
+    finally{if(btn){btn.disabled=false;btn.textContent='BUILD / REFRESH SYSTEM'}}
+  }
+  async function assignDomainLead(id){
+    const select=$('[data-domain-lead-select="'+CSS.escape(id)+'"]'),memberId=select?.value;
+    if(!memberId)return notify('Choose a Domain Lead first.','error');
+    const current=state.projectDomains.find(x=>x.id===id);
+    let reason='';
+    if(current?.lead_member_id&&current.lead_member_id!==memberId)reason=prompt('Reason for changing the accountable Domain Lead:')||'';
+    const r=await sb().rpc('studio_domain_command',{p_action:'assign_lead',p_payload:{workstream_id:id,member_id:memberId,reason}});
+    if(r.error)return notify(r.error.message,'error');
+    await loadProjectWorkspace();notify('Domain Lead assigned.');
+  }
+  async function acceptDomain(id){
+    const r=await sb().rpc('studio_domain_command',{p_action:'accept_domain',p_payload:{workstream_id:id}});
+    if(r.error)return notify(r.error.message,'error');
+    await loadProjectWorkspace();notify('Domain outcome accepted.');
+  }
+  async function reworkDomain(id){
+    const reason=prompt('What must the Domain Lead change before acceptance?')||'';
+    if(!reason.trim())return;
+    const r=await sb().rpc('studio_domain_command',{p_action:'rework_domain',p_payload:{workstream_id:id,reason}});
+    if(r.error)return notify(r.error.message,'error');
+    await loadProjectWorkspace();notify('Rework sent to the Domain Lead.');
+  }
+
   function renderProjectWorkspace(){
+    renderProjectDomains();
     $('#project-message-thread').innerHTML=state.projectMessages.length?state.projectMessages.map(x=>'<div class="message-bubble '+esc(x.sender_type)+'"><b>'+(x.sender_type==='client'?'CLIENT':'ATS')+'</b><p>'+esc(x.body)+'</p><small>'+esc(fmt(x.created_at))+'</small></div>').join(''):'<div class="ops-empty">No messages in this project yet.</div>';const thread=$('#project-message-thread');if(thread)thread.scrollTop=thread.scrollHeight;
     $('#project-file-list').innerHTML=state.projectFiles.length?state.projectFiles.map(x=>'<div class="collab-row"><div><b>'+esc(x.file_name)+'</b><small>'+esc((x.category||'file').replaceAll('_',' ')+' · '+(x.version||'—')+' · '+(x.visibility||'admin_only'))+'</small></div><div class="row-actions"><button class="row-action" data-admin-file-open="'+esc(x.id)+'" data-file-path="'+esc(x.storage_path||'')+'">OPEN</button>'+(x.category==='review'?'<button class="row-action primary-action" data-publish-file-review="'+esc(x.id)+'">REVIEW →</button>':'')+(x.category==='final_delivery'&&x.visibility!=='client_visible'?'<button class="row-action primary-action" data-release-final="'+esc(x.id)+'">RELEASE →</button>':'')+'</div></div>').join(''):'<div class="ops-empty">No project files yet.</div>';
     const revisionByReview=new Map(state.projectRevisions.map(x=>[x.review_id,x]));$('#project-review-list').innerHTML=state.projectReviews.length?state.projectReviews.map(x=>{const r=revisionByReview.get(x.id);return '<div class="collab-row"><div><b>'+esc(x.title||'Review')+' · '+esc(x.version||'')+'</b><small>'+esc((x.review_code||'—')+' · '+(x.status||'').replaceAll('_',' '))+(r?' · Revision #'+esc(r.revision_number)+' '+esc(r.status):'')+'</small>'+(r?.notes?'<p>'+esc(r.notes)+'</p>':'')+'</div><div class="row-actions">'+(r&&['submitted','in_progress'].includes(r.status)?'<button class="row-action primary-action" data-complete-revision="'+esc(r.id)+'">COMPLETE REVISION</button>':'')+'</div></div>'}).join(''):'<div class="ops-empty">No reviews published yet.</div>';
@@ -1396,6 +1472,10 @@
       const due=new Date();due.setDate(due.getDate()+20);
       const converted=await sb().rpc('studio_admin_convert_lead',{p_lead_id:p.lead_id,p_project_title:prop.data.title,p_due_date:due.toISOString().slice(0,10)});
       if(converted.error)return notify(converted.error.message,'error');
+      if(converted.data?.project_id){
+        const built=await sb().rpc('studio_admin_build_delivery_system',{p_project_id:converted.data.project_id});
+        if(built.error)notify('Project created, but delivery system needs a manual refresh: '+built.error.message,'error');
+      }
     }
     if(p.payment_type==='final'&&p.project_id){
       const project=await sb().from('studio_projects').select('*').eq('id',p.project_id).single();
@@ -1431,6 +1511,10 @@
       if(action==='plan'||action==='verification'){setLeadFocusMode(false);const fold=$('#fold-solution-tasks');fold?.setAttribute('open','');if(action==='verification'){if($('#solution-task-type'))$('#solution-task-type').value='verification';if($('#solution-task-title')&&!$('#solution-task-title').value)$('#solution-task-title').value='Verify effectiveness of the proposed solution';}fold?.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>$('#solution-task-title')?.focus(),250);return}
       if(action==='qualify'){if($('#lead-status'))$('#lead-status').value='qualified';if($('#lead-next-action'))$('#lead-next-action').value='Prepare proposal';updateLeadWorkspaceState();void saveLead(false);return}
     }
+    const domainAssign=e.target.closest('[data-domain-assign]');if(domainAssign){void assignDomainLead(domainAssign.dataset.domainAssign);return}
+    const domainAccept=e.target.closest('[data-domain-accept]');if(domainAccept){void acceptDomain(domainAccept.dataset.domainAccept);return}
+    const domainRework=e.target.closest('[data-domain-rework]');if(domainRework){void reworkDomain(domainRework.dataset.domainRework);return}
+    const domainTeam=e.target.closest('[data-domain-open-team]');if(domainTeam&&state.currentProject?.id){location.href='/admin/team-tasks?project='+encodeURIComponent(state.currentProject.id)+'&domain='+encodeURIComponent(domainTeam.dataset.domainOpenTeam);return}
     const jump=e.target.closest('[data-jump]');if(jump){window.ATS_ADMIN?.switchTab?.(jump.dataset.jump);loadPanel(jump.dataset.jump);return}
     const refresh=e.target.closest('[data-ops-refresh]');if(refresh){loadPanel(refresh.dataset.opsRefresh,true);return}
     const priorityLead=e.target.closest('[data-priority-lead]');if(priorityLead){void (async()=>{window.ATS_ADMIN?.switchTab?.('leads');await loadLeads();await openLead(priorityLead.dataset.priorityLead)})();return}
@@ -1527,6 +1611,7 @@
   $('#send-project-message')?.addEventListener('click',sendProjectMessage);
   $('#upload-project-file')?.addEventListener('click',uploadProjectFile);
   $('#refresh-project-workspace')?.addEventListener('click',()=>loadProjectWorkspace());
+  $('#build-project-delivery')?.addEventListener('click',buildProjectDelivery);
   $('#open-project-team-tasks')?.addEventListener('click',()=>{if(state.currentProject?.id)location.href='/admin/team-tasks?project='+encodeURIComponent(state.currentProject.id)});
   $('#project-message-input')?.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();sendProjectMessage()}});
   $('#save-v9-layout')?.addEventListener('click',saveV9);
