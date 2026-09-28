@@ -984,6 +984,7 @@
     const lead=state.currentLead;if(!lead)return;
     executionCtx=ctx||executionCtx||{};
     const proposal=executionCtx.proposal||null,deposit=executionCtx.deposit||null,project=executionCtx.project||null,taskCount=Number(executionCtx.taskCount||0);
+    const internalProject=String(lead.project_mode||'client')==='internal';
     const c=state.discoveryCase||{},op=operatingGateState(),body=state.deliveryBlueprint?.blueprint||{};
     const portalRequestOpen=String(c.analysis_state||'')==='ready'&&c.system_next_question?.source==='admin_request';
     const leadReady=['qualified','proposal_sent','negotiation','won'].includes(lead.status);
@@ -996,13 +997,15 @@
 
     const understandDone=op.understood&&!!understanding;
     const planDone=op.blueprintReady;
-    const agreeDone=proposalAccepted&&depositPaid;
+    const agreeDone=internalProject?projectLive:(proposalAccepted&&depositPaid);
     const deliverDone=projectLive&&taskCount>0;
     const steps=[
       {label:'01 · UNDERSTAND',value:understandDone?'Understood':op.needsEvidence?'Needs client/admin input':String(c.analysis_state||'never_analyzed').replaceAll('_',' '),done:understandDone,current:!understandDone},
       {label:'02 · STRUCTURE',value:planDone?(deliveryDomains.length+' accountable domain'+(deliveryDomains.length===1?'':'s')):'Waiting',done:planDone,current:understandDone&&!planDone,locked:!understandDone},
-      {label:'03 · AGREE',value:agreeDone?'Accepted + paid':proposalCreated?String(proposal.status||'proposal').replaceAll('_',' '):op.scopeApproved?'Ready for offer':'Waiting',done:agreeDone,current:op.scopeApproved&&!agreeDone,locked:!op.scopeApproved&&!proposalCreated},
-      {label:'04 · DELIVER',value:projectLive?(taskCount?taskCount+' team task'+(taskCount===1?'':'s')+' live':'Project live'):'Not started',done:deliverDone,current:agreeDone&&!deliverDone,locked:!agreeDone}
+      internalProject
+        ? {label:'03 · ACTIVATE',value:projectLive?'Internal project live':op.scopeApproved?'Ready to start':'Waiting',done:projectLive,current:op.scopeApproved&&!projectLive,locked:!op.scopeApproved}
+        : {label:'03 · AGREE',value:agreeDone?'Accepted + paid':proposalCreated?String(proposal.status||'proposal').replaceAll('_',' '):op.scopeApproved?'Ready for offer':'Waiting',done:agreeDone,current:op.scopeApproved&&!agreeDone,locked:!op.scopeApproved&&!proposalCreated},
+      {label:'04 · DELIVER',value:projectLive?(taskCount?taskCount+' team task'+(taskCount===1?'':'s')+' live':'Project live'):'Not started',done:deliverDone,current:projectLive&&!deliverDone,locked:!projectLive}
     ];
     $('#lead-execution-steps').innerHTML=steps.map(s=>'<div class="lead-execution-step '+(s.done?'done ':s.current?'current ':s.locked?'locked ':'')+'"><span>'+esc(s.label)+'</span><b>'+esc(s.value)+'</b></div>').join('');
 
@@ -1017,8 +1020,13 @@
       needTitle=effectiveClientMissing.length?'Close the remaining understanding gap':'Review the request with the client';
       needDetail=effectiveClientMissing.length?effectiveClientMissing.slice(0,3).join(' • '):String(c.system_next_action||'Collect only the information that can change the project decision.');
     }else if(op.blueprintReady&&!op.scopeApproved){
-      needTitle='Confirm the delivery structure';
-      needDetail=deliveryDomains.length+' professional domain'+(deliveryDomains.length===1?'':'s')+' ready. Confirm once, then prepare the commercial offer.';
+      needTitle=internalProject?'Confirm the internal delivery structure':'Confirm the delivery structure';
+      needDetail=internalProject
+        ? deliveryDomains.length+' professional domain'+(deliveryDomains.length===1?'':'s')+' ready. Confirm once, then start the ATS internal project without a commercial gate.'
+        : deliveryDomains.length+' professional domain'+(deliveryDomains.length===1?'':'s')+' ready. Confirm once, then prepare the commercial offer.';
+    }else if(internalProject&&op.scopeApproved){
+      needTitle='Start the internal ATS project';
+      needDetail='Scope is approved. Activate the project, build the accountable domains, then assign Domain Leads.';
     }else if(op.scopeApproved&&!proposalCreated){
       needTitle='Prepare the client offer';
       needDetail='Scope is approved. ATS will prefill the proposal from the domain outcomes; you only finish the commercial terms.';
@@ -1049,11 +1057,17 @@
     title.textContent=projectLive?'Project delivery':lead.full_name+' · '+(lead.service||'New request');
     copy.textContent=projectLive
       ?(project.project_code||'Project')+' · Admin manages accountable Domain Leads and final outcomes.'
-      :'Client + Admin understand first. After scope approval, ATS turns the case into accountable delivery domains automatically.';
+      :internalProject
+        ?'Internal ATS project · understand first, approve the delivery structure, then activate without proposal or deposit.'
+        :'Client + Admin understand first. After scope approval, ATS turns the case into accountable delivery domains automatically.';
     btn.dataset.action='';btn.dataset.id='';btn.dataset.newTask='0';btn.disabled=false;
 
     if(projectLive){
       btn.textContent='OPEN PROJECT DELIVERY →';btn.dataset.action='open-project';btn.dataset.id=project.id;
+    }else if(internalProject&&op.blueprintReady&&!op.scopeApproved){
+      btn.textContent='CONFIRM INTERNAL SCOPE →';btn.dataset.action='approve-internal-scope';
+    }else if(internalProject&&op.scopeApproved){
+      btn.textContent='START INTERNAL PROJECT →';btn.dataset.action='activate-internal-project';
     }else if(proposalAccepted&&deposit&&!depositPaid){
       btn.textContent='CONFIRM RECEIVED DEPOSIT →';btn.dataset.action='confirm-deposit';btn.dataset.id=deposit.id;
     }else if(proposal?.status==='sent'){
@@ -1124,7 +1138,7 @@
     const assets=(x.current_assets||[]);$('#lead-assets').innerHTML=assets.length?assets.map(a=>'<span>'+esc(a)+'</span>').join(''):'<em>No structured assets listed.</em>';
     $('#lead-understanding').value=suggestedUnderstanding(x,cards);
     $('#lead-missing-info').value=suggestedMissing(x,cards).join('\n');
-    $('#lead-status').value=x.status||'new';$('#lead-fit').value=x.fit||'';$('#lead-fit-reason').value=x.fit_reason||'';$('#lead-next-action').value=x.next_action||'';$('#lead-next-due').value=dateTimeLocal(x.next_action_due_at);$('#lead-contact-preference').value=x.preferred_contact_channel||'';$('#lead-notes').value=x.internal_notes||'';$('#lead-lost-reason').value=x.lost_reason||'';
+    $('#lead-status').value=x.status||'new';$('#lead-fit').value=x.fit||'';$('#lead-project-mode').value=x.project_mode||'client';$('#lead-fit-reason').value=x.fit_reason||'';$('#lead-next-action').value=x.next_action||'';$('#lead-next-due').value=dateTimeLocal(x.next_action_due_at);$('#lead-contact-preference').value=x.preferred_contact_channel||'';$('#lead-notes').value=x.internal_notes||'';$('#lead-lost-reason').value=x.lost_reason||'';
     $('#lead-contact-channel').value=x.preferred_contact_channel||'whatsapp';$('#lead-contact-outcome').value='contacted';$('#lead-contact-summary').value='';$('#lead-contact-signal').value='';
     state.clientAccessCode=null;$('#client-access-code').textContent='------';$('#client-access-code-state').textContent=x.email?'No active code shown. Generate a new code when the client is ready.':'Add an email before generating Client Access.';$('#copy-client-access-code').classList.add('hidden');$('#share-client-access-wa').classList.add('hidden');$('#issue-client-access-code').disabled=!x.email;$('#client-access-link').textContent=location.origin+'/client-access/';
     $('#lead-last-contact').textContent=x.last_contacted_at?'Last contact '+fmt(x.last_contacted_at):'No contact logged';
@@ -1226,6 +1240,7 @@
     if(status==='qualified'&&x.status!=='qualified'&&!diagnosisGateState().ready){notify('Complete the Diagnosis Gate before qualifying this lead','error');return false}
     const patch={
       status,fit,fit_reason:$('#lead-fit-reason').value.trim()||null,
+      project_mode:$('#lead-project-mode').value||'client',
       ats_understanding:understanding||null,
       missing_information:$('#lead-missing-info').value.split('\n').map(v=>v.trim()).filter(Boolean),
       next_action:nextAction,next_action_due_at:dueAt,
@@ -1289,6 +1304,52 @@
       deposit_percent:50,
       terms:'Delivery scope is based on the approved ATS Delivery Blueprint. Internal team-task distribution is managed by the accountable Domain Leads. Any material scope change is reviewed before execution.'
     };
+  }
+
+  async function confirmInternalScope(){
+    const lead=state.currentLead;if(!lead)return;
+    if(String(lead.project_mode||'client')!=='internal')return notify('Switch Project Mode to Internal ATS Project first.','error');
+    const op=operatingGateState();
+    if(op.needsEvidence)return notify('Complete Client/Admin understanding before approving the internal delivery scope.','error');
+    let bp=state.deliveryBlueprint;
+    if(!op.blueprintReady){
+      try{bp=await ensureDeliveryBlueprint(lead.id,{force:true,silent:false})}catch(_){return}
+    }
+    const domains=Array.isArray(bp?.blueprint?.domains)?bp.blueprint.domains:[];
+    if(!bp||bp.status==='needs_evidence'||!domains.length)return notify('ATS still needs a valid delivery structure before activation.','error');
+    const now=new Date().toISOString();
+    if(bp.status==='ready'){
+      const approved=await sb().from('studio_delivery_blueprints').update({status:'approved',approved_at:now,updated_at:now}).eq('id',bp.id).eq('status','ready').select('*').single();
+      if(approved.error)return notify(approved.error.message,'error');
+      bp=approved.data;state.deliveryBlueprint=bp;
+    }
+    const leadPatch=await sb().from('studio_leads').update({next_action:'Start internal project',next_action_due_at:null,updated_at:now}).eq('id',lead.id).select('*').single();
+    if(leadPatch.error)return notify(leadPatch.error.message,'error');
+    const li=state.leads.findIndex(x=>x.id===lead.id);if(li>=0)state.leads[li]=leadPatch.data;state.currentLead=leadPatch.data;
+    await logLeadActivity('delivery_scope_approved',{blueprint_id:bp.id,domain_count:domains.length,project_mode:'internal'},lead.id);
+    updateLeadWorkspaceState();renderLeadExecutionPath(executionCtx);
+    notify('Internal scope approved · ready to activate.');
+  }
+
+  async function activateInternalProject(){
+    const lead=state.currentLead;if(!lead)return;
+    if(String(lead.project_mode||'client')!=='internal')return notify('This lead is not marked as an internal ATS project.','error');
+    const op=operatingGateState();
+    if(!op.scopeApproved)return notify('Confirm the internal Delivery Blueprint first.','error');
+    if(!confirm('Start this as an internal ATS project? No proposal or deposit will be created.'))return;
+    const title=(lead.company_name||lead.full_name||'ATS Internal')+' · ATS Delivery';
+    const converted=await sb().rpc('studio_admin_convert_internal_lead',{p_lead_id:lead.id,p_project_title:title,p_due_date:null});
+    if(converted.error)return notify(converted.error.message,'error');
+    const projectId=converted.data?.project_id;
+    if(!projectId)return notify('Internal project activation did not return a project.','error');
+    const built=await sb().rpc('studio_admin_build_delivery_system',{p_project_id:projectId});
+    if(built.error)return notify('Project created, but delivery system build is blocked: '+built.error.message,'error');
+    state.loaded.leads=false;state.loaded['studio-projects']=false;state.loaded.dashboard=false;
+    await Promise.all([loadLeads(true),loadProjects(true)]);
+    const project=state.projects.find(x=>x.id===projectId);
+    notify('Internal project live · delivery domains created.');
+    $('#lead-dialog')?.close();
+    if(project)await openStudioProject(project.id);
   }
 
   async function confirmScopeAndPrepareOffer(){
@@ -1632,6 +1693,8 @@
     if(!action)return;
     if(action==='analysis'){void runDiagnosticEngine(false);return}
     if(action==='build-blueprint'){void ensureDeliveryBlueprint(state.currentLead?.id,{force:true,silent:false}).then(()=>{updateLeadWorkspaceState();renderLeadExecutionPath(executionCtx)});return}
+    if(action==='approve-internal-scope'){void confirmInternalScope();return}
+    if(action==='activate-internal-project'){void activateInternalProject();return}
     if(action==='prepare-offer'){void confirmScopeAndPrepareOffer();return}
     if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
       if(action==='whatsapp-access'){void issueAndOpenClientAccessWhatsApp();return}
@@ -1677,6 +1740,7 @@
   $('#add-solution-task')?.addEventListener('click',addSolutionTask);
   $('#lead-refresh-timeline')?.addEventListener('click',()=>state.currentLead&&loadLeadTimeline(state.currentLead.id));
   $('#lead-status')?.addEventListener('change',updateLeadWorkspaceState);
+  $('#lead-project-mode')?.addEventListener('change',()=>{if(state.currentLead){state.currentLead={...state.currentLead,project_mode:$('#lead-project-mode').value};renderLeadExecutionPath(executionCtx)}updateLeadWorkspaceState()});
   $('#lead-next-action')?.addEventListener('change',updateLeadWorkspaceState);
   $('#lead-next-due')?.addEventListener('change',updateLeadWorkspaceState);
   $('#lead-create-proposal')?.addEventListener('click',async()=>{
