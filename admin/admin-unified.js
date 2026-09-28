@@ -655,57 +655,207 @@
     return d;
   }
 
-  function renderLeadTaskWorkspace(task){
-    const d=ensureLeadTaskWorkspace();
-    if(!task)return;
-    const started=task.started_at?new Date(task.started_at).toLocaleString():'Just started';
-    d.innerHTML=
-      '<div class="lead-task-dialog-head"><div><span>CURRENT ATS TASK</span><h3>'+esc(task.title)+'</h3><small>'+esc((task.task_type||'task').replaceAll('_',' '))+' · '+esc(task.priority||'medium')+' · Started '+esc(started)+'</small></div><button type="button" data-lead-task-close>×</button></div>'+
-      '<div class="lead-task-exec-grid">'+
-        '<article><span>WHAT TO DO</span><p>'+esc(task.rationale||task.title)+'</p></article>'+
-        '<article><span>DONE WHEN</span><p>'+esc(task.acceptance_criteria||'The result is documented and reviewed before moving to the next step.')+'</p></article>'+
-        '<article class="wide"><span>EXPECTED EFFECT</span><p>'+esc(task.expected_effect||'Reduce uncertainty and improve the next decision.')+'</p></article>'+
+
+  async function loadTaskPlaybook(taskId,force=false){
+    if(!force){
+      const existing=await sb().from('studio_task_playbooks').select('*').eq('task_id',taskId).maybeSingle();
+      if(existing.error)throw existing.error;
+      if(existing.data)return existing.data;
+    }
+    const generated=await sb().functions.invoke('ats-task-playbook',{body:{task_id:taskId,force}});
+    if(generated.error)throw generated.error;
+    if(!generated.data?.playbook)throw new Error(generated.data?.error||'ATS could not generate a task playbook.');
+    return generated.data.playbook;
+  }
+
+  function playbookProgressMap(playbook){
+    return new Map((Array.isArray(playbook?.progress)?playbook.progress:[]).map(x=>[String(x.id),x]));
+  }
+
+  function playbookSourceMap(playbook){
+    return new Map((Array.isArray(playbook?.source_refs)?playbook.source_refs:[]).map(x=>[String(x.source_key),x]));
+  }
+
+  function renderPlaybookCheck(check,progress,sourceMap,index){
+    const p=progress.get(String(check.id))||{},status=String(p.status||'pending');
+    const sources=(Array.isArray(check.source_keys)?check.source_keys:[]).map(k=>sourceMap.get(String(k))).filter(Boolean);
+    const sourceHtml=sources.length?'<div class="task-check-sources">'+sources.map(s=>'<a href="'+esc(s.url||'#')+'" target="_blank" rel="noopener">'+esc(s.publisher||s.source_key)+' · '+esc(s.version_label||'source')+'</a>').join('')+'</div>':'';
+    const naDisabled=check.allows_na?'':' disabled';
+    return '<article class="task-check '+esc(status)+'" data-playbook-check="'+esc(check.id)+'">'+
+      '<div class="task-check-head"><div><span>CHECK '+(index+1)+' · '+esc(check.section||'Check')+'</span><b>'+esc(check.action||'')+'</b></div><em class="severity '+esc(check.severity_if_failed||'medium')+'">'+esc((check.severity_if_failed||'medium').toUpperCase())+'</em></div>'+
+      '<div class="task-check-body">'+
+        '<div><span>HOW TO TEST</span><p>'+esc(check.how_to_test||check.action||'')+'</p></div>'+
+        '<div><span>PASS WHEN</span><p>'+esc(check.pass_criteria||'Expected behavior is observed and documented.')+'</p></div>'+
       '</div>'+
-      '<label class="lead-task-result"><span>RESULT / WHAT DID WE FIND?</span><textarea id="lead-task-result-summary" placeholder="Write the outcome, findings, blockers or evidence from this task…">'+esc(task.result_summary||'')+'</textarea></label>'+
+      sourceHtml+
+      '<div class="task-check-controls">'+
+        '<button type="button" data-check-status="pass" class="'+(status==='pass'?'active':'')+'">PASS</button>'+
+        '<button type="button" data-check-status="issue" class="'+(status==='issue'?'active':'')+'">ISSUE</button>'+
+        '<button type="button" data-check-status="na" class="'+(status==='na'?'active':'')+'"'+naDisabled+'>N/A</button>'+
+      '</div>'+
+      '<div class="task-check-evidence">'+
+        '<label><span>NOTE / FINDING</span><textarea data-check-note placeholder="What happened? What did you observe?">'+esc(p.note||'')+'</textarea></label>'+
+        '<label><span>EVIDENCE / REFERENCE</span><input data-check-evidence value="'+esc(p.evidence||'')+'" placeholder="Screenshot name, URL, metric, file reference…"></label>'+
+      '</div>'+
+    '</article>';
+  }
+
+  function collectPlaybookProgress(d,playbook){
+    const out=[];
+    (Array.isArray(playbook?.checklist)?playbook.checklist:[]).forEach(check=>{
+      const row=d.querySelector('[data-playbook-check="'+CSS.escape(String(check.id))+'"]');
+      if(!row)return;
+      const active=row.querySelector('[data-check-status].active');
+      out.push({
+        id:String(check.id),
+        status:active?.dataset.checkStatus||'pending',
+        note:row.querySelector('[data-check-note]')?.value.trim()||'',
+        evidence:row.querySelector('[data-check-evidence]')?.value.trim()||'',
+        updated_at:new Date().toISOString()
+      });
+    });
+    return out;
+  }
+
+  function summarizePlaybook(task,playbook,progress,humanReviewer=''){
+    const checks=Array.isArray(playbook?.checklist)?playbook.checklist:[];
+    const map=new Map(progress.map(x=>[String(x.id),x]));
+    const counts={pass:0,issue:0,na:0,pending:0};
+    const issues=[];
+    checks.forEach(check=>{
+      const p=map.get(String(check.id))||{status:'pending'};
+      const st=['pass','issue','na'].includes(String(p.status))?p.status:'pending';
+      counts[st]++;
+      if(st==='issue')issues.push({
+        section:check.section||'Check',
+        severity:check.severity_if_failed||'medium',
+        action:check.action||'',
+        note:p.note||'No note recorded',
+        evidence:p.evidence||''
+      });
+    });
+    const lines=[
+      'Task: '+task.title,
+      'Method: '+(playbook.method_name||'Evidence-backed task verification'),
+      'Checks: '+counts.pass+' Pass · '+counts.issue+' Issue · '+counts.na+' N/A · '+counts.pending+' Pending'
+    ];
+    if(issues.length){
+      lines.push('Material findings:');
+      issues.sort((a,b)=>({critical:4,high:3,medium:2,low:1}[b.severity]||0)-({critical:4,high:3,medium:2,low:1}[a.severity]||0)).forEach((x,i)=>{
+        lines.push((i+1)+'. ['+String(x.severity).toUpperCase()+'] '+x.section+' — '+x.note+(x.evidence?' · Evidence: '+x.evidence:''));
+      });
+    }else lines.push('Material findings: No issues recorded in the completed checklist.');
+    if(playbook.human_gate_required)lines.push('Human review: '+(humanReviewer||'Required before final client-facing conclusion.'));
+    lines.push('Conclusion: '+(issues.length?'The task identified '+issues.length+' issue'+(issues.length===1?'':'s')+' requiring follow-up.':'The tested checks passed or were justified as N/A; no issue was recorded in this task.'));
+    return lines.join('\n');
+  }
+
+  function validatePlaybookCompletion(playbook,progress,humanReviewer=''){
+    const map=new Map(progress.map(x=>[String(x.id),x]));
+    for(const check of (Array.isArray(playbook?.checklist)?playbook.checklist:[])){
+      const p=map.get(String(check.id))||{status:'pending',note:'',evidence:''};
+      if(check.required&&p.status==='pending')return 'Complete all required checks before closing the task.';
+      if(p.status==='na'&&!check.allows_na)return 'N/A is not allowed for '+(check.section||check.id)+'.';
+      if(p.status==='issue'&&!String(p.note||p.evidence||'').trim())return 'Add a note or evidence for every Issue.';
+    }
+    if(playbook.human_gate_required&&!String(humanReviewer||'').trim())return 'This is a high-risk task. Record the competent human reviewer before completion.';
+    return '';
+  }
+
+  function renderLeadTaskWorkspace(task,playbook){
+    const d=ensureLeadTaskWorkspace();
+    if(!task||!playbook)return;
+    const started=task.started_at?new Date(task.started_at).toLocaleString():'Just started';
+    const progress=playbookProgressMap(playbook),sourceMap=playbookSourceMap(playbook);
+    const sources=Array.isArray(playbook.source_refs)?playbook.source_refs:[];
+    d.dataset.taskId=task.id;d.dataset.playbookId=playbook.id;
+    d.innerHTML=
+      '<div class="lead-task-dialog-head"><div><span>EVIDENCE-BACKED ATS TASK</span><h3>'+esc(task.title)+'</h3><small>'+esc(playbook.method_name||'Task playbook')+' · '+esc(String(playbook.risk_level||'medium').toUpperCase())+' RISK · Started '+esc(started)+'</small></div><button type="button" data-lead-task-close>×</button></div>'+
+      '<div class="task-playbook-banner '+(playbook.human_gate_required?'gate':'')+'"><div><span>OBJECTIVE</span><b>'+esc(playbook.objective||task.rationale||task.title)+'</b></div><div class="task-playbook-badges"><i>'+esc(String(playbook.domain||'general').replaceAll('_',' ').toUpperCase())+'</i>'+(playbook.human_gate_required?'<i class="gate">HUMAN REVIEW REQUIRED</i>':'<i>SOURCE-GROUNDED</i>')+'</div></div>'+
+      '<div class="task-checklist">'+(Array.isArray(playbook.checklist)&&playbook.checklist.length?playbook.checklist.map((x,i)=>renderPlaybookCheck(x,progress,sourceMap,i)).join(''):'<div class="ops-empty">No checklist generated.</div>')+'</div>'+
+      (playbook.human_gate_required?'<div class="task-human-gate"><span>COMPETENT HUMAN REVIEW</span><p>AI assists evidence collection only. Record the reviewer before a final client-facing conclusion.</p><div><input id="task-human-reviewer" value="'+esc(playbook.human_reviewed_by||'')+'" placeholder="Reviewer name / role"><input id="task-human-review-note" value="'+esc(playbook.human_review_note||'')+'" placeholder="Review note (optional)"></div></div>':'')+
+      '<details class="task-source-panel"><summary>SOURCES & METHOD BASIS · '+sources.length+'</summary><div>'+sources.map(s=>'<a href="'+esc(s.url||'#')+'" target="_blank" rel="noopener"><b>'+esc(s.title||s.source_key)+'</b><small>'+esc((s.publisher||'Source')+' · '+(s.version_label||'')+' · Authority tier '+(s.authority_tier||'—'))+'</small></a>').join('')+'</div><p>'+esc(playbook.completion_rule||'')+'</p></details>'+
       '<div class="lead-task-dialog-actions"><button type="button" class="secondary" data-lead-task-close>CLOSE</button><button type="button" class="secondary" id="lead-task-save">SAVE PROGRESS</button><button type="button" class="primary" id="lead-task-complete">COMPLETE & START NEXT →</button></div>';
     d.querySelectorAll('[data-lead-task-close]').forEach(b=>b.onclick=()=>d.close());
-    $('#lead-task-save',d).onclick=()=>saveLeadTaskProgress(task,false,d);
-    $('#lead-task-complete',d).onclick=()=>saveLeadTaskProgress(task,true,d);
+    d.querySelectorAll('[data-check-status]').forEach(btn=>btn.onclick=()=>{
+      const row=btn.closest('[data-playbook-check]');if(!row||btn.disabled)return;
+      row.querySelectorAll('[data-check-status]').forEach(x=>x.classList.remove('active'));
+      btn.classList.add('active');
+      row.classList.remove('pending','pass','issue','na');
+      row.classList.add(btn.dataset.checkStatus||'pending');
+    });
+    $('#lead-task-save',d).onclick=()=>savePlaybookTaskProgress(task,playbook,false,d);
+    $('#lead-task-complete',d).onclick=()=>savePlaybookTaskProgress(task,playbook,true,d);
   }
 
   async function openCurrentLeadTaskWorkspace(taskId=null){
-    const task=(taskId?state.solutionTasks.find(x=>x.id===taskId):currentInternalLeadTask())||internalLeadTasks().find(x=>x.status==='todo');
+    let task=(taskId?state.solutionTasks.find(x=>x.id===taskId):currentInternalLeadTask())||internalLeadTasks().find(x=>x.status==='todo');
     if(!task)return notify('No active ATS task found.','error');
     if(task.status==='todo'){
       const now=new Date().toISOString();
       const r=await sb().from('studio_solution_tasks').update({status:'in_progress',started_at:now,updated_at:now}).eq('id',task.id).eq('status','todo').select('*').single();
       if(r.error)return notify(r.error.message,'error');
-      const i=state.solutionTasks.findIndex(x=>x.id===task.id);if(i>=0)state.solutionTasks[i]=r.data;
-      await logLeadActivity('solution_task_started',{task_id:r.data.id,title:r.data.title,task_type:r.data.task_type});
+      task=r.data;
+      const i=state.solutionTasks.findIndex(x=>x.id===task.id);if(i>=0)state.solutionTasks[i]=task;
+      await logLeadActivity('solution_task_started',{task_id:task.id,title:task.title,task_type:task.task_type});
       renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
-      renderLeadTaskWorkspace(r.data);
-    }else{
-      renderLeadTaskWorkspace(task);
     }
-    ensureLeadTaskWorkspace().showModal();
+    const d=ensureLeadTaskWorkspace();
+    d.innerHTML='<div class="task-playbook-loading"><b>ATS is preparing the evidence-backed playbook…</b><small>Loading task method, checklist and approved sources.</small></div>';
+    if(!d.open)d.showModal();
+    try{
+      const playbook=await loadTaskPlaybook(task.id,false);
+      renderLeadTaskWorkspace(task,playbook);
+    }catch(error){
+      d.close();
+      notify(error?.message||'Could not prepare the ATS task playbook.','error');
+      throw error;
+    }
   }
 
-  async function saveLeadTaskProgress(task,complete,d){
-    const summary=$('#lead-task-result-summary',d)?.value.trim()||'';
-    if(complete&&summary.length<10)return notify('Add a short result before completing the task.','error');
+  async function savePlaybookTaskProgress(task,playbook,complete,d){
+    const progress=collectPlaybookProgress(d,playbook);
+    const humanReviewer=$('#task-human-reviewer',d)?.value.trim()||'';
+    const humanReviewNote=$('#task-human-review-note',d)?.value.trim()||'';
     const now=new Date().toISOString();
-    const payload=complete
-      ?{result_summary:summary,status:'done',completed_at:now,updated_at:now}
-      :{result_summary:summary||null,updated_at:now};
-    const r=await sb().from('studio_solution_tasks').update(payload).eq('id',task.id).select('*').single();
+    if(complete){
+      const validation=validatePlaybookCompletion(playbook,progress,humanReviewer);
+      if(validation)return notify(validation,'error');
+    }
+    const playbookPatch={
+      progress,
+      human_reviewed_by:playbook.human_gate_required?(humanReviewer||null):null,
+      human_reviewed_at:playbook.human_gate_required&&humanReviewer?now:null,
+      human_review_note:playbook.human_gate_required?(humanReviewNote||null):null,
+      updated_at:now
+    };
+    if(complete)playbookPatch.status='completed';
+    const pb=await sb().from('studio_task_playbooks').update(playbookPatch).eq('id',playbook.id).select('*').single();
+    if(pb.error)return notify(pb.error.message,'error');
+    if(!complete){
+      await logLeadActivity('solution_task_progress_saved',{task_id:task.id,title:task.title,playbook_id:playbook.id,checks_resolved:progress.filter(x=>x.status!=='pending').length,total_checks:progress.length});
+      return notify('Checklist progress saved.');
+    }
+
+    const summary=summarizePlaybook(task,pb.data,progress,humanReviewer);
+    const pbSummary=await sb().from('studio_task_playbooks').update({result_summary:summary,updated_at:now}).eq('id',playbook.id);
+    if(pbSummary.error)return notify(pbSummary.error.message,'error');
+    const taskPatch={result_summary:summary,status:'done',completed_at:now,updated_at:now};
+    const r=await sb().from('studio_solution_tasks').update(taskPatch).eq('id',task.id).select('*').single();
     if(r.error)return notify(r.error.message,'error');
     let i=state.solutionTasks.findIndex(x=>x.id===task.id);if(i>=0)state.solutionTasks[i]=r.data;
-    if(!complete){
-      await logLeadActivity('solution_task_progress_saved',{task_id:r.data.id,title:r.data.title});
-      renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
-      return notify('Task progress saved.');
-    }
-    await logLeadActivity('solution_task_completed',{task_id:r.data.id,title:r.data.title,result_summary:summary.slice(0,500)});
+    await logLeadActivity('solution_task_completed',{
+      task_id:r.data.id,title:r.data.title,playbook_id:playbook.id,
+      result_summary:summary.slice(0,1200),
+      pass:progress.filter(x=>x.status==='pass').length,
+      issues:progress.filter(x=>x.status==='issue').length,
+      na:progress.filter(x=>x.status==='na').length,
+      risk_level:playbook.risk_level||null,
+      human_gate_required:!!playbook.human_gate_required,
+      human_reviewer:humanReviewer||null,
+      source_keys:(Array.isArray(playbook.source_refs)?playbook.source_refs:[]).map(x=>x.source_key).filter(Boolean)
+    });
+
     const next=state.solutionTasks
       .filter(x=>['ats','shared'].includes(String(x.owner_type||''))&&x.status==='todo')
       .sort((a,b)=>Number(a.sort_order||999)-Number(b.sort_order||999))[0]||null;
@@ -719,8 +869,9 @@
     d.close();
     await syncDiagnosisPhase();
     renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
-    notify(next?'Task completed · next ATS task started.':'Task completed.');
+    notify(next?'Task completed from evidence · next ATS task started.':'Task completed from evidence.');
   }
+
 
   async function startInternalLeadWork(){
     const tasks=internalLeadTasks();
