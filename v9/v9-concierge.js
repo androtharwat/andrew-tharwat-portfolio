@@ -358,7 +358,7 @@
   function setStage(name){
     state.stage=name;
     $$('.concierge-stage',root).forEach(x=>x.classList.toggle('active',x.dataset.conciergeStage===name));
-    const order=['tell','understand','snapshot','contact'];
+    const order=['tell','contact'];
     const idx=Math.max(0,order.indexOf(name));
     $$('[data-concierge-progress]',root).forEach((x,i)=>{
       x.classList.toggle('active',i===idx);
@@ -472,15 +472,23 @@
     if(problem)problem.placeholder=starterPlaceholder();
     const btn=$('#concierge-understand');
     if(btn){
-      btn.disabled=!state.starterChoice;
-      btn.textContent=!state.starterChoice
-        ?(lang()==='ar'?'اختار نقطة البداية ↑':'CHOOSE A STARTING POINT ↑')
-        :(lang()==='ar'?'ساعد ATS يفهم ←':'HELP ATS UNDERSTAND →');
+      btn.disabled=false;
+      btn.textContent=lang()==='ar'?'راجع الطلب ←':'REVIEW REQUEST →';
     }
+  }
+
+  function renderRequestReview(){
+    const review=$('#concierge-request-review');
+    if(!review)return;
+    review.textContent=state.problem;
+    const context=$('#concierge-review-context');
+    context.textContent=[state.link,state.extra].filter(Boolean).join('\n');
+    context.hidden=!context.textContent;
   }
 
   function refreshLocale(){
     const l=lang();
+    if(state.stage==='contact')renderRequestReview();
     const problem=$('#concierge-problem');
     const extra=$('#concierge-extra');
     if(problem)problem.placeholder=problem.dataset[l+'Placeholder']||problem.dataset.enPlaceholder||'';
@@ -521,29 +529,22 @@
     state.link=$('#concierge-link').value.trim();
     state.extra=$('#concierge-extra').value.trim();
     persist();
-    if(!state.starterChoice){
-      showMessage('#concierge-tell-error',lang()==='ar'?'اختار واحدة من الثلاثة الأول علشان نبدأ من السياق الصح.':'Choose one of the three starting points first.');
-      $('.concierge-starters',root)?.scrollIntoView({behavior:'smooth',block:'center'});
-      return;
-    }
     if(state.problem.length<20){
       showMessage('#concierge-tell-error',t().min);
       focusInvalid($('#concierge-problem'));
       return;
     }
-    const btn=$('#concierge-understand'),old=btn.textContent;
-    btn.disabled=true;btn.textContent=lang()==='ar'?'ATS بيحلل كلامك…':'ATS IS READING THIS…';
-    await analyzeIntake();
-    renderUnderstanding();
-    setStage('understand');
-    btn.disabled=false;btn.textContent=old;
+    state.analysis=infer(state.problem,state.extra);
+    state.intakeAnalysis=localIntakeFallback();
+    renderRequestReview();
+    setStage('contact');
   });
 
   $('#concierge-adjust')?.addEventListener('click',()=>setStage('tell'));
   $('#concierge-confirm')?.addEventListener('click',renderClarification);
   $('#concierge-snapshot-back')?.addEventListener('click',()=>setStage('understand'));
   $('#concierge-contact-next')?.addEventListener('click',()=>setStage('contact'));
-  $('#concierge-contact-back')?.addEventListener('click',()=>setStage('snapshot'));
+  $('#concierge-contact-back')?.addEventListener('click',()=>setStage('tell'));
 
   async function uploadOrderEvidence(grant,btn){
     const results=[];
@@ -663,7 +664,7 @@
 
       if(grant){
         btn.textContent=lang()==='ar'?'تجهيز التشخيص الأولي…':'PREPARING INITIAL DIAGNOSIS…';
-        try{await sb.functions.invoke('ats-problem-solver',{body:{upload_grant:grant}})}catch(error){console.warn('ATS intake diagnosis deferred',error)}
+        sb.functions.invoke('ats-problem-solver',{body:{upload_grant:grant}}).then(({error})=>{if(error)console.warn('ATS intake diagnosis deferred',error)}).catch(error=>console.warn('ATS intake diagnosis deferred',error));
       }
 
       $('#concierge-request-code').textContent=row?.lead_code||t().received;

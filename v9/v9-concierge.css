@@ -534,3 +534,10 @@ body[data-lang=ar] .concierge-starter.active:after{right:auto;left:11px}
 body[data-lang=ar] .concierge-starter{text-align:right}
 body[data-lang=ar] .concierge-honesty-note{border-left:0;border-right:2px solid rgba(34,211,167,.55);border-radius:8px 0 0 8px}
 @media(max-width:760px){.concierge-starters{grid-template-columns:1fr}.concierge-starter{min-height:60px}}
+
+/* Two-step intake: keep review close to contact details. */
+#studio-concierge .concierge-progress{grid-template-columns:repeat(2,minmax(0,1fr))}
+.concierge-request-review{padding:20px;margin:0 0 24px;border:1px solid rgba(255,255,255,.12);border-radius:14px}
+.concierge-request-review small{color:#ff6172}
+.concierge-request-review p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;margin:10px 0 0}
+#concierge-review-context{font-size:13px;opacity:.8}
