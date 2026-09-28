@@ -192,7 +192,7 @@
       '<div class="social-dialog-head"><div><span>CONTENT ITEM</span><h3>'+(item?'Edit Content':'Add Content')+'</h3></div><button data-social-close>×</button></div>'+
       '<form class="social-form" id="social-item-form">'+
         '<label class="wide">TITLE / IDEA<input name="title" required value="'+esc(v.title||'')+'"></label>'+
-        '<label>PUBLISH DATE & TIME<input name="publish_at" type="datetime-local" value="'+esc(dt)+'"></label>'+
+        '<label>PUBLISH DATE & TIME<input name="publish_at" type="datetime-local" required value="'+esc(dt)+'"></label>'+
         '<label>FORMAT<select name="format">'+['post','reel','story','carousel','video'].map(x=>'<option value="'+x+'" '+(v.format===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'+
         '<label>PILLAR<input name="pillar" value="'+esc(v.pillar||'')+'" placeholder="Education / Product / Proof…"></label>'+
         '<label>STATUS<select name="status">'+statusOptions(v.status)+'</select></label>'+
@@ -220,7 +220,8 @@
   async function saveItem(d,item){
     const f=$('#social-item-form',d),fd=new FormData(f),platforms=fd.getAll('platforms');
     const plan=currentPlan();
-    const payload={brand_id:state.brandId,plan_id:plan?.id||null,title:fd.get('title').trim(),publish_at:fd.get('publish_at')?new Date(fd.get('publish_at')).toISOString():null,format:fd.get('format'),pillar:fd.get('pillar')||null,status:fd.get('status'),hook:fd.get('hook')||null,caption:fd.get('caption')||null,cta:fd.get('cta')||null,creative_brief:fd.get('creative_brief')||null,approval_note:fd.get('approval_note')||null,platforms,updated_at:new Date().toISOString()};
+    if(!fd.get('publish_at'))return notify('Publish date is required.','error');
+    const payload={brand_id:state.brandId,plan_id:plan?.id||null,title:fd.get('title').trim(),publish_at:new Date(fd.get('publish_at')).toISOString(),format:fd.get('format'),pillar:fd.get('pillar')||null,status:fd.get('status'),hook:fd.get('hook')||null,caption:fd.get('caption')||null,cta:fd.get('cta')||null,creative_brief:fd.get('creative_brief')||null,approval_note:fd.get('approval_note')||null,platforms,updated_at:new Date().toISOString()};
     if(!payload.title)return notify('Title is required.','error');
     const q=item?sb().from('studio_social_content_items').update(payload).eq('id',item.id):sb().from('studio_social_content_items').insert(payload);
     const r=await q;if(r.error)return notify(r.error.message,'error');
