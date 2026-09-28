@@ -194,6 +194,7 @@
     $('#discovery-file-picker')?.classList.toggle('hidden',locked);
     const card=$('#discovery-question-card'),waiting=$('#discovery-waiting'),nudge=$('#evidence-nudge');
     card.classList.toggle('hidden',!q||locked);
+    card.classList.toggle('admin-request',!!q&&!locked&&adminRequest);
     waiting.classList.toggle('hidden',!!q&&!locked);
     $('#step-diagnosis').classList.remove('done','active');
 
