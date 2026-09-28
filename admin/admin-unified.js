@@ -308,6 +308,17 @@
     const analysisCurrent=String(c.analysis_state||'')==='ready';
     return {analysisCurrent,coverage,synthesis,validated,hasTask,verification,ready:analysisCurrent&&coverage&&synthesis&&validated&&hasTask&&verification};
   }
+  function operatingGateState(){
+    const c=state.discoveryCase||{},bp=state.deliveryBlueprint||{},body=bp.blueprint||{};
+    const stage=String(c.decision_stage||'needs_evidence');
+    const domains=Array.isArray(body.domains)?body.domains:[];
+    const analysisCurrent=String(c.analysis_state||'')==='ready';
+    const needsEvidence=stage==='needs_evidence'||bp.status==='needs_evidence';
+    const blueprintReady=!needsEvidence&&['ready','approved','activated'].includes(String(bp.status||''))&&domains.length>0;
+    const scopeApproved=['approved','activated'].includes(String(bp.status||''));
+    return {stage,analysisCurrent,needsEvidence,domains,blueprintReady,scopeApproved,understood:analysisCurrent&&!needsEvidence};
+  }
+
   function nextMissingDiscovery(){
     const c=state.discoveryCase||{};
     return discoveryDimensions.find(([key])=>!String(c[key]||'').trim())||null;
@@ -569,7 +580,7 @@
     }
     const unread=state.discoveryAnswers.filter(x=>x.actor_type==='prospect'&&!x.is_read_by_admin).map(x=>x.id);
     if(unread.length){await sb().from('studio_discovery_answers').update({is_read_by_admin:true}).in('id',unread);state.discoveryAnswers.forEach(x=>{if(unread.includes(x.id))x.is_read_by_admin=true});state.loaded.inbox=false}
-    renderLeadDiagnosis();
+    renderLeadDiagnosis();updateLeadWorkspaceState();
     if(autoAnalyze&&state.currentLead?.id===leadId&&['never_analyzed','stale'].includes(String(state.discoveryCase?.analysis_state||''))){
       void runDiagnosticEngine(true);
     }else if(autoAnalyze&&state.currentLead?.id===leadId&&String(state.discoveryCase?.analysis_state||'')==='ready'&&!state.deliveryBlueprint){
@@ -969,139 +980,98 @@
     const lead=state.currentLead;if(!lead)return;
     executionCtx=ctx||executionCtx||{};
     const proposal=executionCtx.proposal||null,deposit=executionCtx.deposit||null,project=executionCtx.project||null,taskCount=Number(executionCtx.taskCount||0);
-    const c=state.discoveryCase||{},gate=diagnosisGateState();
+    const c=state.discoveryCase||{},op=operatingGateState(),body=state.deliveryBlueprint?.blueprint||{};
     const portalRequestOpen=String(c.analysis_state||'')==='ready'&&c.system_next_question?.source==='admin_request';
     const leadReady=['qualified','proposal_sent','negotiation','won'].includes(lead.status);
     const proposalCreated=!!proposal,proposalAccepted=proposal?.status==='accepted',depositPaid=deposit?.status==='paid',projectLive=!!project;
     const understanding=leadUnderstanding();
-    const missing=leadMissingItems();
     const clientMissing=clientEvidenceItems();
-    const proposed=state.solutionTasks.filter(x=>x.status==='proposed'&&x.source_type==='ai');
-    const approved=state.solutionTasks.filter(x=>!['proposed','rejected'].includes(String(x.status||'')));
-    const safePlan=safeProposedTasks();
-    const internalTasks=internalLeadTasks();
-    const activeInternal=internalTasks.find(x=>x.status==='in_progress')||internalTasks.find(x=>x.status==='todo')||null;
-    const blueprintBody=state.deliveryBlueprint?.blueprint||{};
-    const deliveryDomains=Array.isArray(blueprintBody.domains)?blueprintBody.domains:[];
-    const deliveryReady=state.deliveryBlueprint?.status==='ready'&&deliveryDomains.length>0;
-    const effectiveClientMissing=deliveryReady?[]:clientMissing;
+    const blueprintGaps=Array.isArray(body.evidence_gaps)?body.evidence_gaps.filter(Boolean):[];
+    const effectiveClientMissing=[...new Set([...blueprintGaps,...clientMissing])].slice(0,6);
+    const deliveryDomains=op.domains;
 
-    const understandDone=String(c.analysis_state||'')==='ready'&&!!understanding;
-    const planDone=!!deliveryReady||(gate.validated&&gate.hasTask&&gate.verification);
+    const understandDone=op.understood&&!!understanding;
+    const planDone=op.blueprintReady;
     const agreeDone=proposalAccepted&&depositPaid;
     const deliverDone=projectLive&&taskCount>0;
     const steps=[
-      {label:'01 · UNDERSTAND',value:understandDone?'Understood':String(c.analysis_state||'never_analyzed').replaceAll('_',' '),done:understandDone,current:!understandDone},
-      {label:'02 · PLAN',value:deliveryReady?(deliveryDomains.length+' domain'+(deliveryDomains.length===1?'':'s')+' ready'):planDone?'Work defined':(approved.length?approved.length+' approved':proposed.length?proposed.length+' suggested':'Waiting'),done:planDone,current:understandDone&&!planDone,locked:!understandDone},
-      {label:'03 · AGREE',value:agreeDone?'Accepted + paid':proposalCreated?String(proposal.status||'proposal').replaceAll('_',' '):leadReady?'Ready for proposal':'Waiting',done:agreeDone,current:planDone&&!agreeDone,locked:!planDone&&!proposalCreated},
-      {label:'04 · DELIVER',value:projectLive?(taskCount?taskCount+' live task'+(taskCount===1?'':'s'):'Project live'):'Not started',done:deliverDone,current:agreeDone&&!deliverDone,locked:!agreeDone}
+      {label:'01 · UNDERSTAND',value:understandDone?'Understood':op.needsEvidence?'Needs client/admin input':String(c.analysis_state||'never_analyzed').replaceAll('_',' '),done:understandDone,current:!understandDone},
+      {label:'02 · STRUCTURE',value:planDone?(deliveryDomains.length+' accountable domain'+(deliveryDomains.length===1?'':'s')):'Waiting',done:planDone,current:understandDone&&!planDone,locked:!understandDone},
+      {label:'03 · AGREE',value:agreeDone?'Accepted + paid':proposalCreated?String(proposal.status||'proposal').replaceAll('_',' '):op.scopeApproved?'Ready for offer':'Waiting',done:agreeDone,current:op.scopeApproved&&!agreeDone,locked:!op.scopeApproved&&!proposalCreated},
+      {label:'04 · DELIVER',value:projectLive?(taskCount?taskCount+' team task'+(taskCount===1?'':'s')+' live':'Project live'):'Not started',done:deliverDone,current:agreeDone&&!deliverDone,locked:!agreeDone}
     ];
     $('#lead-execution-steps').innerHTML=steps.map(s=>'<div class="lead-execution-step '+(s.done?'done ':s.current?'current ':s.locked?'locked ':'')+'"><span>'+esc(s.label)+'</span><b>'+esc(s.value)+'</b></div>').join('');
 
+    let needTitle='ATS is understanding the request',needDetail='No team work is created until the client/Admin understanding gate is complete.';
+    if(portalRequestOpen){
+      needTitle='Waiting for client response in Client Portal';
+      needDetail='Only the requested details or evidence are needed. The team is not involved yet.';
+    }else if(projectLive){
+      needTitle=taskCount?'Delivery is running by accountable domains':'Activate the delivery domains';
+      needDetail=(project.project_code||'Project')+' · Admin follows Domain Leads and outcomes, not every subtask.';
+    }else if(op.needsEvidence){
+      needTitle=effectiveClientMissing.length?'Close the remaining understanding gap':'Review the request with the client';
+      needDetail=effectiveClientMissing.length?effectiveClientMissing.slice(0,3).join(' • '):String(c.system_next_action||'Collect only the information that can change the project decision.');
+    }else if(op.blueprintReady&&!op.scopeApproved){
+      needTitle='Confirm the delivery structure';
+      needDetail=deliveryDomains.length+' professional domain'+(deliveryDomains.length===1?'':'s')+' ready. Confirm once, then prepare the commercial offer.';
+    }else if(op.scopeApproved&&!proposalCreated){
+      needTitle='Prepare the client offer';
+      needDetail='Scope is approved. ATS will prefill the proposal from the domain outcomes; you only finish the commercial terms.';
+    }else if(!planDone&&op.understood){
+      needTitle='ATS is structuring delivery';
+      needDetail='Turning the approved understanding into accountable domains, outcomes and team-ready work.';
+    }
+
     const checklist=$('#lead-start-checklist');
-    const needTitle=portalRequestOpen
-      ?'Waiting for client response in Client Portal'
-      :projectLive
-        ?(taskCount?'Delivery is running':'Create the first execution task')
-        :!understandDone
-          ?(String(c.analysis_state||'')==='analyzing'?'ATS is understanding the request':'Let ATS understand the request')
-          :effectiveClientMissing.length
-            ?'Get the missing evidence from the client'
-            :deliveryReady
-              ?'Delivery system is ready'
-              :activeInternal
-              ?(activeInternal.status==='in_progress'?'ATS internal work is in progress':'ATS should start internal validation')
-              :safePlan.length
-                ?'Approve the internal validation plan'
-                :!String(c.root_problem||'').trim()
-                  ?'Confirm the working problem'
-                  :!gate.validated
-                    ?'Validate the real cause'
-                    :!gate.verification
-                      ?'Add how we will verify success'
-                      :!leadReady
-                        ?'Move the case to commercial'
-                        :'Continue the commercial step';
-
-    const needDetail=portalRequestOpen
-      ?'The request is live in Client Access. The client can reply with details and upload photos, video, PDFs or other evidence.'
-      :projectLive
-        ?(project.project_code||'Project')+' · '+taskCount+' execution task'+(taskCount===1?'':'s')
-        :effectiveClientMissing.length
-          ?effectiveClientMissing.slice(0,3).join(' • ')
-          :deliveryReady
-            ?deliveryDomains.length+' accountable domain'+(deliveryDomains.length===1?'':'s')+' defined · team tasks will activate when the project goes Live.'
-            :activeInternal
-            ?String(activeInternal.title||activeInternal.rationale||'Run the next ATS validation task.')
-            :safePlan.length
-              ?String(safePlan[0]?.title||safePlan[0]?.rationale||'Review and approve the proposed validation work.')
-              :String(c.system_next_action||state.diagnosticRun?.analysis?.next_best_action||lead.next_action||'Follow the single next action shown below.');
-
     checklist.innerHTML=
       '<div class="lead-simple-grid">'+
-        '<article class="lead-simple-card understood"><span>ATS UNDERSTANDS</span><b>'+esc(understanding||'Still analyzing the request…')+'</b><small>'+esc((lead.service||'Client request')+' · '+Number(c.system_confidence||c.diagnosis_confidence||0)+'% confidence')+'</small></article>'+
+        '<article class="lead-simple-card understood"><span>ATS UNDERSTANDS</span><b>'+esc(understanding||'Still analyzing the request…')+'</b><small>'+esc((lead.service||'Client request')+' · '+Number(c.system_confidence||c.diagnosis_confidence||0)+'% working confidence')+'</small></article>'+
         '<article class="lead-simple-card next"><span>NEED NOW</span><b>'+esc(needTitle)+'</b><small>'+esc(needDetail)+'</small></article>'+
       '</div>';
 
     const plan=$('#lead-plan-preview');
-    if(deliveryReady){
+    if(op.blueprintReady){
       plan.innerHTML=
-        '<div class="lead-plan-head"><div><span>DELIVERY BLUEPRINT</span><b>'+deliveryDomains.length+' accountable domain'+(deliveryDomains.length===1?'':'s')+'</b></div><small>Admin owns domain outcomes. Domain Leads own team-task detail after project activation.</small></div>'+
+        '<div class="lead-plan-head"><div><span>DELIVERY BLUEPRINT</span><b>'+deliveryDomains.length+' accountable domain'+(deliveryDomains.length===1?'':'s')+'</b></div><small>Admin approves outcomes. Each Domain Lead owns the internal task plan and team delivery.</small></div>'+
         '<div class="lead-plan-items">'+deliveryDomains.map((d,i)=>'<article class="lead-plan-item approved"><span>DOMAIN '+(i+1)+' · '+esc(String(d.domain_key||'delivery').replaceAll('_',' ').toUpperCase())+'</span><b>'+esc(d.name||d.domain_key||'Delivery')+'</b><small>'+esc(d.expected_outcome||'Defined outcome')+'</small><small>Accountable skill: '+esc(d.lead_skill||'project management')+(d.human_gate_required?' · Human review required':'')+'</small></article>').join('')+'</div>';
+    }else if(op.needsEvidence){
+      plan.innerHTML='<div class="lead-plan-head"><div><span>DELIVERY STRUCTURE</span><b>Not released to the team yet</b></div><small>Client + Admin understanding remains private until the decision-critical evidence gap is closed.</small></div>';
     }else{
-      const visiblePlan=state.solutionTasks.filter(x=>x.status!=='rejected').slice(0,5);
-      if(visiblePlan.length){
-        plan.innerHTML=
-          '<div class="lead-plan-head"><div><span>VALIDATION WORK</span><b>'+visiblePlan.length+' evidence step'+(visiblePlan.length===1?'':'s')+'</b></div><small>This is pre-delivery validation, not the final team structure.</small></div>'+
-          '<div class="lead-plan-items">'+visiblePlan.map((x,i)=>{const label=x.status==='proposed'?'SUGGESTED':x.status==='in_progress'?'IN PROGRESS':x.status==='done'?'DONE':'APPROVED';const cls=x.status==='proposed'?'suggested':x.status==='in_progress'?'current':x.status==='done'?'done':'approved';return '<article class="lead-plan-item '+cls+'"><span>'+label+' · '+esc((x.task_type||'task').replaceAll('_',' '))+'</span><b>'+(i+1)+'. '+esc(x.title)+'</b><small>'+esc(x.owner_type||'ATS')+(x.acceptance_criteria?' · '+esc(String(x.acceptance_criteria).slice(0,100)):'')+'</small></article>'}).join('')+'</div>';
-      }else{
-        plan.innerHTML='<div class="lead-plan-head"><div><span>DELIVERY PLAN</span><b>Waiting for enough evidence</b></div><small>ATS will build the professional domain structure automatically after the case is ready.</small></div>';
-      }
+      plan.innerHTML='<div class="lead-plan-head"><div><span>DELIVERY STRUCTURE</span><b>ATS is building the accountable domains</b></div><small>No diagnostic checklist needs to be executed by Admin. Required validation becomes delivery work under the right Domain Lead.</small></div>';
     }
 
     const title=$('#lead-execution-title'),copy=$('#lead-execution-copy'),btn=$('#lead-execution-primary');
-    title.textContent=projectLive?'Project execution':lead.full_name+' · '+(lead.service||'New request');
+    title.textContent=projectLive?'Project delivery':lead.full_name+' · '+(lead.service||'New request');
     copy.textContent=projectLive
-      ?(project.project_code||'Project')+' is live. Manage delivery from one task board.'
-      :'One operating view: understand the request, collect only what is missing, approve the work, then start delivery.';
+      ?(project.project_code||'Project')+' · Admin manages accountable Domain Leads and final outcomes.'
+      :'Client + Admin understand first. After scope approval, ATS turns the case into accountable delivery domains automatically.';
     btn.dataset.action='';btn.dataset.id='';btn.dataset.newTask='0';btn.disabled=false;
 
     if(projectLive){
-      btn.textContent=taskCount?'OPEN TASK BOARD →':'CREATE FIRST TASK →';btn.dataset.action='open-tasks';btn.dataset.id=project.id;btn.dataset.newTask=taskCount?'0':'1';
+      btn.textContent='OPEN PROJECT DELIVERY →';btn.dataset.action='open-project';btn.dataset.id=project.id;
     }else if(proposalAccepted&&deposit&&!depositPaid){
       btn.textContent='CONFIRM RECEIVED DEPOSIT →';btn.dataset.action='confirm-deposit';btn.dataset.id=deposit.id;
     }else if(proposal?.status==='sent'){
       btn.textContent='CONFIRM CLIENT ACCEPTANCE →';btn.dataset.action='accept-proposal';btn.dataset.id=proposal.id;
     }else if(proposalCreated){
       btn.textContent='OPEN PROPOSAL →';btn.dataset.action='open-proposal';btn.dataset.id=proposal.id;
-    }else if(leadReady){
+    }else if(op.blueprintReady&&!op.scopeApproved){
+      btn.textContent='CONFIRM SCOPE & PREPARE OFFER →';btn.dataset.action='prepare-offer';
+    }else if(leadReady&&op.scopeApproved){
       btn.textContent='CREATE PROPOSAL →';btn.dataset.action='create-proposal';
-    }else if(deliveryReady){
-      btn.textContent='QUALIFY & CREATE OFFER →';btn.dataset.action='qualify';
-    }else if(gate.ready){
-      btn.textContent='QUALIFY & CREATE OFFER →';btn.dataset.action='qualify';
     }else if(['never_analyzed','stale','error'].includes(String(c.analysis_state||''))){
       btn.textContent='RUN ATS UNDERSTANDING →';btn.dataset.action='analysis';
     }else if(String(c.analysis_state||'')==='analyzing'){
       btn.textContent='ATS IS ANALYZING…';btn.disabled=true;
     }else if(portalRequestOpen){
       btn.textContent='SEND / RESEND ACCESS ON WHATSAPP →';btn.dataset.action='whatsapp-access';
-    }else if(effectiveClientMissing.length){
+    }else if(op.needsEvidence&&effectiveClientMissing.length){
       btn.textContent='SEND TO CLIENT PORTAL →';btn.dataset.action='publish-evidence';
-    }else if(safePlan.length){
-      btn.textContent='APPROVE NEXT STEPS →';btn.dataset.action='approve-plan';
-    }else if(activeInternal?.status==='todo'){
-      btn.textContent='START FIRST ATS TASK →';btn.dataset.action='start-internal';
-    }else if(activeInternal?.status==='in_progress'){
-      btn.textContent='VIEW CURRENT ATS TASK →';btn.dataset.action='start-internal';
-    }else if(!String(c.root_problem||'').trim()&&String(c.system_problem_statement||'').trim()){
-      btn.textContent='ACCEPT WORKING PROBLEM →';btn.dataset.action='accept-diagnosis';
-    }else if(!gate.validated){
-      btn.textContent='REVIEW THE MAIN CAUSE →';btn.dataset.action='causes';
-    }else if(!gate.verification){
-      btn.textContent='ADD SUCCESS CHECK →';btn.dataset.action='verification';
+    }else if(op.understood&&!op.blueprintReady){
+      btn.textContent='BUILD DELIVERY STRUCTURE →';btn.dataset.action='build-blueprint';
     }else{
-      btn.textContent='REVIEW WORK DETAILS →';btn.dataset.action='diagnosis';
+      btn.textContent='REVIEW UNDERSTANDING →';btn.dataset.action='diagnosis';
     }
   }
 
@@ -1122,14 +1092,14 @@
   }
 
   function updateLeadWorkspaceState(){
-    const status=$('#lead-status').value||'new',x=state.currentLead,gate=diagnosisGateState();
+    const status=$('#lead-status').value||'new',x=state.currentLead,op=operatingGateState();
     $('#lead-workspace-status').className='status-chip '+status;$('#lead-workspace-status').textContent=leadStatusLabels[status]||status;
     $('#lead-lost-wrap').classList.toggle('hidden',status!=='lost');
     const existingCommercial=['proposal_sent','negotiation'].includes(status);
-    const proposalReady=existingCommercial||(status==='qualified'&&gate.ready);
+    const proposalReady=existingCommercial||(status==='qualified'&&op.scopeApproved&&!op.needsEvidence);
     $('#lead-create-proposal').classList.toggle('hidden',!proposalReady);
     const gateText=$('#lead-proposal-gate');gateText.classList.toggle('hidden',proposalReady);
-    if(!proposalReady)gateText.textContent=status==='qualified'?'Complete the Diagnosis Gate before creating a proposal.':'Qualify the lead after the Diagnosis Gate is ready.';
+    if(!proposalReady)gateText.textContent=op.needsEvidence?'Client/Admin understanding must be completed before commercial handoff.':op.blueprintReady?'Confirm the Delivery Blueprint once before creating the proposal.':'ATS is still structuring the delivery scope.';
     const due=$('#lead-next-due').value?new Date($('#lead-next-due').value).getTime():0,overdue=due&&due<Date.now()&&!['won','lost'].includes(status);
     const warning=$('#lead-next-warning');
     if(overdue){warning.textContent='OVERDUE · This follow-up needs attention.';warning.className='lead-next-warning overdue'}
