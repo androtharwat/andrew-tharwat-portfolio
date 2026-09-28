@@ -426,6 +426,11 @@
   function contact(){
     const section=$('#contact'),h=$('#contact .section-head'),shell=$('.brief-shell');
     if(!section)return;
+    // Concierge owns intake when present; keep the legacy brief out of this journey.
+    if($('#studio-concierge',section)){
+      $('.v10-contact-entry',section)?.remove();
+      return;
+    }
     section.classList.add('v10-contact-system');
     if(h){
       set($('.eyebrow',h),'START WITH ONE SENTENCE','ابدأ بجملة واحدة');

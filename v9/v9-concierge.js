@@ -311,17 +311,22 @@
     state.fileInsights=next;
     return next;
   }
+  function withAnalysisDeadline(request){
+    let timer;
+    const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Intake analysis timed out')),20000)});
+    return Promise.race([request,deadline]).finally(()=>clearTimeout(timer));
+  }
   async function analyzeIntake(){
     try{
       const fileEvidence=await analyzeSelectedFiles();
-      const {data,error}=await sb.functions.invoke('ats-public-intake-analyzer',{body:{
+      const {data,error}=await withAnalysisDeadline(sb.functions.invoke('ats-public-intake-analyzer',{body:{
         problem:state.problem,extra:state.extra,link:state.link,mode:state.mode,
         followups:state.followups,skipped_keys:state.skippedKeys,
         file_evidence:fileEvidence.map(x=>({
           file_name:x.file_name,summary:x.summary,relevance:x.relevance,
           discovery_signals:x.discovery_signals||{},observations:x.observations||[]
         }))
-      }});
+      }}));
       if(error||!data?.discovery)throw error||new Error('No intake analysis returned');
       state.intakeAnalysis=data;
     }catch(error){
@@ -369,6 +374,7 @@
     const readiness=Number(smart.readiness_score||0);
     $('#concierge-understanding').innerHTML=
       `<div class="concierge-read-head"><span>${esc(t().confirm)}</span><small>${esc(lang()==='ar'?'فهم أولي · اكتمال '+readiness+'%':'INITIAL UNDERSTANDING · '+readiness+'% COVERAGE')}</small></div>
+       ${smart.fallback?`<p role="status">${esc(lang()==='ar'?'ده ملخص مبدئي من كلامك. تقدر تكمل طلبك، وATS هيراجع التفاصيل.':'This is a preliminary summary of your words. You can continue; ATS will review the details.')}</p>`:''}
        <div class="concierge-read-grid">
          <article><small>${esc(t().situation)}</small><strong>${esc(u.situation||a.situation)}</strong></article>
          <article><small>${esc(t().problem)}</small><strong>${esc(u.problem_summary||a.coreProblem)}</strong></article>
