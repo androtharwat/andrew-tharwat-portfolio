@@ -71,7 +71,8 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": true
+      "main": true,
+      "feature/social-ops-bridge-v2": true
     }
   }
 }
