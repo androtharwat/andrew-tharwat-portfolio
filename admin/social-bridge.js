@@ -325,10 +325,20 @@
     b.onclick=()=>b.dataset.projectId&&openLaunch(b.dataset.projectId);
   }
 
+  async function resolveCurrentLead(){
+    const code=$('#lead-dialog-code')?.textContent?.trim();
+    if(code&&code!=='LEAD'&&sb()){
+      const r=await sb().from('studio_leads').select('id').eq('lead_code',code).maybeSingle();
+      if(!r.error&&r.data){currentLeadId=r.data.id;return currentLeadId;}
+    }
+    return currentLeadId;
+  }
+
   async function refreshLeadButton(){
     injectLeadButton();
-    const b=$('#lead-social-bridge-button');if(!b||!currentLeadId||!sb())return;
-    const p=await sb().from('studio_projects').select('id').eq('source_lead_id',currentLeadId).order('created_at',{ascending:false}).limit(1).maybeSingle();
+    const b=$('#lead-social-bridge-button');if(!b||!sb())return;
+    const leadId=await resolveCurrentLead();if(!leadId){b.classList.add('hidden');return}
+    const p=await sb().from('studio_projects').select('id').eq('source_lead_id',leadId).order('created_at',{ascending:false}).limit(1).maybeSingle();
     if(p.error||!p.data){b.classList.add('hidden');return}
     try{
       const ctx=await getProjectContext(p.data.id);
