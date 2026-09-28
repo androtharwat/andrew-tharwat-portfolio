@@ -529,14 +529,25 @@
       if(cq.error)return notify(cq.error.message,'error');
     }
     state.discoveryCase=cq.data;
-    const [answers,causes,tasks,runs]=await Promise.all([
+    const [answers,causes,tasks,runs,latestRun]=await Promise.all([
       sb().from('studio_discovery_answers').select('*').eq('case_id',cq.data.id).order('created_at',{ascending:false}).limit(250),
       sb().from('studio_root_causes').select('*').eq('case_id',cq.data.id).order('system_rank',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false}),
       sb().from('studio_solution_tasks').select('*').eq('case_id',cq.data.id).order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
-      sb().from('studio_diagnostic_runs').select('id,status,model,analysis,completed_at,created_at').eq('case_id',cq.data.id).eq('status','completed').order('created_at',{ascending:false}).limit(1).maybeSingle()
+      sb().from('studio_diagnostic_runs').select('id,status,model,analysis,completed_at,created_at').eq('case_id',cq.data.id).eq('status','completed').order('created_at',{ascending:false}).limit(1).maybeSingle(),
+      sb().from('studio_diagnostic_runs').select('id,status,created_at').eq('case_id',cq.data.id).order('created_at',{ascending:false}).limit(1).maybeSingle()
     ]);
-    const failed=[answers,causes,tasks,runs].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
+    const failed=[answers,causes,tasks,runs,latestRun].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
     state.discoveryAnswers=answers.data||[];state.rootCauses=causes.data||[];state.solutionTasks=tasks.data||[];state.diagnosticRun=runs.data||null;
+    if(String(state.discoveryCase?.analysis_state||'')==='analyzing'){
+      const last=latestRun.data,ageMs=last?.created_at?Date.now()-new Date(last.created_at).getTime():Infinity;
+      if(!last||last.status!=='running'||ageMs>15*60*1000){
+        if(last?.status==='running'){
+          await sb().from('studio_diagnostic_runs').update({status:'failed',error_text:'Auto-recovered stale diagnostic run',completed_at:new Date().toISOString()}).eq('id',last.id).eq('status','running');
+        }
+        const recovered=await sb().from('studio_discovery_cases').update({analysis_state:'stale',updated_at:new Date().toISOString()}).eq('id',cq.data.id).select('*').single();
+        if(!recovered.error)state.discoveryCase=recovered.data;
+      }
+    }
     const unread=state.discoveryAnswers.filter(x=>x.actor_type==='prospect'&&!x.is_read_by_admin).map(x=>x.id);
     if(unread.length){await sb().from('studio_discovery_answers').update({is_read_by_admin:true}).in('id',unread);state.discoveryAnswers.forEach(x=>{if(unread.includes(x.id))x.is_read_by_admin=true});state.loaded.inbox=false}
     renderLeadDiagnosis();
