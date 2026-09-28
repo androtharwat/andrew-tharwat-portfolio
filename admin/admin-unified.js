@@ -625,6 +625,40 @@
     ].map(x=>String(x||'').trim()).filter(Boolean))];
   }
 
+  function clientEvidenceItems(){
+    const lead=state.currentLead||{},c=state.discoveryCase||{},run=state.diagnosticRun||{},analysis=run.analysis||{};
+    const explicit=Array.isArray(lead.missing_information)?lead.missing_information.filter(Boolean):[];
+    const systemQ=c.system_next_question||analysis.next_best_question||{};
+    return [...new Set([
+      ...explicit,
+      ...(String(systemQ?.question||'').trim()&&systemQ?.source!=='admin_request'?[String(systemQ.question).trim()]:[])
+    ].map(x=>String(x||'').trim()).filter(Boolean))];
+  }
+
+  function internalLeadTasks(){
+    return state.solutionTasks
+      .filter(x=>['ats','shared'].includes(String(x.owner_type||''))&&['todo','in_progress'].includes(String(x.status||'')))
+      .sort((a,b)=>Number(a.sort_order||999)-Number(b.sort_order||999));
+  }
+
+  async function startInternalLeadWork(){
+    const tasks=internalLeadTasks();
+    const active=tasks.find(x=>x.status==='in_progress');
+    if(active){
+      setLeadFocusMode(false);
+      const fold=$('#fold-solution-tasks');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});
+      return;
+    }
+    const task=tasks.find(x=>x.status==='todo');
+    if(!task)return notify('Approve the next steps first.','error');
+    const r=await sb().from('studio_solution_tasks').update({status:'in_progress'}).eq('id',task.id).eq('status','todo').select('*').single();
+    if(r.error)return notify(r.error.message,'error');
+    const i=state.solutionTasks.findIndex(x=>x.id===task.id);if(i>=0)state.solutionTasks[i]=r.data;
+    await logLeadActivity('solution_task_started',{task_id:r.data.id,title:r.data.title,task_type:r.data.task_type});
+    renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
+    notify('ATS task started.');
+  }
+
   function leadUnderstanding(){
     const lead=state.currentLead||{},c=state.discoveryCase||{},run=state.diagnosticRun||{},analysis=run.analysis||{};
     return String(
@@ -649,7 +683,7 @@
   }
 
   async function publishLeadEvidenceRequest(){
-    const lead=state.currentLead,c=state.discoveryCase||{},items=leadMissingItems().filter(x=>!String(x).startsWith('مطلوب من ATS')&&!String(x).startsWith('ATS needs')).slice(0,6);
+    const lead=state.currentLead,c=state.discoveryCase||{},items=clientEvidenceItems().filter(x=>!String(x).startsWith('مطلوب من ATS')&&!String(x).startsWith('ATS needs')).slice(0,6);
     if(!lead||!c?.id)return notify('Open a lead with an active discovery case first.','error');
     if(String(c.analysis_state||'')!=='ready')return notify('Run ATS Understanding first so the request is based on the latest case evidence.','error');
     if(!items.length)return notify('No missing client information is currently identified.','error');
@@ -697,9 +731,12 @@
     const proposalCreated=!!proposal,proposalAccepted=proposal?.status==='accepted',depositPaid=deposit?.status==='paid',projectLive=!!project;
     const understanding=leadUnderstanding();
     const missing=leadMissingItems();
+    const clientMissing=clientEvidenceItems();
     const proposed=state.solutionTasks.filter(x=>x.status==='proposed'&&x.source_type==='ai');
     const approved=state.solutionTasks.filter(x=>!['proposed','rejected'].includes(String(x.status||'')));
     const safePlan=safeProposedTasks();
+    const internalTasks=internalLeadTasks();
+    const activeInternal=internalTasks.find(x=>x.status==='in_progress')||internalTasks.find(x=>x.status==='todo')||null;
 
     const understandDone=String(c.analysis_state||'')==='ready'&&!!understanding;
     const planDone=gate.validated&&gate.hasTask&&gate.verification;
@@ -717,45 +754,48 @@
     const needTitle=portalRequestOpen
       ?'Waiting for client response in Client Portal'
       :projectLive
-      ?(taskCount?'Delivery is running':'Create the first execution task')
-      :!understandDone
-        ?(String(c.analysis_state||'')==='analyzing'?'ATS is understanding the request':'Let ATS understand the request')
-        :missing.length&&!gate.coverage
-          ?'Get the missing evidence from the client'
-          :!String(c.root_problem||'').trim()
-            ?'Confirm the working problem'
-            :!gate.validated
-              ?'Validate the real cause'
-              :!gate.hasTask
-                ?'Approve the justified next work'
-                :!gate.verification
-                  ?'Add how we will verify success'
-                  :!leadReady
-                    ?'Move the case to commercial'
-                    :'Continue the commercial step';
+        ?(taskCount?'Delivery is running':'Create the first execution task')
+        :!understandDone
+          ?(String(c.analysis_state||'')==='analyzing'?'ATS is understanding the request':'Let ATS understand the request')
+          :clientMissing.length
+            ?'Get the missing evidence from the client'
+            :activeInternal
+              ?(activeInternal.status==='in_progress'?'ATS internal work is in progress':'ATS should start internal validation')
+              :safePlan.length
+                ?'Approve the internal validation plan'
+                :!String(c.root_problem||'').trim()
+                  ?'Confirm the working problem'
+                  :!gate.validated
+                    ?'Validate the real cause'
+                    :!gate.verification
+                      ?'Add how we will verify success'
+                      :!leadReady
+                        ?'Move the case to commercial'
+                        :'Continue the commercial step';
 
     const needDetail=portalRequestOpen
       ?'The request is live in Client Access. The client can reply with details and upload photos, video, PDFs or other evidence.'
       :projectLive
-      ?(project.project_code||'Project')+' · '+taskCount+' execution task'+(taskCount===1?'':'s')
-      :missing.length&&!gate.coverage
-        ?missing.slice(0,3).join(' • ')
-        :String(c.system_next_action||state.diagnosticRun?.analysis?.next_best_action||lead.next_action||'Follow the single next action shown below.');
+        ?(project.project_code||'Project')+' · '+taskCount+' execution task'+(taskCount===1?'':'s')
+        :clientMissing.length
+          ?clientMissing.slice(0,3).join(' • ')
+          :activeInternal
+            ?String(activeInternal.title||activeInternal.rationale||'Run the next ATS validation task.')
+            :safePlan.length
+              ?String(safePlan[0]?.title||safePlan[0]?.rationale||'Review and approve the proposed validation work.')
+              :String(c.system_next_action||state.diagnosticRun?.analysis?.next_best_action||lead.next_action||'Follow the single next action shown below.');
 
     checklist.innerHTML=
       '<div class="lead-simple-grid">'+
         '<article class="lead-simple-card understood"><span>ATS UNDERSTANDS</span><b>'+esc(understanding||'Still analyzing the request…')+'</b><small>'+esc((lead.service||'Client request')+' · '+Number(c.system_confidence||c.diagnosis_confidence||0)+'% confidence')+'</small></article>'+
-        '<article class="lead-simple-card next"><span>NEED NOW</span><b>'+esc(needTitle)+'</b><small>'+esc(needDetail)+'</small>'+
-          (!portalRequestOpen&&missing.length&&!gate.coverage?'<button type="button" class="secondary" data-exec-action="publish-evidence">SEND TO CLIENT PORTAL</button>':portalRequestOpen?'<button type="button" class="secondary" data-exec-action="whatsapp-access">SEND ACCESS ON WHATSAPP</button>':'')+
-        '</article>'+
+        '<article class="lead-simple-card next"><span>NEED NOW</span><b>'+esc(needTitle)+'</b><small>'+esc(needDetail)+'</small></article>'+
       '</div>';
 
     const plan=$('#lead-plan-preview');
     const visiblePlan=state.solutionTasks.filter(x=>x.status!=='rejected').slice(0,5);
     if(visiblePlan.length){
       plan.innerHTML=
-        '<div class="lead-plan-head"><div><span>ATS WORK PLAN</span><b>'+visiblePlan.length+' next step'+(visiblePlan.length===1?'':'s')+'</b></div>'+
-        (safePlan.length?'<button type="button" class="secondary" data-exec-action="approve-plan">APPROVE NEXT STEPS</button>':'<small>Only justified tasks are shown here.</small>')+'</div>'+
+        '<div class="lead-plan-head"><div><span>ATS WORK PLAN</span><b>'+visiblePlan.length+' next step'+(visiblePlan.length===1?'':'s')+'</b></div><small>Only justified work is shown here.</small></div>'+
         '<div class="lead-plan-items">'+visiblePlan.map((x,i)=>'<article class="lead-plan-item '+(x.status==='proposed'?'suggested':'approved')+'"><span>'+(x.status==='proposed'?'SUGGESTED':'APPROVED')+' · '+esc((x.task_type||'task').replaceAll('_',' '))+'</span><b>'+(i+1)+'. '+esc(x.title)+'</b><small>'+esc(x.owner_type||'ATS')+(x.acceptance_criteria?' · '+esc(String(x.acceptance_criteria).slice(0,100)):'')+'</small></article>').join('')+'</div>';
     }else{
       plan.innerHTML='<div class="lead-plan-head"><div><span>ATS WORK PLAN</span><b>No work should be created yet</b></div><small>ATS will derive the next tasks after it has enough evidence.</small></div>';
@@ -786,14 +826,18 @@
       btn.textContent='ATS IS ANALYZING…';btn.disabled=true;
     }else if(portalRequestOpen){
       btn.textContent='SEND / RESEND ACCESS ON WHATSAPP →';btn.dataset.action='whatsapp-access';
-    }else if(missing.length&&!gate.coverage){
+    }else if(clientMissing.length){
       btn.textContent='SEND TO CLIENT PORTAL →';btn.dataset.action='publish-evidence';
+    }else if(safePlan.length){
+      btn.textContent='APPROVE NEXT STEPS →';btn.dataset.action='approve-plan';
+    }else if(activeInternal?.status==='todo'){
+      btn.textContent='START FIRST ATS TASK →';btn.dataset.action='start-internal';
+    }else if(activeInternal?.status==='in_progress'){
+      btn.textContent='VIEW CURRENT ATS TASK →';btn.dataset.action='start-internal';
     }else if(!String(c.root_problem||'').trim()&&String(c.system_problem_statement||'').trim()){
       btn.textContent='ACCEPT WORKING PROBLEM →';btn.dataset.action='accept-diagnosis';
     }else if(!gate.validated){
       btn.textContent='REVIEW THE MAIN CAUSE →';btn.dataset.action='causes';
-    }else if(safePlan.length){
-      btn.textContent='APPROVE NEXT STEPS →';btn.dataset.action='approve-plan';
     }else if(!gate.verification){
       btn.textContent='ADD SUCCESS CHECK →';btn.dataset.action='verification';
     }else{
@@ -1156,6 +1200,7 @@
       if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
       if(action==='whatsapp-access'){void issueAndOpenClientAccessWhatsApp();return}
       if(action==='approve-plan'){void approveSuggestedNextSteps();return}
+      if(action==='start-internal'){void startInternalLeadWork();return}
       if(action==='accept-diagnosis'){void acceptSystemDiagnosis();return}
       if(action==='evidence'){setLeadFocusMode(false);const fold=$('#fold-discovery');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
       if(action==='diagnosis'){setLeadFocusMode(false);const fold=$('#fold-working-diagnosis');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
@@ -1201,6 +1246,7 @@
     if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
       if(action==='whatsapp-access'){void issueAndOpenClientAccessWhatsApp();return}
     if(action==='approve-plan'){void approveSuggestedNextSteps();return}
+      if(action==='start-internal'){void startInternalLeadWork();return}
     if(action==='accept-diagnosis'){void acceptSystemDiagnosis();return}
     if(action==='causes'){setLeadFocusMode(false);const fold=$('#fold-root-causes');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
     if(action==='verification'){setLeadFocusMode(false);const fold=$('#fold-solution-tasks');fold?.setAttribute('open','');if($('#solution-task-type'))$('#solution-task-type').value='verification';fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
