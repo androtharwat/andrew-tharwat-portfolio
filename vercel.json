@@ -71,7 +71,8 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": true
+      "main": true,
+      "feature/task-execution-workspace-v1": true
     }
   }
 }
