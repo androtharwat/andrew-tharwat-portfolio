@@ -668,7 +668,7 @@
       '</div>'+
       '<label class="lead-task-result"><span>RESULT / WHAT DID WE FIND?</span><textarea id="lead-task-result-summary" placeholder="Write the outcome, findings, blockers or evidence from this task…">'+esc(task.result_summary||'')+'</textarea></label>'+
       '<div class="lead-task-dialog-actions"><button type="button" class="secondary" data-lead-task-close>CLOSE</button><button type="button" class="secondary" id="lead-task-save">SAVE PROGRESS</button><button type="button" class="primary" id="lead-task-complete">COMPLETE & START NEXT →</button></div>';
-    $('[data-lead-task-close]',d).forEach(b=>b.onclick=()=>d.close());
+    d.querySelectorAll('[data-lead-task-close]').forEach(b=>b.onclick=()=>d.close());
     $('#lead-task-save',d).onclick=()=>saveLeadTaskProgress(task,false,d);
     $('#lead-task-complete',d).onclick=()=>saveLeadTaskProgress(task,true,d);
   }
@@ -1272,7 +1272,7 @@
       if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
       if(action==='whatsapp-access'){void issueAndOpenClientAccessWhatsApp();return}
       if(action==='approve-plan'){void approveSuggestedNextSteps();return}
-      if(action==='start-internal'){void startInternalLeadWork();return}
+      if(action==='start-internal'){void startInternalLeadWork().catch(error=>{console.error('ATS task workspace',error);notify(error?.message||'Could not open the current ATS task.','error')});return}
       if(action==='accept-diagnosis'){void acceptSystemDiagnosis();return}
       if(action==='evidence'){setLeadFocusMode(false);const fold=$('#fold-discovery');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
       if(action==='diagnosis'){setLeadFocusMode(false);const fold=$('#fold-working-diagnosis');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
@@ -1318,7 +1318,7 @@
     if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
       if(action==='whatsapp-access'){void issueAndOpenClientAccessWhatsApp();return}
     if(action==='approve-plan'){void approveSuggestedNextSteps();return}
-      if(action==='start-internal'){void startInternalLeadWork();return}
+      if(action==='start-internal'){void startInternalLeadWork().catch(error=>{console.error('ATS task workspace',error);notify(error?.message||'Could not open the current ATS task.','error')});return}
     if(action==='accept-diagnosis'){void acceptSystemDiagnosis();return}
     if(action==='causes'){setLeadFocusMode(false);const fold=$('#fold-root-causes');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
     if(action==='verification'){setLeadFocusMode(false);const fold=$('#fold-solution-tasks');fold?.setAttribute('open','');if($('#solution-task-type'))$('#solution-task-type').value='verification';fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
