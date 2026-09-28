@@ -64,6 +64,24 @@ Deno.serve(async(req:Request)=>{
     if(task?.id)qs.set('task',task.id)
     const redirectTo=base+'?'+qs.toString()
 
+    const {data:notifySettings}=await admin.from('portfolio_site_settings').select('value').eq('key','ats_team_notifications').maybeSingle()
+    const notifyConfig=(notifySettings?.value&&typeof notifySettings.value==='object')?notifySettings.value:{}
+    const customResendEnabled=notifyConfig.custom_resend_enabled===true
+    const senderFrom=clean(notifyConfig.sender_from,240)||'AT Studio <onboarding@resend.dev>'
+
+    if(!customResendEnabled){
+      const fallback=await admin.auth.signInWithOtp({
+        email:member.email,
+        options:{shouldCreateUser:false,emailRedirectTo:redirectTo}
+      })
+      if(fallback.error)throw new Error('Auth email failed: '+fallback.error.message)
+      await admin.from('studio_team_notifications').update({
+        status:'fallback_sent',provider:'supabase_auth',error:null,sent_at:new Date().toISOString(),updated_at:new Date().toISOString(),
+        metadata:{...(n.metadata||{}),redirect_to:redirectTo,delivery_mode:'auth_email'}
+      }).eq('id',notificationId)
+      return json({ok:true,status:'fallback_sent',provider:'supabase_auth'})
+    }
+
     const {data:linkData,error:linkError}=await admin.auth.admin.generateLink({
       type:'magiclink',
       email:member.email,
@@ -107,7 +125,7 @@ Deno.serve(async(req:Request)=>{
           'Idempotency-Key':'ats-team-'+notificationId
         },
         body:JSON.stringify({
-          from:'AT Studio <onboarding@resend.dev>',
+          from:senderFrom,
           to:[member.email],
           subject,
           html,
@@ -127,17 +145,11 @@ Deno.serve(async(req:Request)=>{
       console.error('ATS Resend notification failed',resendError)
     }
 
-    const fallback=await admin.auth.signInWithOtp({
-      email:member.email,
-      options:{shouldCreateUser:false,emailRedirectTo:redirectTo}
-    })
-    if(fallback.error)throw new Error('Resend failed: '+resendError+'; Auth email failed: '+fallback.error.message)
-
     await admin.from('studio_team_notifications').update({
-      status:'fallback_sent',provider:'supabase_auth',error:resendError,sent_at:new Date().toISOString(),updated_at:new Date().toISOString(),
+      status:'failed',provider:'resend',error:resendError,updated_at:new Date().toISOString(),
       metadata:{...(n.metadata||{}),redirect_to:redirectTo}
     }).eq('id',notificationId)
-    return json({ok:true,status:'fallback_sent',provider:'supabase_auth'})
+    throw new Error(resendError)
   }catch(e){
     const msg=clean((e as any)?.message||e,1200)
     console.error('ATS team notification failed',msg)
