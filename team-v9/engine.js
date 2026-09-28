@@ -162,7 +162,7 @@
     const eligible=candidates.filter(x=>x.eligible);
     if(!eligible.length)return message('No available team member currently matches '+t.required_skill+' at the required capacity.',true);
     modal('Assign · '+t.title,
-      select('member_id','Team member',eligible.map(m=>[m.id,m.full_name+' · '+m.skill+' L'+m.level+' · '+m.active_load+'/'+m.capacity]),eligible[0]?.id,'required'),
+      select('member_id','Team member',eligible.map(m=>[m.id,m.full_name+' · '+m.skill+' L'+m.level+' · '+m.active_load+'/'+m.capacity+(m.is_domain_lead?' · Domain Lead → Admin review':'')]),eligible[0]?.id,'required'),
       async fd=>{await domainCommand('assign_task',{workstream_id:t.workstream_id,id:t.id,member_id:fd.get('member_id')});},
       'Assign task');
   }
@@ -275,7 +275,7 @@
     const t=rows.tasks.find(x=>x.id===id);if(!t)return;
     if(action==='details'){
       const events=rows.events.filter(e=>e.task_id===id).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));
-      modal(t.title,`<div class="wide"><h3>Acceptance criteria</h3><pre>${esc(t.acceptance_criteria)}</pre><h3>Delivery evidence</h3><pre>${esc(t.submission||'No submission yet.')}</pre><p>Reviewer: ${esc(context(t.id).reviewer_name||name(t.reviewer_id))}</p><h3>History</h3>${events.map(e=>`<details class="team-event"><summary>${esc(label(e.action))} · ${esc(date(e.created_at))}</summary><pre>${esc(JSON.stringify(e.details,null,2))}</pre></details>`).join('')||'<p>No events visible.</p>'}</div>`,null);return;
+      modal(t.title,`<div class="wide"><h3>Acceptance criteria</h3><pre>${esc(t.acceptance_criteria)}</pre><h3>Delivery evidence</h3><pre>${esc(t.submission||'No submission yet.')}</pre><p>Reviewer: ${esc(t.admin_acceptance&&!t.reviewer_id?'Admin':(context(t.id).reviewer_name||name(t.reviewer_id)))}</p><h3>History</h3>${events.map(e=>`<details class="team-event"><summary>${esc(label(e.action))} · ${esc(date(e.created_at))}</summary><pre>${esc(JSON.stringify(e.details,null,2))}</pre></details>`).join('')||'<p>No events visible.</p>'}</div>`,null);return;
     }
     let body=`<p class="wide">${esc(t.title)}</p>`;let extra={};
     if(action==='assign')body+=select('member_id','Task owner',rows.members.filter(m=>m.active&&m.id!==t.reviewer_id).map(m=>[m.id,`${m.full_name} · ${load(m.id)}/${m.capacity}`]),'','required')+check('override_capacity','Override capacity (admin)',false)+area('reason','Assignment / override reason','',false);
