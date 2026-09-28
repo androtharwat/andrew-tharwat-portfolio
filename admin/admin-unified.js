@@ -258,7 +258,7 @@
   }
   function localToIso(value){return value?new Date(value).toISOString():null}
   function humanActivity(action,meta={}){
-    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',diagnostic_engine_completed:'ATS diagnostic engine completed',working_diagnosis_accepted:'Working diagnosis accepted',lead_file_analyzed:'Project evidence analyzed',client_access_code_issued:'Client Access Code issued',client_access_code_redeemed:'Client Access opened',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
+    const labels={lead_status_changed:'Status changed',lead_contact_logged:'Client contact logged',lead_next_action_changed:'Next action updated',lead_discovery_started:'Discovery started',discovery_answered:'Discovery answer received',discovery_signal_added:'Discovery evidence added',diagnosis_updated:'Diagnosis updated',root_cause_added:'Root-cause hypothesis added',root_cause_status_changed:'Root cause updated',solution_task_added:'Solution task added',solution_task_status_changed:'Solution task updated',diagnostic_engine_completed:'ATS diagnostic engine completed',working_diagnosis_accepted:'Working diagnosis accepted',lead_file_analyzed:'Project evidence analyzed',client_access_code_issued:'Client Access Code issued',client_access_code_redeemed:'Client Access opened',client_portal_request_published:'Client Portal request published',proposal_created:'Proposal created',proposal_sent:'Proposal sent',proposal_accepted:'Proposal accepted'};
     const title=labels[action]||String(action||'Activity').replaceAll('_',' ');
     let detail=meta.summary||meta.note||'';
     if(action==='lead_status_changed')detail=(leadStatusLabels[meta.from]||meta.from||'—')+' → '+(leadStatusLabels[meta.to]||meta.to||'—');
@@ -637,18 +637,35 @@
     return state.solutionTasks.filter(x=>x.status==='proposed'&&(!allowed||allowed.has(String(x.task_type||''))));
   }
 
-  async function copyLeadEvidenceRequest(){
-    const lead=state.currentLead,items=leadMissingItems().slice(0,6);
-    if(!lead||!items.length)return notify('No missing client information is currently identified.','error');
+  async function publishLeadEvidenceRequest(){
+    const lead=state.currentLead,c=state.discoveryCase||{},items=leadMissingItems().filter(x=>!String(x).startsWith('مطلوب من ATS')&&!String(x).startsWith('ATS needs')).slice(0,6);
+    if(!lead||!c?.id)return notify('Open a lead with an active discovery case first.','error');
+    if(String(c.analysis_state||'')!=='ready')return notify('Run ATS Understanding first so the request is based on the latest case evidence.','error');
+    if(!items.length)return notify('No missing client information is currently identified.','error');
     const arabic=/[\u0600-\u06ff]/.test(String(lead.project_goal||lead.ats_understanding||lead.full_name||''));
-    const intro=arabic
-      ?'أهلاً '+String(lead.full_name||'').trim()+'، علشان نكمل فهم الطلب ونحدد نطاق الشغل بدقة، محتاجين من حضرتك الآتي:'
-      :'Hi '+String(lead.full_name||'').trim()+', to complete the assessment and define the work accurately, please send us:';
-    const outro=arabic
-      ?'بعد استلام البيانات هنراجعها ونحدد الخطوات الفعلية المطلوبة بدون افتراضات.'
-      :'Once received, ATS will review the evidence and define the justified next steps.';
-    const msg=intro+'\n\n'+items.map((x,i)=>(i+1)+'. '+x).join('\n')+'\n\n'+outro;
-    try{await navigator.clipboard.writeText(msg);notify('Client request copied.')}catch(_){notify('Could not copy the client request.','error')}
+    const question=(arabic?'مطلوب من ATS علشان نكمل تقييم الطلب بدقة:\n':'ATS needs the following to complete the assessment accurately:\n')+items.map((x,i)=>(i+1)+'. '+x).join('\n');
+    const reason=arabic?'جاوب بالمعلومات المتاحة وارفع الصور أو الفيديوهات أو الملفات المرتبطة مباشرة بالطلب. مش مطلوب منك تجهيز بريف جديد.':'Reply with what you know and upload any directly relevant photos, videos or files. You do not need to prepare a new brief.';
+    const decisionValue=arabic?'بعد وصول الرد والملفات، ATS هيعيد التحليل ويحوّل المعلومات لخطوات عمل مبررة.':'After your response and files arrive, ATS will re-analyze the case and turn the evidence into justified next steps.';
+    const publishedAt=new Date().toISOString();
+    const request={question,reason,decision_value:decisionValue,source:'admin_request',published_at:publishedAt,requested_items:items};
+    const caseUpdate=await sb().from('studio_discovery_cases').update({system_next_question:request,system_next_action:'Waiting for client evidence in Client Portal',updated_at:publishedAt}).eq('id',c.id).select('*').single();
+    if(caseUpdate.error)return notify(caseUpdate.error.message,'error');
+    const leadUpdate=await sb().from('studio_leads').update({status:['new','contacted','reviewing'].includes(lead.status)?'discovery':lead.status,next_action:'Waiting for client response in Client Portal',updated_at:publishedAt}).eq('id',lead.id).select('*').single();
+    if(leadUpdate.error)return notify(leadUpdate.error.message,'error');
+    state.discoveryCase=caseUpdate.data;
+    const li=state.leads.findIndex(x=>x.id===lead.id);if(li>=0)state.leads[li]=leadUpdate.data;state.currentLead=leadUpdate.data;
+    let accessCode=null;
+    try{
+      const access=await sb().from('studio_client_access_codes').select('status,used_at,expires_at,created_at').eq('lead_id',lead.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
+      const latest=access.data,expired=latest?.expires_at&&new Date(latest.expires_at).getTime()<=Date.now(),hasAccessHistory=!!latest?.used_at,hasActive=latest?.status==='active'&&!expired;
+      if(!hasAccessHistory&&!hasActive){
+        const issued=await sb().rpc('studio_admin_issue_client_access_code',{p_lead_id:lead.id,p_ttl_minutes:1440});
+        if(!issued.error&&issued.data?.code){accessCode=issued.data;renderClientAccessCode(issued.data)}
+      }
+    }catch(_){}
+    await logLeadActivity('client_portal_request_published',{summary:'Evidence request published to Client Portal',requested_items:items,published_at:publishedAt});
+    renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
+    notify(accessCode?.code?'Request published · Client Access code generated in Details.':'Request published to Client Portal.');
   }
 
   async function approveSuggestedNextSteps(){
@@ -667,6 +684,7 @@
     executionCtx=ctx||executionCtx||{};
     const proposal=executionCtx.proposal||null,deposit=executionCtx.deposit||null,project=executionCtx.project||null,taskCount=Number(executionCtx.taskCount||0);
     const c=state.discoveryCase||{},gate=diagnosisGateState();
+    const portalRequestOpen=String(c.analysis_state||'')==='ready'&&c.system_next_question?.source==='admin_request';
     const leadReady=['qualified','proposal_sent','negotiation','won'].includes(lead.status);
     const proposalCreated=!!proposal,proposalAccepted=proposal?.status==='accepted',depositPaid=deposit?.status==='paid',projectLive=!!project;
     const understanding=leadUnderstanding();
@@ -688,7 +706,9 @@
     $('#lead-execution-steps').innerHTML=steps.map(s=>'<div class="lead-execution-step '+(s.done?'done ':s.current?'current ':s.locked?'locked ':'')+'"><span>'+esc(s.label)+'</span><b>'+esc(s.value)+'</b></div>').join('');
 
     const checklist=$('#lead-start-checklist');
-    const needTitle=projectLive
+    const needTitle=portalRequestOpen
+      ?'Waiting for client response in Client Portal'
+      :projectLive
       ?(taskCount?'Delivery is running':'Create the first execution task')
       :!understandDone
         ?(String(c.analysis_state||'')==='analyzing'?'ATS is understanding the request':'Let ATS understand the request')
@@ -706,7 +726,9 @@
                     ?'Move the case to commercial'
                     :'Continue the commercial step';
 
-    const needDetail=projectLive
+    const needDetail=portalRequestOpen
+      ?'The request is live in Client Access. The client can reply with details and upload photos, video, PDFs or other evidence.'
+      :projectLive
       ?(project.project_code||'Project')+' · '+taskCount+' execution task'+(taskCount===1?'':'s')
       :missing.length&&!gate.coverage
         ?missing.slice(0,3).join(' • ')
@@ -716,7 +738,7 @@
       '<div class="lead-simple-grid">'+
         '<article class="lead-simple-card understood"><span>ATS UNDERSTANDS</span><b>'+esc(understanding||'Still analyzing the request…')+'</b><small>'+esc((lead.service||'Client request')+' · '+Number(c.system_confidence||c.diagnosis_confidence||0)+'% confidence')+'</small></article>'+
         '<article class="lead-simple-card next"><span>NEED NOW</span><b>'+esc(needTitle)+'</b><small>'+esc(needDetail)+'</small>'+
-          (missing.length&&!gate.coverage?'<button type="button" class="secondary" data-exec-action="copy-evidence">COPY CLIENT REQUEST</button>':'')+
+          (!portalRequestOpen&&missing.length&&!gate.coverage?'<button type="button" class="secondary" data-exec-action="publish-evidence">SEND TO CLIENT PORTAL</button>':'')+
         '</article>'+
       '</div>';
 
@@ -754,8 +776,10 @@
       btn.textContent='RUN ATS UNDERSTANDING →';btn.dataset.action='analysis';
     }else if(String(c.analysis_state||'')==='analyzing'){
       btn.textContent='ATS IS ANALYZING…';btn.disabled=true;
+    }else if(portalRequestOpen){
+      btn.textContent='REQUEST SENT · WAITING FOR CLIENT';btn.disabled=true;
     }else if(missing.length&&!gate.coverage){
-      btn.textContent='COPY WHAT WE NEED FROM CLIENT →';btn.dataset.action='copy-evidence';
+      btn.textContent='SEND TO CLIENT PORTAL →';btn.dataset.action='publish-evidence';
     }else if(!String(c.root_problem||'').trim()&&String(c.system_problem_statement||'').trim()){
       btn.textContent='ACCEPT WORKING PROBLEM →';btn.dataset.action='accept-diagnosis';
     }else if(!gate.validated){
@@ -1072,7 +1096,7 @@
     if(exec){
       const action=exec.dataset.execAction;
       if(action==='analysis'){void runDiagnosticEngine(false);return}
-      if(action==='copy-evidence'){void copyLeadEvidenceRequest();return}
+      if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
       if(action==='approve-plan'){void approveSuggestedNextSteps();return}
       if(action==='accept-diagnosis'){void acceptSystemDiagnosis();return}
       if(action==='evidence'){setLeadFocusMode(false);const fold=$('#fold-discovery');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
@@ -1116,7 +1140,7 @@
     const btn=$('#lead-execution-primary'),action=btn?.dataset.action,id=btn?.dataset.id;
     if(!action)return;
     if(action==='analysis'){void runDiagnosticEngine(false);return}
-    if(action==='copy-evidence'){void copyLeadEvidenceRequest();return}
+    if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
     if(action==='approve-plan'){void approveSuggestedNextSteps();return}
     if(action==='accept-diagnosis'){void acceptSystemDiagnosis();return}
     if(action==='causes'){setLeadFocusMode(false);const fold=$('#fold-root-causes');fold?.setAttribute('open','');fold?.scrollIntoView({behavior:'smooth',block:'start'});return}
