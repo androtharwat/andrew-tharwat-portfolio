@@ -6,7 +6,7 @@
   const $$ = (s,r=document) => [...r.querySelectorAll(s)];
   const root = $('#social-os-root');
   if (!root) return;
-  const state = {brands:[],plans:[],items:[],brandId:null,month:new Date(new Date().getFullYear(),new Date().getMonth(),1),status:'all',platform:'all',ready:false};
+  const state = {brands:[],plans:[],items:[],members:[],skills:[],teamTasks:[],brandId:null,month:new Date(new Date().getFullYear(),new Date().getMonth(),1),status:'all',platform:'all',ready:false};
   const esc = (v='') => String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const notify = (m,t='success') => window.ATS_ADMIN?.notify?.(m,t);
   const sb = () => window.ATS_ADMIN?.getClient?.();
@@ -19,6 +19,25 @@
   const currentPlan = () => state.plans.find(x=>x.brand_id===state.brandId && x.month_start===monthKey(state.month)) || null;
   const nextStatus = s => ({idea:'draft',draft:'design',design:'review',review:'approved',needs_changes:'design',approved:'scheduled',scheduled:'published'}[s]||null);
   const statusLabel = s => String(s||'draft').replaceAll('_',' ');
+  const openTeamStates = ['assigned','in_progress','review'];
+  const member = id => state.members.find(x=>x.id===id)||null;
+  const memberLoad = id => state.teamTasks.filter(t=>t.owner_id===id&&openTeamStates.includes(t.status)).length;
+  const memberSocialLevel = id => Math.max(0,...state.skills.filter(s=>s.member_id===id&&String(s.skill||'').toLowerCase()==='social media').map(s=>Number(s.level||0)));
+  const memberLabel = id => {
+    const m=member(id); if(!m)return 'Not assigned';
+    return m.full_name+' · '+memberLoad(id)+'/'+m.capacity+(memberSocialLevel(id)?' · Social L'+memberSocialLevel(id):'');
+  };
+  function socialMembers(){
+    return state.members.filter(m=>m.active&&memberSocialLevel(m.id)>0).sort((a,b)=>
+      Number(b.available)-Number(a.available) ||
+      memberSocialLevel(b.id)-memberSocialLevel(a.id) ||
+      memberLoad(a.id)-memberLoad(b.id)
+    );
+  }
+  function memberOptions(selected,reviewer=false){
+    const list=reviewer?state.members.filter(m=>m.active):socialMembers();
+    return '<option value="">'+(reviewer?'Choose reviewer':'Unassigned')+'</option>'+list.map(m=>'<option value="'+esc(m.id)+'" '+(selected===m.id?'selected':'')+'>'+esc(memberLabel(m.id)+(m.available?'':' · unavailable'))+'</option>').join('');
+  }
 
   function platformPills(arr){
     return (arr||[]).map(x=>'<span class="social-pill">'+esc(x)+'</span>').join('');
@@ -28,9 +47,16 @@
   async function load(force=false){
     if (!sb()) return;
     showLoading();
-    const b = await sb().from('studio_social_brands').select('*').neq('status','archived').order('created_at',{ascending:true});
-    if (b.error) return fail(b.error);
-    state.brands=b.data||[];
+    const [b,m,s,t] = await Promise.all([
+      sb().from('studio_social_brands').select('*').neq('status','archived').order('created_at',{ascending:true}),
+      sb().from('studio_team_members').select('*').eq('active',true).order('full_name'),
+      sb().from('studio_member_skills').select('*'),
+      sb().from('studio_project_tasks').select('id,project_id,owner_id,reviewer_id,status,required_skill,title')
+    ]);
+    const bad=[b,m,s,t].find(x=>x.error); if(bad) return fail(bad.error);
+    state.brands=b.data||[]; state.members=m.data||[]; state.skills=s.data||[]; state.teamTasks=t.data||[];
+    const requested=sessionStorage.getItem('ats_social_open_brand');
+    if(requested&&state.brands.some(x=>x.id===requested)){state.brandId=requested;sessionStorage.removeItem('ats_social_open_brand');}
     if (!state.brandId || !state.brands.some(x=>x.id===state.brandId)) state.brandId=state.brands[0]?.id||null;
     await loadMonth();
     state.ready=true;
@@ -88,7 +114,7 @@
   function metric(v,label,small){return '<article class="social-metric"><span>'+label+'</span><strong>'+v+'</strong><small>'+small+'</small></article>'}
   function renderBrands(){
     if(!state.brands.length)return '';
-    return '<div class="social-brand-strip">'+state.brands.map(b=>'<button class="social-brand-card '+(b.id===state.brandId?'active':'')+'" data-social-brand="'+esc(b.id)+'"><b>'+esc(b.name)+'</b><small>'+esc(b.primary_goal||b.industry||'Brand workspace')+'</small><div class="social-brand-platforms">'+platformPills(b.platforms)+'</div></button>').join('')+'</div>';
+    return '<div class="social-brand-strip">'+state.brands.map(b=>'<button class="social-brand-card '+(b.id===state.brandId?'active':'')+'" data-social-brand="'+esc(b.id)+'"><b>'+esc(b.name)+'</b><small>'+esc(b.project_id?'Linked client project':'Standalone brand')+' · '+esc(memberLabel(b.responsible_member_id))+'</small><div class="social-brand-platforms">'+platformPills(b.platforms)+'</div></button>').join('')+'</div>';
   }
   function planNote(){
     const p=currentPlan();
@@ -163,6 +189,8 @@
         '<label class="wide">BRAND VOICE<textarea name="brand_voice" placeholder="Tone, language, phrases to use / avoid">'+esc(values.brand_voice||'')+'</textarea></label>'+
         '<label class="wide">PRIMARY GOAL<textarea name="primary_goal" placeholder="Sales, leads, awareness, engagement…">'+esc(values.primary_goal||'')+'</textarea></label>'+
         '<label class="wide">PRODUCTS / SERVICES<textarea name="products_services">'+esc(values.products_services||'')+'</textarea></label>'+
+        '<label>RESPONSIBLE OWNER<select name="responsible_member_id">'+memberOptions(values.responsible_member_id,false)+'</select></label>'+
+        '<label>REVIEWER<select name="reviewer_member_id">'+memberOptions(values.reviewer_member_id,true)+'</select></label>'+
         '<label class="wide">PLATFORMS<div class="social-checks">'+['facebook','instagram','tiktok','linkedin','youtube','x'].map(p=>'<label><input type="checkbox" name="platforms" value="'+p+'" '+((values.platforms||[]).includes(p)?'checked':'')+'> '+p+'</label>').join('')+'</div></label>'+
         '<label class="wide">NOTES<textarea name="content_notes">'+esc(values.content_notes||'')+'</textarea></label>'+
       '</form>'+
@@ -177,7 +205,7 @@
     const platforms=fd.getAll('platforms');
     if(!fd.get('name')?.trim())return notify('Brand name is required.','error');
     if(!platforms.length)return notify('Choose at least one platform.','error');
-    const payload={name:fd.get('name').trim(),handle:fd.get('handle')||null,industry:fd.get('industry')||null,audience:fd.get('audience')||null,brand_voice:fd.get('brand_voice')||null,language:fd.get('language')||'ar',primary_goal:fd.get('primary_goal')||null,products_services:fd.get('products_services')||null,content_notes:fd.get('content_notes')||null,platforms,updated_at:new Date().toISOString()};
+    const payload={name:fd.get('name').trim(),handle:fd.get('handle')||null,industry:fd.get('industry')||null,audience:fd.get('audience')||null,brand_voice:fd.get('brand_voice')||null,language:fd.get('language')||'ar',primary_goal:fd.get('primary_goal')||null,products_services:fd.get('products_services')||null,content_notes:fd.get('content_notes')||null,responsible_member_id:fd.get('responsible_member_id')||null,reviewer_member_id:fd.get('reviewer_member_id')||null,platforms,updated_at:new Date().toISOString()};
     const q=brand?sb().from('studio_social_brands').update(payload).eq('id',brand.id).select().single():sb().from('studio_social_brands').insert(payload).select().single();
     const r=await q;if(r.error)return notify(r.error.message,'error');
     state.brandId=r.data.id;d.close();notify('Brand saved.');await load();
@@ -292,6 +320,11 @@
     if(state.ready||!window.ATS_ADMIN?.getClient?.())return;
     load();
   }
+  window.ATS_SOCIAL_OS=Object.freeze({
+    reload:()=>load(true),
+    openBrand:async id=>{state.brandId=id;await loadMonth();render();}
+  });
+  window.addEventListener('ats-social-open-brand',e=>{const id=e.detail?.brandId;if(!id)return;sessionStorage.setItem('ats_social_open_brand',id);if(state.ready){state.brandId=id;void loadMonth().then(render);}});
   window.addEventListener('ats-admin-ready',tryInit);
   setTimeout(tryInit,0);
 })();
