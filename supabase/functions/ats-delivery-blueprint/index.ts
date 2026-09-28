@@ -214,6 +214,28 @@ Deno.serve(async(req:Request)=>{
     if(!leadQ.data)return json({error:'Lead not found'},404)
 
     const taskRows=tasksQ.data||[]
+    const activeValidation=taskRows.filter((x:any)=>
+      ['investigate','verification','client_action'].includes(String(x.task_type||'')) &&
+      ['proposed','todo','in_progress'].includes(String(x.status||''))
+    )
+    if(activeValidation.length){
+      const now=new Date().toISOString()
+      const blockedBlueprint={
+        summary:'Delivery planning is paused until the current validation work is completed.',
+        readiness:'needs_evidence',
+        evidence_gaps:activeValidation.slice(0,8).map((x:any)=>clean(x.title||x.rationale,500)).filter(Boolean),
+        domains:[]
+      }
+      const payload={
+        case_id:caseId,lead_id:leadId,status:'needs_evidence',blueprint:blockedBlueprint,
+        source_snapshot:{lead:leadQ.data,discovery:caseRow,validation_tasks:activeValidation},
+        model:'validation-gate',generation_notes:'Active validation tasks must be completed before delivery architecture is activated.',
+        generated_at:now,updated_at:now
+      }
+      const saved=await admin.from('studio_delivery_blueprints').upsert(payload,{onConflict:'case_id'}).select('*').single()
+      if(saved.error)return json({error:saved.error.message},500)
+      return json({ok:true,cached:false,blueprint:saved.data})
+    }
     const taskIds=taskRows.map((x:any)=>x.id)
     let playbooks:any[]=[]
     if(taskIds.length){
