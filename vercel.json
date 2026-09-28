@@ -71,7 +71,8 @@
   "git": {
     "deploymentEnabled": {
       "*": false,
-      "main": true
+      "main": true,
+      "feature/ats-social-os-v1": true
     }
   }
 }
