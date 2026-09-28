@@ -5,7 +5,7 @@
   const fmt = v => v ? new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v)) : '—';
   const esc = (v='') => String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const OTP_LENGTH = Number(window.ATS_AUTH?.accessCodeLength || window.ATS_AUTH?.otpLength || 6);
-  let sb = null, context = null, diagnosticRefreshPromise = null, leadEvidenceFiles = [];
+  let sb = null, context = null, diagnosticRefreshPromise = null, leadEvidenceFiles = [], adminRequestUploads = 0, adminRequestFileIds = [];
 
   function fileSize(v){const n=Number(v||0);if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';return (n/1048576).toFixed(1)+' MB'}
   function renderLeadEvidenceFiles(files=[]){
@@ -39,6 +39,7 @@
     const tooLarge=selected.find(f=>f.size>26214400);
     if(tooLarge)return uploadState(tooLarge.name+' exceeds the 25 MB limit.',true);
     const picker=$('#discovery-file-picker');
+    const adminRequest=isAdminPortalRequest(context?.discovery?.next_question);
     picker?.classList.add('busy');if(picker)picker.disabled=true;
     try{
       const {data:sessionData,error:sessionError}=await sb.auth.getSession();
@@ -58,16 +59,28 @@
         const uploaded=await response.json().catch(()=>null);
         if(!response.ok||!uploaded?.file?.id)throw new Error(uploaded?.detail||uploaded?.error||'Could not upload '+file.name);
         await loadLeadEvidenceFiles(lead.id);
+        if(adminRequest){
+          adminRequestFileIds.push(uploaded.file.id);
+          completed++;
+          continue;
+        }
         uploadState('Analyzing '+file.name+'…');
         const analyzed=await sb.functions.invoke('ats-lead-file-analyzer',{body:{file_id:uploaded.file.id}});
         if(analyzed.error)throw new Error(analyzed.error.message||'The file was uploaded but ATS could not analyze it.');
         completed++;
         await loadLeadEvidenceFiles(lead.id);
       }
-      uploadState(completed+' file'+(completed===1?'':'s')+' uploaded and analyzed successfully.');
-      toast('Project evidence added · ATS is updating the diagnosis');
-      await refreshDiagnosticFromClient(false);
-      await loadContext();
+      if(adminRequest){
+        adminRequestUploads+=completed;
+        uploadState(completed+' file'+(completed===1?'':'s')+' uploaded successfully. Send your response when ready.');
+        toast('Files attached · send your response when ready');
+        await loadLeadEvidenceFiles(lead.id);
+      }else{
+        uploadState(completed+' file'+(completed===1?'':'s')+' uploaded and analyzed successfully.');
+        toast('Project evidence added · ATS is updating the diagnosis');
+        await refreshDiagnosticFromClient(false);
+        await loadContext();
+      }
     }catch(error){
       window.ATS_AUTH_CLIENT.logError('file-upload',error);
       const message=error?.message||'Could not upload the project file';
@@ -133,6 +146,11 @@
     return ar>en?'ar':'en';
   }
 
+  function isAdminPortalRequest(q){
+    const text=String(q?.question||'').trim();
+    return text.startsWith('مطلوب من ATS')||text.startsWith('ATS needs the following');
+  }
+
   function evidencePrompt(key,l='en'){
     const ar={
       current_state:['لو عندك حاجة بتوضح الوضع الحالي، هتفيدنا.','صورة، Screenshot، لينك أو ملف بسيط ممكن يساعدنا نشوف نفس اللي أنت شايفه.'],
@@ -172,10 +190,11 @@
     const known=labels.filter(([,v])=>String(v||'').trim());
     $('#discovery-known').innerHTML=known.length?known.map(([k,v])=>'<article><span>'+esc(k.toUpperCase())+'</span><p>'+esc(v)+'</p></article>').join(''):'<div class="discovery-file-empty">'+(l==='ar'?'لسه بنكوّن الصورة من كلامك.':'ATS is still building the picture from what you shared.')+'</div>';
 
-    const q=discovery.next_question,locked=!!proposal;
+    const q=discovery.next_question,locked=!!proposal,adminRequest=isAdminPortalRequest(q);
     $('#discovery-file-picker')?.classList.toggle('hidden',locked);
     const card=$('#discovery-question-card'),waiting=$('#discovery-waiting'),nudge=$('#evidence-nudge');
     card.classList.toggle('hidden',!q||locked);
+    card.classList.toggle('admin-request',!!q&&!locked&&adminRequest);
     waiting.classList.toggle('hidden',!!q&&!locked);
     $('#step-diagnosis').classList.remove('done','active');
 
@@ -189,18 +208,34 @@
       $('#discovery-question-alt').textContent=secondary;
       $('#discovery-why').textContent=why;
       $('#discovery-answer').value='';
-      $('#discovery-answer').placeholder=l==='ar'?'جاوب بطريقتك. لو مش متأكد، قول مش متأكد — دي معلومة مفيدة.':'Answer naturally. If you are not sure, say so — that is useful information.';
-      $('#submit-discovery').textContent=l==='ar'?'إرسال الإجابة ←':'SEND THIS ANSWER →';
+      const questionLabel=card.querySelector('.question-label');
+      if(questionLabel)questionLabel.textContent=adminRequest?'ATS REQUEST · مطلوب من ATS':'ONE QUESTION ONLY · سؤال واحد بس';
+      if(adminRequest){
+        $('#discovery-answer').placeholder=l==='ar'?'اكتب أي تفاصيل إضافية هنا، أو ارفع الملفات المطلوبة بالأسفل.':'Add any useful details here, or upload the requested files below.';
+        $('#submit-discovery').textContent=l==='ar'?'إرسال الرد والملفات ←':'SEND RESPONSE & FILES →';
+        $('#journey-status').textContent=l==='ar'?'مطلوب معلومات من ATS':'ATS NEEDS INFORMATION';
+        $('#journey-copy').textContent=l==='ar'?'الطلب ده جاي مباشرة من فريق ATS علشان نكمل التقييم بدون افتراضات.':'This request came directly from ATS so we can complete the assessment without assumptions.';
+        $('#current-action').textContent=l==='ar'?'ابعث التفاصيل والملفات المطلوبة':'Send the requested details and files';
+        $('#current-action-copy').textContent=l==='ar'?'تقدر تكتب رد، ترفع ملفات، أو تعمل الاتنين مع بعض من نفس الصفحة.':'You can reply, upload files, or do both from this page.';
+        const nudgeLabel=nudge?.querySelector('span');if(nudgeLabel)nudgeLabel.textContent=l==='ar'?'الملفات المطلوبة · ATTACH FILES':'ATTACH REQUESTED FILES · الملفات المطلوبة';
+        $('#evidence-request-title').textContent=l==='ar'?'ارفع أي صور أو فيديوهات أو مستندات مرتبطة بالطلب':'Upload any photos, videos or documents relevant to this request';
+        $('#evidence-request-copy').textContent=l==='ar'?'تقدر ترفع أكتر من ملف، بحد أقصى 25 MB للملف الواحد.':'You can upload multiple files, up to 25 MB each.';
+        const picker=$('#discovery-file-picker');if(picker)picker.innerHTML='<strong>+ '+(l==='ar'?'إضافة ملفات':'ADD FILES')+'</strong><span>Up to 25 MB each</span>';
+        nudge?.classList.add('recommended');nudge?.classList.remove('hidden');
+      }else{
+        $('#discovery-answer').placeholder=l==='ar'?'جاوب بطريقتك. لو مش متأكد، قول مش متأكد — دي معلومة مفيدة.':'Answer naturally. If you are not sure, say so — that is useful information.';
+        $('#submit-discovery').textContent=l==='ar'?'إرسال الإجابة ←':'SEND THIS ANSWER →';
+        $('#journey-status').textContent=l==='ar'?'بنفهم المشكلة':'UNDERSTANDING THE PROBLEM';
+        $('#journey-copy').textContent=l==='ar'?'بنطلب أقل معلومة ممكنة تساعدنا نفرق بين العرض والسبب الحقيقي.':'ATS is asking for the smallest useful piece of information before choosing a direction.';
+        $('#current-action').textContent=l==='ar'?'جاوب سؤال واحد بس':'One answer will move this forward';
+        $('#current-action-copy').textContent=l==='ar'?'مش محتاج تكتب بريف أو ترتب الكلام. جاوب زي ما هتشرح لشخص قدامك.':'No brief or technical language needed. Answer the way you would explain it to a person.';
+        const [evTitle,evCopy]=evidencePrompt(q.key,l);
+        $('#evidence-request-title').textContent=evTitle;
+        $('#evidence-request-copy').textContent=evCopy;
+        nudge?.classList.toggle('recommended',['current_state','impact','evidence','process_point','prior_attempts'].includes(q.key));
+        nudge?.classList.remove('hidden');
+      }
       $('#step-diagnosis').classList.add('active');
-      $('#journey-status').textContent=l==='ar'?'بنفهم المشكلة':'UNDERSTANDING THE PROBLEM';
-      $('#journey-copy').textContent=l==='ar'?'بنطلب أقل معلومة ممكنة تساعدنا نفرق بين العرض والسبب الحقيقي.':'ATS is asking for the smallest useful piece of information before choosing a direction.';
-      $('#current-action').textContent=l==='ar'?'جاوب سؤال واحد بس':'One answer will move this forward';
-      $('#current-action-copy').textContent=l==='ar'?'مش محتاج تكتب بريف أو ترتب الكلام. جاوب زي ما هتشرح لشخص قدامك.':'No brief or technical language needed. Answer the way you would explain it to a person.';
-      const [evTitle,evCopy]=evidencePrompt(q.key,l);
-      $('#evidence-request-title').textContent=evTitle;
-      $('#evidence-request-copy').textContent=evCopy;
-      nudge?.classList.toggle('recommended',['current_state','impact','evidence','process_point','prior_attempts'].includes(q.key));
-      nudge?.classList.remove('hidden');
     }else if(discovery.diagnosis_ready||locked){
       $('#step-diagnosis').classList.add('done');
       waiting.classList.remove('hidden');
@@ -239,18 +274,31 @@
   }
 
   async function submitDiscoveryAnswer(){
-    const card=$('#discovery-question-card'),key=card?.dataset.questionKey,answer=$('#discovery-answer')?.value.trim();
-    if(!key||!answer){$('#discovery-answer')?.focus();return toast('Add a short answer first.')}
-    const b=$('#submit-discovery');busy(b,true,'SENDING…');
+    const card=$('#discovery-question-card'),key=card?.dataset.questionKey;
+    let answer=$('#discovery-answer')?.value.trim();
+    const adminRequest=isAdminPortalRequest(context?.discovery?.next_question);
+    if(!answer&&adminRequest&&adminRequestUploads>0){
+      const l=preferredDiscoveryLang(context?.lead||{});
+      answer=l==='ar'?'تم رفع الملفات المطلوبة عبر Client Portal.':'The requested files were uploaded through Client Portal.';
+    }
+    if(!key||!answer){$('#discovery-answer')?.focus();return toast(adminRequest?'Add a short note or upload the requested files first.':'Add a short answer first.')}
+    const b=$('#submit-discovery');busy(b,true,adminRequest&&adminRequestFileIds.length?'ANALYZING FILES…':'SENDING…');
     try{
+      if(adminRequest&&adminRequestFileIds.length){
+        for(const fileId of [...adminRequestFileIds]){
+          const analyzed=await sb.functions.invoke('ats-lead-file-analyzer',{body:{file_id:fileId}});
+          if(analyzed.error)throw new Error(analyzed.error.message||'A file was uploaded but ATS could not analyze it.');
+        }
+      }
       const {error}=await sb.rpc('studio_portal_discovery_answer',{p_question_key:key,p_answer:answer});
       if(error)throw error;
       busy(b,true,'ANALYZING…');
-      toast('Answer saved · ATS is updating the diagnosis');
+      toast('Response saved · ATS is updating the diagnosis');
+      adminRequestUploads=0;adminRequestFileIds=[];
       await refreshDiagnosticFromClient(false);
       await loadContext();
-    }catch(error){toast(error.message||'Could not save your answer')}
-    finally{busy(b,false,'SEND ANSWER →')}
+    }catch(error){toast(error.message||'Could not save your response')}
+    finally{busy(b,false,adminRequest?'SEND RESPONSE & FILES →':'SEND ANSWER →')}
   }
 
   function renderProspect(ctx){
