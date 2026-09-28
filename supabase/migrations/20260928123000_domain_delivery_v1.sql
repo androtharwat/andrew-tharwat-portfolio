@@ -31,6 +31,12 @@ alter table public.studio_project_tasks
   add column if not exists source_solution_task_id uuid references public.studio_solution_tasks(id) on delete set null,
   add column if not exists created_by_member_id uuid references public.studio_team_members(id) on delete set null;
 
+alter table public.studio_activity
+  drop constraint if exists studio_activity_actor_type_check;
+alter table public.studio_activity
+  add constraint studio_activity_actor_type_check
+  check (actor_type in ('system','admin','client','prospect','member'));
+
 create unique index if not exists studio_project_tasks_source_solution_unique
   on public.studio_project_tasks(source_solution_task_id)
   where source_solution_task_id is not null;
