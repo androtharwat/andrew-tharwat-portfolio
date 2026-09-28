@@ -112,3 +112,11 @@ button.primary:disabled{opacity:.55;cursor:wait}
   .details,.understanding-panel .discovery-known{grid-template-columns:1fr}
   .proposal-meta{grid-template-columns:1fr 1fr}.proposal-actions{flex-direction:column}
 }
+
+/* ATS direct portal request */
+#discovery-question{white-space:pre-wrap}
+.discovery-question-card.admin-request{border-color:rgba(239,35,60,.34);background:linear-gradient(145deg,rgba(239,35,60,.055),rgba(6,24,36,.98))}
+.discovery-question-card.admin-request .question-label{color:#ff6d7d}
+.discovery-question-card.admin-request textarea{min-height:120px}
+.discovery-question-card.admin-request + .discovery-waiting + .evidence-nudge,
+.evidence-nudge.recommended{border-color:rgba(72,174,226,.28)}
