@@ -656,12 +656,8 @@
     const li=state.leads.findIndex(x=>x.id===lead.id);if(li>=0)state.leads[li]=leadUpdate.data;state.currentLead=leadUpdate.data;
     let accessCode=null;
     try{
-      const access=await sb().from('studio_client_access_codes').select('status,used_at,expires_at,created_at').eq('lead_id',lead.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
-      const latest=access.data,expired=latest?.expires_at&&new Date(latest.expires_at).getTime()<=Date.now(),hasAccessHistory=!!latest?.used_at,hasActive=latest?.status==='active'&&!expired;
-      if(!hasAccessHistory&&!hasActive){
-        const issued=await sb().rpc('studio_admin_issue_client_access_code',{p_lead_id:lead.id,p_ttl_minutes:1440});
-        if(!issued.error&&issued.data?.code){accessCode=issued.data;renderClientAccessCode(issued.data)}
-      }
+      const issued=await sb().rpc('studio_admin_issue_client_access_code',{p_lead_id:lead.id,p_ttl_minutes:1440});
+      if(!issued.error&&issued.data?.code){accessCode=issued.data;renderClientAccessCode(issued.data)}
     }catch(_){}
     await logLeadActivity('client_portal_request_published',{summary:'Evidence request published to Client Portal',requested_items:items,published_at:publishedAt});
     renderLeadDiagnosis();renderLeadExecutionPath(executionCtx);
