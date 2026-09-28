@@ -4,7 +4,7 @@
   const esc=(v='')=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
   const money=v=>window.ATS_I18N?.formatNumber?.(v)??new Intl.NumberFormat('en-US').format(Number(v||0));
   const fmt=v=>v?(window.ATS_I18N?.formatDate?.(v,{day:'2-digit',month:'short',year:'numeric'})??new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(v))):'—';
-  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],projectDomains:[],projectTasks:[],teamMembers:[],teamSkills:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[],diagnosticRun:null,clientAccessCode:null};
+  const state={booted:false,loaded:{},leads:[],clients:[],projects:[],proposals:[],payments:[],portfolio:[],v9:null,currentLead:null,currentProposal:null,currentProject:null,inbox:[],projectMessages:[],projectFiles:[],projectReviews:[],projectRevisions:[],projectDomains:[],projectTasks:[],teamMembers:[],teamSkills:[],leadActivities:[],discoveryCase:null,discoveryAnswers:[],rootCauses:[],solutionTasks:[],diagnosticRun:null,deliveryBlueprint:null,clientAccessCode:null};
   let executionCtx={};
   let inboxTimer=null;
   const roleNames={hse:'HSE & TECHNICAL',software:'SOFTWARE & AUTOMATION',design:'DESIGN & VISUAL',video:'VIDEO & MOTION',content:'CONTENT & STORYTELLING',ai:'AI PRODUCTION'};
@@ -386,6 +386,21 @@
       btn.textContent=analyzing?'ANALYZING…':stateName==='ready'?'REFRESH ATS DIAGNOSIS':'RUN ATS DIAGNOSIS';
     }
   }
+  async function ensureDeliveryBlueprint(leadId,{force=false,silent=true}={}){
+    if(!leadId||!sb())return null;
+    const {data,error}=await sb().functions.invoke('ats-delivery-blueprint',{body:{lead_id:leadId,force}});
+    if(error){
+      if(!silent)notify(error.message||'Could not generate the delivery blueprint.','error');
+      throw error;
+    }
+    const row=data?.blueprint||null;
+    if(state.currentLead?.id===leadId&&row){
+      state.deliveryBlueprint=row;
+      renderLeadExecutionPath(executionCtx);
+    }
+    return row;
+  }
+
   async function runDiagnosticEngine(silent=false){
     const lead=state.currentLead;if(!lead||!sb())return;
     const btn=$('#run-diagnostic-engine'),old=btn?.textContent;
@@ -395,8 +410,11 @@
       const {data,error}=await sb().functions.invoke('ats-problem-solver',{body:{lead_id:lead.id}});
       if(error)throw error;
       await loadLeadDiagnosis(lead.id,{autoAnalyze:false});
+      if(String(state.discoveryCase?.analysis_state||'')==='ready'){
+        try{await ensureDeliveryBlueprint(lead.id,{force:!data?.cached,silent:true})}catch(_){}
+      }
       await loadLeadTimeline(lead.id);
-      if(!silent)notify(data?.cached?'Diagnosis already current':'ATS diagnosis refreshed');
+      if(!silent)notify(data?.cached?'Diagnosis already current':'ATS diagnosis refreshed · delivery plan updated');
     }catch(error){
       if(state.discoveryCase)state.discoveryCase.analysis_state='error';
       renderSystemDiagnosis();
@@ -520,7 +538,7 @@
   }
 
   async function loadLeadDiagnosis(leadId,{autoAnalyze=true}={}){
-    state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];state.diagnosticRun=null;
+    state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];state.diagnosticRun=null;state.deliveryBlueprint=null;
     $('#diagnosis-dimensions').innerHTML='<div class="loading-line">Loading discovery evidence…</div>';
     let cq=await sb().from('studio_discovery_cases').select('*').eq('lead_id',leadId).maybeSingle();
     if(cq.error)return notify(cq.error.message,'error');
@@ -529,15 +547,16 @@
       if(cq.error)return notify(cq.error.message,'error');
     }
     state.discoveryCase=cq.data;
-    const [answers,causes,tasks,runs,latestRun]=await Promise.all([
+    const [answers,causes,tasks,runs,latestRun,blueprint]=await Promise.all([
       sb().from('studio_discovery_answers').select('*').eq('case_id',cq.data.id).order('created_at',{ascending:false}).limit(250),
       sb().from('studio_root_causes').select('*').eq('case_id',cq.data.id).order('system_rank',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false}),
       sb().from('studio_solution_tasks').select('*').eq('case_id',cq.data.id).order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
       sb().from('studio_diagnostic_runs').select('id,status,model,analysis,completed_at,created_at').eq('case_id',cq.data.id).eq('status','completed').order('created_at',{ascending:false}).limit(1).maybeSingle(),
-      sb().from('studio_diagnostic_runs').select('id,status,created_at').eq('case_id',cq.data.id).order('created_at',{ascending:false}).limit(1).maybeSingle()
+      sb().from('studio_diagnostic_runs').select('id,status,created_at').eq('case_id',cq.data.id).order('created_at',{ascending:false}).limit(1).maybeSingle(),
+      sb().from('studio_delivery_blueprints').select('*').eq('case_id',cq.data.id).maybeSingle()
     ]);
-    const failed=[answers,causes,tasks,runs,latestRun].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
-    state.discoveryAnswers=answers.data||[];state.rootCauses=causes.data||[];state.solutionTasks=tasks.data||[];state.diagnosticRun=runs.data||null;
+    const failed=[answers,causes,tasks,runs,latestRun,blueprint].find(x=>x.error);if(failed)return notify(failed.error.message,'error');
+    state.discoveryAnswers=answers.data||[];state.rootCauses=causes.data||[];state.solutionTasks=tasks.data||[];state.diagnosticRun=runs.data||null;state.deliveryBlueprint=blueprint.data||null;
     if(String(state.discoveryCase?.analysis_state||'')==='analyzing'){
       const last=latestRun.data,ageMs=last?.created_at?Date.now()-new Date(last.created_at).getTime():Infinity;
       if(!last||last.status!=='running'||ageMs>15*60*1000){
@@ -553,6 +572,8 @@
     renderLeadDiagnosis();
     if(autoAnalyze&&state.currentLead?.id===leadId&&['never_analyzed','stale'].includes(String(state.discoveryCase?.analysis_state||''))){
       void runDiagnosticEngine(true);
+    }else if(autoAnalyze&&state.currentLead?.id===leadId&&String(state.discoveryCase?.analysis_state||'')==='ready'&&!state.deliveryBlueprint){
+      void ensureDeliveryBlueprint(leadId,{force:false,silent:true});
     }
   }
   async function syncDiagnosisPhase(){
@@ -960,14 +981,18 @@
     const safePlan=safeProposedTasks();
     const internalTasks=internalLeadTasks();
     const activeInternal=internalTasks.find(x=>x.status==='in_progress')||internalTasks.find(x=>x.status==='todo')||null;
+    const blueprintBody=state.deliveryBlueprint?.blueprint||{};
+    const deliveryDomains=Array.isArray(blueprintBody.domains)?blueprintBody.domains:[];
+    const deliveryReady=state.deliveryBlueprint?.status==='ready'&&deliveryDomains.length>0;
+    const effectiveClientMissing=deliveryReady?[]:clientMissing;
 
     const understandDone=String(c.analysis_state||'')==='ready'&&!!understanding;
-    const planDone=gate.validated&&gate.hasTask&&gate.verification;
+    const planDone=!!deliveryReady||(gate.validated&&gate.hasTask&&gate.verification);
     const agreeDone=proposalAccepted&&depositPaid;
     const deliverDone=projectLive&&taskCount>0;
     const steps=[
       {label:'01 · UNDERSTAND',value:understandDone?'Understood':String(c.analysis_state||'never_analyzed').replaceAll('_',' '),done:understandDone,current:!understandDone},
-      {label:'02 · PLAN',value:planDone?'Work defined':(approved.length?approved.length+' approved':proposed.length?proposed.length+' suggested':'Waiting'),done:planDone,current:understandDone&&!planDone,locked:!understandDone},
+      {label:'02 · PLAN',value:deliveryReady?(deliveryDomains.length+' domain'+(deliveryDomains.length===1?'':'s')+' ready'):planDone?'Work defined':(approved.length?approved.length+' approved':proposed.length?proposed.length+' suggested':'Waiting'),done:planDone,current:understandDone&&!planDone,locked:!understandDone},
       {label:'03 · AGREE',value:agreeDone?'Accepted + paid':proposalCreated?String(proposal.status||'proposal').replaceAll('_',' '):leadReady?'Ready for proposal':'Waiting',done:agreeDone,current:planDone&&!agreeDone,locked:!planDone&&!proposalCreated},
       {label:'04 · DELIVER',value:projectLive?(taskCount?taskCount+' live task'+(taskCount===1?'':'s'):'Project live'):'Not started',done:deliverDone,current:agreeDone&&!deliverDone,locked:!agreeDone}
     ];
@@ -980,9 +1005,11 @@
         ?(taskCount?'Delivery is running':'Create the first execution task')
         :!understandDone
           ?(String(c.analysis_state||'')==='analyzing'?'ATS is understanding the request':'Let ATS understand the request')
-          :clientMissing.length
+          :effectiveClientMissing.length
             ?'Get the missing evidence from the client'
-            :activeInternal
+            :deliveryReady
+              ?'Delivery system is ready'
+              :activeInternal
               ?(activeInternal.status==='in_progress'?'ATS internal work is in progress':'ATS should start internal validation')
               :safePlan.length
                 ?'Approve the internal validation plan'
@@ -1000,9 +1027,11 @@
       ?'The request is live in Client Access. The client can reply with details and upload photos, video, PDFs or other evidence.'
       :projectLive
         ?(project.project_code||'Project')+' · '+taskCount+' execution task'+(taskCount===1?'':'s')
-        :clientMissing.length
-          ?clientMissing.slice(0,3).join(' • ')
-          :activeInternal
+        :effectiveClientMissing.length
+          ?effectiveClientMissing.slice(0,3).join(' • ')
+          :deliveryReady
+            ?deliveryDomains.length+' accountable domain'+(deliveryDomains.length===1?'':'s')+' defined · team tasks will activate when the project goes Live.'
+            :activeInternal
             ?String(activeInternal.title||activeInternal.rationale||'Run the next ATS validation task.')
             :safePlan.length
               ?String(safePlan[0]?.title||safePlan[0]?.rationale||'Review and approve the proposed validation work.')
@@ -1015,13 +1044,19 @@
       '</div>';
 
     const plan=$('#lead-plan-preview');
-    const visiblePlan=state.solutionTasks.filter(x=>x.status!=='rejected').slice(0,5);
-    if(visiblePlan.length){
+    if(deliveryReady){
       plan.innerHTML=
-        '<div class="lead-plan-head"><div><span>ATS WORK PLAN</span><b>'+visiblePlan.length+' next step'+(visiblePlan.length===1?'':'s')+'</b></div><small>Only justified work is shown here.</small></div>'+
-        '<div class="lead-plan-items">'+visiblePlan.map((x,i)=>{const label=x.status==='proposed'?'SUGGESTED':x.status==='in_progress'?'IN PROGRESS':x.status==='done'?'DONE':'APPROVED';const cls=x.status==='proposed'?'suggested':x.status==='in_progress'?'current':x.status==='done'?'done':'approved';return '<article class="lead-plan-item '+cls+'"><span>'+label+' · '+esc((x.task_type||'task').replaceAll('_',' '))+'</span><b>'+(i+1)+'. '+esc(x.title)+'</b><small>'+esc(x.owner_type||'ATS')+(x.acceptance_criteria?' · '+esc(String(x.acceptance_criteria).slice(0,100)):'')+'</small></article>'}).join('')+'</div>';
+        '<div class="lead-plan-head"><div><span>DELIVERY BLUEPRINT</span><b>'+deliveryDomains.length+' accountable domain'+(deliveryDomains.length===1?'':'s')+'</b></div><small>Admin owns domain outcomes. Domain Leads own team-task detail after project activation.</small></div>'+
+        '<div class="lead-plan-items">'+deliveryDomains.map((d,i)=>'<article class="lead-plan-item approved"><span>DOMAIN '+(i+1)+' · '+esc(String(d.domain_key||'delivery').replaceAll('_',' ').toUpperCase())+'</span><b>'+esc(d.name||d.domain_key||'Delivery')+'</b><small>'+esc(d.expected_outcome||'Defined outcome')+'</small><small>Accountable skill: '+esc(d.lead_skill||'project management')+(d.human_gate_required?' · Human review required':'')+'</small></article>').join('')+'</div>';
     }else{
-      plan.innerHTML='<div class="lead-plan-head"><div><span>ATS WORK PLAN</span><b>No work should be created yet</b></div><small>ATS will derive the next tasks after it has enough evidence.</small></div>';
+      const visiblePlan=state.solutionTasks.filter(x=>x.status!=='rejected').slice(0,5);
+      if(visiblePlan.length){
+        plan.innerHTML=
+          '<div class="lead-plan-head"><div><span>VALIDATION WORK</span><b>'+visiblePlan.length+' evidence step'+(visiblePlan.length===1?'':'s')+'</b></div><small>This is pre-delivery validation, not the final team structure.</small></div>'+
+          '<div class="lead-plan-items">'+visiblePlan.map((x,i)=>{const label=x.status==='proposed'?'SUGGESTED':x.status==='in_progress'?'IN PROGRESS':x.status==='done'?'DONE':'APPROVED';const cls=x.status==='proposed'?'suggested':x.status==='in_progress'?'current':x.status==='done'?'done':'approved';return '<article class="lead-plan-item '+cls+'"><span>'+label+' · '+esc((x.task_type||'task').replaceAll('_',' '))+'</span><b>'+(i+1)+'. '+esc(x.title)+'</b><small>'+esc(x.owner_type||'ATS')+(x.acceptance_criteria?' · '+esc(String(x.acceptance_criteria).slice(0,100)):'')+'</small></article>'}).join('')+'</div>';
+      }else{
+        plan.innerHTML='<div class="lead-plan-head"><div><span>DELIVERY PLAN</span><b>Waiting for enough evidence</b></div><small>ATS will build the professional domain structure automatically after the case is ready.</small></div>';
+      }
     }
 
     const title=$('#lead-execution-title'),copy=$('#lead-execution-copy'),btn=$('#lead-execution-primary');
@@ -1041,6 +1076,8 @@
       btn.textContent='OPEN PROPOSAL →';btn.dataset.action='open-proposal';btn.dataset.id=proposal.id;
     }else if(leadReady){
       btn.textContent='CREATE PROPOSAL →';btn.dataset.action='create-proposal';
+    }else if(deliveryReady){
+      btn.textContent='QUALIFY & CREATE OFFER →';btn.dataset.action='qualify';
     }else if(gate.ready){
       btn.textContent='QUALIFY & CREATE OFFER →';btn.dataset.action='qualify';
     }else if(['never_analyzed','stale','error'].includes(String(c.analysis_state||''))){
@@ -1049,7 +1086,7 @@
       btn.textContent='ATS IS ANALYZING…';btn.disabled=true;
     }else if(portalRequestOpen){
       btn.textContent='SEND / RESEND ACCESS ON WHATSAPP →';btn.dataset.action='whatsapp-access';
-    }else if(clientMissing.length){
+    }else if(effectiveClientMissing.length){
       btn.textContent='SEND TO CLIENT PORTAL →';btn.dataset.action='publish-evidence';
     }else if(safePlan.length){
       btn.textContent='APPROVE NEXT STEPS →';btn.dataset.action='approve-plan';
@@ -1102,7 +1139,7 @@
   }
   async function openLead(id){
     const x=state.leads.find(v=>v.id===id);if(!x)return;
-    state.currentLead=x;state.leadActivities=[];state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];state.diagnosticRun=null;
+    state.currentLead=x;state.leadActivities=[];state.discoveryCase=null;state.discoveryAnswers=[];state.rootCauses=[];state.solutionTasks=[];state.diagnosticRun=null;state.deliveryBlueprint=null;
     const cards=parseLeadBrief(x.project_goal);
     $('#lead-dialog-title').textContent=x.full_name||'Lead';$('#lead-dialog-code').textContent=x.lead_code||'—';$('#lead-workspace-source').textContent=(x.source||'website').replaceAll('_',' ');$('#lead-workspace-received').textContent='Received '+fmt(x.created_at);
     $('#lead-dialog-summary').innerHTML=[
@@ -1391,6 +1428,13 @@
     const p=state.currentProject;if(!p)return;
     const btn=$('#build-project-delivery');if(btn){btn.disabled=true;btn.textContent='BUILDING…'}
     try{
+      if(p.source_lead_id){
+        const blueprint=await ensureDeliveryBlueprint(p.source_lead_id,{force:false,silent:true});
+        if(blueprint?.status==='needs_evidence'){
+          notify('Delivery blueprint is blocked by missing evidence. Return to the client case before assigning the team.','error');
+          return;
+        }
+      }
       const r=await sb().rpc('studio_admin_build_delivery_system',{p_project_id:p.id});
       if(r.error)throw r.error;
       await loadProjectWorkspace(p);
@@ -1473,8 +1517,14 @@
       const converted=await sb().rpc('studio_admin_convert_lead',{p_lead_id:p.lead_id,p_project_title:prop.data.title,p_due_date:due.toISOString().slice(0,10)});
       if(converted.error)return notify(converted.error.message,'error');
       if(converted.data?.project_id){
-        const built=await sb().rpc('studio_admin_build_delivery_system',{p_project_id:converted.data.project_id});
-        if(built.error)notify('Project created, but delivery system needs a manual refresh: '+built.error.message,'error');
+        let blueprint=null;
+        try{blueprint=await ensureDeliveryBlueprint(p.lead_id,{force:false,silent:true})}catch(_){}
+        if(blueprint?.status==='needs_evidence'){
+          notify('Project created, but team activation is paused until the missing evidence is resolved.','error');
+        }else{
+          const built=await sb().rpc('studio_admin_build_delivery_system',{p_project_id:converted.data.project_id});
+          if(built.error)notify('Project created, but delivery system needs a manual refresh: '+built.error.message,'error');
+        }
       }
     }
     if(p.payment_type==='final'&&p.project_id){
