@@ -62,7 +62,8 @@
   function loadEnhancementsFor(tab){
     if(tab==='projects'){lazyScript('bilingual','/admin/bilingual-fields.js?v=1');lazyScript('ai','/admin/ai-project-assist.js?v=4');lazyScript('access','/admin/page-access-control.js?v=1')}
     if(tab==='media')lazyScript('media-editor','/admin/media-content-editor.js?v=3');
-    if(tab==='content')lazyScript('content-manager','/admin/content-manager.js?v=1');\n    if(tab==='social')lazyScript('social-os','/admin/social-os.js?v=1');
+    if(tab==='content')lazyScript('content-manager','/admin/content-manager.js?v=1');
+    if(tab==='social')lazyScript('social-os','/admin/social-os.js?v=1');
   }
   $$('#admin-nav button').forEach(b=>b.addEventListener('click',()=>{switchTab(b.dataset.tab);loadEnhancementsFor(b.dataset.tab)}));
   $$('[data-goto]').forEach(b=>b.addEventListener('click',()=>{switchTab(b.dataset.goto);loadEnhancementsFor(b.dataset.goto)}));
