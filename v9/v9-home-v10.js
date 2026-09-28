@@ -429,6 +429,7 @@
     // Concierge owns intake when present; keep the legacy brief out of this journey.
     if($('#studio-concierge',section)){
       $('.v10-contact-entry',section)?.remove();
+      if(shell){shell.hidden=true;shell.style.setProperty('display','none','important');}
       return;
     }
     section.classList.add('v10-contact-system');
