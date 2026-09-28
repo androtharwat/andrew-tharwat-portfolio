@@ -1269,11 +1269,64 @@
     const sel=$(selectId);if(!sel)return;
     sel.innerHTML='<option value="">Select lead</option>'+state.leads.filter(x=>!['lost','won'].includes(x.status)).map(x=>'<option value="'+esc(x.id)+'" '+(x.id===selected?'selected':'')+'>'+esc((x.lead_code||'Lead')+' · '+(x.full_name||'Unnamed'))+'</option>').join('');
   }
+  function proposalDraftFromBlueprint(leadId){
+    const lead=state.leads.find(x=>x.id===leadId)||((state.currentLead?.id===leadId)?state.currentLead:null)||{};
+    const bp=(state.currentLead?.id===leadId?state.deliveryBlueprint:null)||{};
+    const body=bp.blueprint||{},domains=Array.isArray(body.domains)?body.domains:[];
+    if(!domains.length)return null;
+    const maxDays=Math.max(0,...domains.flatMap(d=>(Array.isArray(d.tasks)?d.tasks:[]).map(t=>Number(t.due_offset_days||0))).filter(Number.isFinite));
+    const titleBase=String(lead.company_name||lead.full_name||'Client').trim();
+    return {
+      title:titleBase+' · ATS Delivery',
+      scope:String(body.summary||domains.map(d=>d.expected_outcome).filter(Boolean).join('\n')).trim(),
+      deliverables:domains.map(d=>String((d.name||d.domain_key||'Domain')+' — '+(d.expected_outcome||'Defined outcome')).trim()),
+      timeline_text:maxDays?('Phased delivery · target up to '+maxDays+' days from project activation, subject to approved dependencies and client response time.'):'',
+      revision_limit:2,
+      deposit_percent:50,
+      terms:'Delivery scope is based on the approved ATS Delivery Blueprint. Internal team-task distribution is managed by the accountable Domain Leads. Any material scope change is reviewed before execution.'
+    };
+  }
+
+  async function confirmScopeAndPrepareOffer(){
+    const lead=state.currentLead;if(!lead)return;
+    const op=operatingGateState();
+    if(op.needsEvidence)return notify('Complete the Client/Admin understanding before commercial handoff.','error');
+    let bp=state.deliveryBlueprint;
+    if(!op.blueprintReady){
+      try{bp=await ensureDeliveryBlueprint(lead.id,{force:true,silent:false})}catch(_){return}
+    }
+    const body=bp?.blueprint||{},domains=Array.isArray(body.domains)?body.domains:[];
+    if(!bp||bp.status==='needs_evidence'||!domains.length)return notify('ATS still needs evidence before the delivery scope can be approved.','error');
+    const now=new Date().toISOString();
+    if(bp.status==='ready'){
+      const approved=await sb().from('studio_delivery_blueprints').update({status:'approved',approved_at:now,updated_at:now}).eq('id',bp.id).eq('status','ready').select('*').single();
+      if(approved.error)return notify(approved.error.message,'error');
+      bp=approved.data;state.deliveryBlueprint=bp;
+    }
+    const leadPatch=await sb().from('studio_leads').update({status:'qualified',next_action:'Prepare and send proposal',next_action_due_at:null,updated_at:now}).eq('id',lead.id).select('*').single();
+    if(leadPatch.error)return notify(leadPatch.error.message,'error');
+    const li=state.leads.findIndex(x=>x.id===lead.id);if(li>=0)state.leads[li]=leadPatch.data;
+    state.currentLead=leadPatch.data;
+    await logLeadActivity('delivery_scope_approved',{
+      blueprint_id:bp.id,
+      domain_count:domains.length,
+      domains:domains.map(d=>({domain_key:d.domain_key,name:d.name,expected_outcome:d.expected_outcome}))
+    },lead.id);
+    updateLeadWorkspaceState();renderLeadExecutionPath(executionCtx);
+    $('#lead-dialog')?.close();
+    await loadProposals(true);
+    const existing=state.proposals.find(p=>p.lead_id===lead.id&&!['declined','expired'].includes(p.status));
+    openProposal(existing?.id||null,lead.id);
+    notify(existing?'Approved scope loaded into the existing proposal.':'Scope approved · proposal prefilled from the Delivery Blueprint.');
+  }
+
   function openProposal(id=null,leadId=null){
     state.currentProposal=id?state.proposals.find(x=>x.id===id):null;
-    fillLeadOptions('#proposal-lead',state.currentProposal?.lead_id||leadId||'');
-    const p=state.currentProposal||{};
-    $('#proposal-dialog-title').textContent=id?'Edit Proposal':'New Proposal';
+    const selectedLead=state.currentProposal?.lead_id||leadId||'';
+    fillLeadOptions('#proposal-lead',selectedLead);
+    const draft=!state.currentProposal?proposalDraftFromBlueprint(selectedLead):null;
+    const p=state.currentProposal||draft||{};
+    $('#proposal-dialog-title').textContent=id?'Edit Proposal':draft?'New Proposal · ATS scope loaded':'New Proposal';
     $('#proposal-title').value=p.title||'';
     $('#proposal-scope').value=p.scope||'';
     $('#proposal-deliverables').value=(p.deliverables||[]).join('\n');
@@ -1570,6 +1623,8 @@
     const btn=$('#lead-execution-primary'),action=btn?.dataset.action,id=btn?.dataset.id;
     if(!action)return;
     if(action==='analysis'){void runDiagnosticEngine(false);return}
+    if(action==='build-blueprint'){void ensureDeliveryBlueprint(state.currentLead?.id,{force:true,silent:false}).then(()=>{updateLeadWorkspaceState();renderLeadExecutionPath(executionCtx)});return}
+    if(action==='prepare-offer'){void confirmScopeAndPrepareOffer();return}
     if(action==='publish-evidence'){void publishLeadEvidenceRequest();return}
       if(action==='whatsapp-access'){void issueAndOpenClientAccessWhatsApp();return}
     if(action==='approve-plan'){void approveSuggestedNextSteps();return}
@@ -1583,6 +1638,7 @@
     if(action==='open-proposal'){const leadId=state.currentLead?.id;$('#lead-dialog')?.close();await loadProposals(true);openProposal(id||null,leadId);return}
     if(action==='accept-proposal'){await loadProposals(true);await acceptProposal(id);await refreshLeadExecutionPath();return}
     if(action==='confirm-deposit'){await loadPayments(true);await markPaid(id);await loadProjects(true);await refreshLeadExecutionPath();return}
+    if(action==='open-project'){await loadProjects(true);await openStudioProject(id);return}
     if(action==='open-tasks'){location.href='/admin/team-tasks?project='+encodeURIComponent(id)+(btn.dataset.newTask==='1'?'&newTask=1':'');return}
   });
   $('#lead-log-contact')?.addEventListener('click',logLeadContact);
@@ -1616,10 +1672,10 @@
   $('#lead-next-action')?.addEventListener('change',updateLeadWorkspaceState);
   $('#lead-next-due')?.addEventListener('change',updateLeadWorkspaceState);
   $('#lead-create-proposal')?.addEventListener('click',async()=>{
-    const id=state.currentLead?.id,status=$('#lead-status').value;
-    if(!id||!['qualified','proposal_sent','negotiation'].includes(status))return notify('Qualify the lead before creating a proposal','error');
+    const id=state.currentLead?.id,status=$('#lead-status').value,op=operatingGateState();
+    if(!id||!['qualified','proposal_sent','negotiation'].includes(status))return notify('Confirm the ATS delivery scope before creating a proposal','error');
     const existingCommercial=['proposal_sent','negotiation'].includes(status);
-    if(!existingCommercial&&!diagnosisGateState().ready)return notify('Complete the Diagnosis Gate before creating a proposal','error');
+    if(!existingCommercial&&(op.needsEvidence||!op.scopeApproved))return notify('Complete Client/Admin understanding and approve the Delivery Blueprint first.','error');
     if(!await saveLead(false))return;
     $('#lead-dialog').close();await loadProposals(true);
     const existing=state.proposals.find(p=>p.lead_id===id&&!['declined','expired'].includes(p.status));
