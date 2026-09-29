@@ -176,3 +176,39 @@ svg.ats-logo-mark{width:72px;height:72px;overflow:visible;background:transparent
   .studio-brand.ats-brand-lockup>svg.ats-logo-compact,
   .admin-brand.ats-brand-lockup>svg.ats-logo-compact{width:92px!important;height:84px!important}
 }
+
+/* Homepage approved primary AT Studio logo — sample v1 */
+.site-header .ats-home-brand{
+  min-height:72px;
+  display:flex;
+  align-items:center;
+  padding:0;
+}
+.site-header .ats-home-logo{
+  display:block;
+  width:240px!important;
+  height:80px!important;
+  max-width:240px!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
+@media(max-width:1180px){
+  .site-header .ats-home-logo{
+    width:210px!important;
+    height:70px!important;
+    max-width:210px!important;
+  }
+}
+@media(max-width:700px){
+  .site-header .ats-home-brand{min-height:56px}
+  .site-header .ats-home-logo{
+    width:156px!important;
+    height:52px!important;
+    max-width:156px!important;
+  }
+}
