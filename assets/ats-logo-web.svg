@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" role="img" aria-labelledby="title desc">
+<title id="title">AT Studio</title><desc id="desc">ATS metallic logo with a hoopoe-inspired safety bird wearing a red hard hat.</desc>
+<defs>
+<linearGradient id="metal" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".34" stop-color="#dfe7ed"/><stop offset=".58" stop-color="#fff"/><stop offset="1" stop-color="#aebbc5"/></linearGradient>
+<linearGradient id="navy" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#163f68"/><stop offset=".45" stop-color="#08233c"/><stop offset="1" stop-color="#020e18"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#ff313d"/><stop offset=".48" stop-color="#ef111b"/><stop offset="1" stop-color="#a9000b"/></linearGradient>
+<linearGradient id="beak" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4b86bd"/><stop offset=".4" stop-color="#173d60"/><stop offset="1" stop-color="#051522"/></linearGradient>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#000814" flood-opacity=".52"/></filter>
+<filter id="micro" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#00101f" flood-opacity=".7"/></filter>
+</defs>
+<g filter="url(#shadow)" stroke="#041627" stroke-width="11" stroke-linejoin="round" paint-order="stroke">
+<path d="M100 326 247 103h83l147 223h-91l-32-54H219l-31 54Zm153-118h69l-35-61Z" fill="url(#metal)"/>
+<path d="M113 326 247 119h40L167 326Z" fill="url(#navy)" stroke-width="0" opacity=".98"/>
+<path d="m281 248 39 23-39 23Z" fill="url(#red)" stroke="#570008" stroke-width="5"/>
+<path d="M376 104h236v72h-78v150h-80V176h-78Z" fill="url(#metal)"/>
+<path d="M454 177h31v149h-31Z" fill="url(#navy)" stroke-width="0" opacity=".93"/>
+<path d="M622 104h184l-39 72h-91c-16 0-23 7-23 18 0 10 8 16 23 16h70c61 0 96 28 96 59 0 38-35 57-89 57H599l39-73h111c14 0 22-6 22-16 0-9-8-15-23-15h-72c-62 0-96-27-96-59 0-38 36-59 42-59Z" fill="url(#metal)"/>
+<path d="M713 178h76l-23 39h-77Z" fill="url(#red)" stroke-width="0"/>
+<path d="M646 276h111l-23 40H624Z" fill="url(#red)" stroke-width="0"/>
+</g>
+<g filter="url(#micro)">
+<path d="M112 183C138 88 201 28 294 17c-59 24-97 67-114 120Z" fill="url(#red)" stroke="#071828" stroke-width="7"/>
+<path d="M137 204c16-92 78-150 177-158-61 22-99 66-113 114Z" fill="#ff242d" stroke="#071828" stroke-width="7"/>
+<path d="M166 220c11-80 65-132 155-137-51 21-84 56-97 94Z" fill="#dc0713" stroke="#071828" stroke-width="7"/>
+<path d="M192 232c11-65 58-109 131-113-45 20-73 47-84 73Z" fill="#ff3c43" stroke="#071828" stroke-width="7"/>
+<path d="M225 92c24-48 93-62 130-26 19 18 25 42 24 69l-151 2c-4-18-4-31-3-45Z" fill="url(#red)" stroke="#071828" stroke-width="8"/>
+<path d="M252 78c24-25 60-31 87-15" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".78"/>
+<path d="M357 90v47h28l-8-53Z" fill="#f31a24" stroke="#071828" stroke-width="7"/>
+<path d="M204 137c48-18 119-19 190 2 13 4 20 14 17 24-3 10-15 15-28 12-67-17-126-16-171 0-14 5-27 0-30-10-4-11 5-23 22-28Z" fill="url(#red)" stroke="#071828" stroke-width="8"/>
+<path d="M220 143c42-9 105-9 166 8" fill="none" stroke="#ff8086" stroke-width="5" opacity=".8"/>
+<path d="M206 165c55-36 124-32 174 4l-31 33c-25-12-43-8-58 11l81 67-52 39-114-94c-14-13-22-28-20-40 2-8 8-14 20-20Z" fill="url(#metal)" stroke="#071828" stroke-width="9"/>
+<path d="M222 227c23 7 47 23 75 50l45 43-35 26-83-74c-14-13-17-29-2-45Z" fill="url(#navy)"/>
+<path d="m351 201 113 31-100 28Z" fill="url(#beak)" stroke="#071828" stroke-width="7"/>
+<path d="m365 212 67 19-61 9Z" fill="#70a9d7" opacity=".8"/>
+<circle cx="329" cy="184" r="17" fill="#04101a" stroke="#dbe6ef" stroke-width="4"/><circle cx="334" cy="179" r="6" fill="#fff"/>
+</g>
+<text x="450" y="398" text-anchor="middle" fill="url(#metal)" stroke="#071828" stroke-width="2" paint-order="stroke" font-family="Arial,Helvetica,sans-serif" font-size="44" font-weight="800" letter-spacing="16">AT STUDIO</text>
+</svg>
