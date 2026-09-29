@@ -556,3 +556,48 @@ linear-gradient(145deg,#081f2d,#061923)!important}
 /* v22 absolute final admin logo lock */
 .sidebar #admin-brand-logo{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:110px!important;min-height:110px!important;margin:0!important;padding:8px 0 14px!important;position:relative!important;z-index:9999!important;overflow:visible!important;opacity:1!important;visibility:visible!important}
 .sidebar #admin-brand-logo-img{display:block!important;width:88px!important;height:88px!important;min-width:88px!important;min-height:88px!important;max-width:88px!important;max-height:88px!important;object-fit:contain!important;position:relative!important;z-index:10000!important;opacity:1!important;visibility:visible!important;filter:none!important;transform:none!important;clip-path:none!important;mask:none!important}
+/* v23 — admin brand correction: use the existing valid official mark asset, no generated/cropped file */
+.sidebar #admin-brand-logo{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  height:124px!important;
+  min-height:124px!important;
+  padding:10px 18px 18px!important;
+  margin:0!important;
+  overflow:visible!important;
+  position:relative!important;
+  z-index:50!important;
+}
+.sidebar #admin-brand-logo-img{
+  content:normal!important;
+  display:block!important;
+  width:104px!important;
+  height:96px!important;
+  min-width:104px!important;
+  min-height:96px!important;
+  max-width:104px!important;
+  max-height:96px!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+  transform:none!important;
+  clip-path:none!important;
+  -webkit-clip-path:none!important;
+  mask:none!important;
+  -webkit-mask:none!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+@media(max-width:760px){
+  .sidebar #admin-brand-logo{height:88px!important;min-height:88px!important;padding:8px!important}
+  .sidebar #admin-brand-logo-img{
+    width:68px!important;height:68px!important;
+    min-width:68px!important;min-height:68px!important;
+    max-width:68px!important;max-height:68px!important;
+  }
+}
