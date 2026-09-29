@@ -1,48 +1,43 @@
-# ATS Logo System
+# AT Studio Logo System
 
-## Master rule
-- **ATS** is the primary visible brand.
-- Use the approved metallic ATS + hoopoe + red hard-hat direction only.
-- Safety red, deep navy/charcoal, metallic silver/white and the red/silver ring are fixed parts of the identity.
-- Do not redraw, recolor or replace the hoopoe with a generic bird.
-- “Andrew Tharwat” remains a personal/founder reference, not the default public wordmark.
+## Approved identity
+- **AT Studio** is the public brand name.
+- **ATS** is the primary monogram / compact brand mark.
+- The approved direction is the metallic ATS wordmark integrated with the hoopoe-inspired safety bird and red hard hat.
+- Fixed identity colors: safety red, deep navy, metallic silver/white, and restrained blue highlights.
+- The bird, hard hat and ATS geometry belong together; do not replace the bird with a generic icon.
+- “Andrew Tharwat” remains a founder reference, not the default public wordmark.
 
-## Current web assets
-- `assets/ats-logo-compact.webp` — primary website lockup: ATS + hoopoe/ring. Default for headers, navigation and sidebars.
-- `assets/ats-logo-mark.webp` — square ATS mark for auth states, compact UI areas, system graphics and empty states.
-- `assets/ats-favicon.png` — browser tab / favicon.
-- `assets/ats-logo-full.webp` — high-resolution ATS-only full lockup derived from the approved master. Use for larger brand placements and presentation-scale output.
-- `ats-brand.css` — shared sizing and responsive behavior for ATS lockups across public, client and admin surfaces.
+## Current production web assets
+- `assets/ats-logo-web.svg` — approved primary web lockup: ATS + safety bird + AT STUDIO. Use for public headers, navigation, sidebars and branded system surfaces.
+- `assets/ats-logo-web-mark.svg` — approved square/compact mark: bird + A. Use for auth states, mobile/app marks, system graphics and favicon.
+- `ats-brand.css` — shared sizing, asset fallback and responsive behavior across public, client and admin surfaces.
 
-## Website usage map
-### 1) Header / Navbar
-Use: `ats-logo-compact.webp`.
-The image carries the ATS wordmark, so duplicated live “ATS” text is visually hidden by the shared brand stylesheet while the short descriptor can remain beside it on wider screens.
+## Compatibility assets
+The older `ats-logo-*.webp`, `logo-*-official.png`, `app-icon-official.png` and legacy favicon files remain in the repository for compatibility/history only. New or refreshed surfaces should use the approved SVG assets above.
 
-### 2) Mobile Header
-Use the same compact lockup at the reduced responsive size. Supporting descriptor text is hidden to keep the header clean.
+## Website usage
+### Header / Navbar
+Use `ats-logo-web.svg`. Do not duplicate a second large “ATS” label beside the lockup.
 
-### 3) Browser Tab
-Use: `ats-favicon.png`.
+### Mobile
+Use the same web lockup at the responsive size. If space is genuinely constrained, use `ats-logo-web-mark.svg`.
 
-### 4) Project / HSE / Work Pages
-Use: `ats-logo-compact.webp` for navigation identity and `ats-logo-mark.webp` only when a square mark is required.
+### Browser / App icon
+Use `ats-logo-web-mark.svg` where SVG favicons are supported.
 
-### 5) Client Access / Client Portal
-Use the compact lockup for the primary brand and the square mark for empty/auth/system states where appropriate.
+### Client / Admin / Team systems
+Use the full lockup for the primary identity and the mark for authentication, compact states and system diagrams.
 
-### 6) Studio OS / Control Centers
-Use the compact lockup in sidebars/navigation and the square mark on secure access/auth screens.
-
-### 7) Homepage System Graphics
-Use: `ats-logo-mark.webp` inside Studio Core / system diagrams.
-
-## Legacy assets
-The older `logo-*-official.png`, `logo-mark.png`, `app-icon-official.png` and `favicon-official.png` files remain in the repository only for compatibility/history. New ATS surfaces must not use them.
+## Clear-space and handling
+- Keep enough empty space around the crest and the right edge of the S.
+- Preserve aspect ratio.
+- Never crop the red crest, hard hat, beak or ATS letterforms in visible brand placement.
+- Do not stretch, recolor or add backgrounds directly inside the primary lockup.
+- On dark surfaces, keep the metallic/silver ATS treatment; on light surfaces, use sufficient contrast rather than recoloring the identity.
 
 ## Never do
-- Do not mix the legacy Andrew Tharwat mark with the ATS identity.
-- Do not change the approved red hard hat or the fixed red accent.
-- Do not stretch or distort the lockup.
-- Do not crop the hoopoe, the ATS letters or the ring in visible brand placement.
-- Do not use the high-resolution full lockup in tight navigation spaces; use the compact lockup instead.
+- Do not mix the legacy Andrew Tharwat mark with the AT Studio identity.
+- Do not redraw the bird as a generic animal or mascot.
+- Do not remove the red hard hat.
+- Do not use the old logo as the main visible brand when the approved web SVG can be used.
