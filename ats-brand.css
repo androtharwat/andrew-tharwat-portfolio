@@ -75,7 +75,7 @@
   height:59px !important;
 }
 .ats-logo-mark{
-  content:url('/assets/at-studio-compact-approved.png?v=1');
+  content:url('/assets/at-studio-compact-approved.webp?v=7');
   display:block;
   width:72px;
   height:72px;
@@ -145,13 +145,13 @@
 .at-brand-full,.at-brand-header,.at-brand-compact,.at-brand-mark{display:block;object-fit:contain;object-position:center;max-width:100%;height:auto}
 .at-brand-full{content:url('/assets/at-studio-logo-full.svg?v=4')}
 .at-brand-header{content:url('/assets/at-studio-logo-header.svg?v=4')}
-.at-brand-compact{content:url('/assets/at-studio-logo-compact.svg?v=4')}
-.at-brand-mark{content:url('/assets/at-studio-compact-approved.png?v=1')}
+.at-brand-compact{content:url('/assets/at-studio-compact-approved.webp?v=7')}
+.at-brand-mark{content:url('/assets/at-studio-compact-approved.webp?v=7')}
 .ats-brand-lockup>img.ats-logo-compact{content:url('/assets/at-studio-logo-header.svg?v=4');width:190px!important;height:64px!important;object-fit:contain!important;box-shadow:none!important;background:transparent!important}
-.ats-logo-mark{content:url('/assets/at-studio-compact-approved.png?v=1');background:transparent!important}
+.ats-logo-mark{content:url('/assets/at-studio-compact-approved.webp?v=7');background:transparent!important}
 @media(max-width:700px){
- .ats-brand-lockup>img.ats-logo-compact,.site-header .ats-brand-lockup>img.ats-logo-compact{content:url('/assets/at-studio-logo-compact.svg?v=4');width:98px!important;height:90px!important}
- .portal-brand.ats-brand-lockup>img.ats-logo-compact,.studio-brand.ats-brand-lockup>img.ats-logo-compact,.admin-brand.ats-brand-lockup>img.ats-logo-compact{content:url('/assets/at-studio-logo-compact.svg?v=4');width:92px!important;height:84px!important}
+ .ats-brand-lockup>img.ats-logo-compact,.site-header .ats-brand-lockup>img.ats-logo-compact{content:url('/assets/at-studio-compact-approved.webp?v=7');width:98px!important;height:90px!important}
+ .portal-brand.ats-brand-lockup>img.ats-logo-compact,.studio-brand.ats-brand-lockup>img.ats-logo-compact,.admin-brand.ats-brand-lockup>img.ats-logo-compact{content:url('/assets/at-studio-compact-approved.webp?v=7');width:92px!important;height:84px!important}
 }
 /* v5: render approved master inline so browser does not block nested SVG image resources */
 .ats-brand-lockup>svg.ats-logo-compact{
@@ -281,7 +281,7 @@ svg.ats-logo-mark{width:72px;height:72px;overflow:visible;background:transparent
 .ats-logo-mark,
 .at-brand-mark,
 .at-brand-compact{
-  content:url('/assets/at-studio-compact-approved.png?v=1')!important;
+  content:url('/assets/at-studio-compact-approved.webp?v=7')!important;
   object-fit:contain!important;
   object-position:center!important;
   aspect-ratio:1/1!important;
@@ -339,4 +339,13 @@ svg.ats-logo-mark{width:72px;height:72px;overflow:visible;background:transparent
     height:54px!important;
     max-width:54px!important;
   }
+}
+
+/* v22 — canonical compact identity for all constrained surfaces */
+.ats-brand-lockup:not(.ats-home-brand)>img.ats-logo-compact,
+.ats-logo-mark,.at-brand-mark,.at-brand-compact{
+  content:url('/assets/at-studio-compact-approved.webp?v=7')!important;
+  object-fit:contain!important;object-position:center!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;filter:none!important;
+  opacity:1!important;visibility:visible!important;
 }
