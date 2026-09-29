@@ -1,7 +1,7 @@
 /* ATS Brand System — approved master-derived web assets */
 :root{
-  --ats-red:#ef233c;
-  --ats-deep:#031018;
+  --ats-red:#ef111b;
+  --ats-deep:#041627;
   --ats-silver:#f2f5f7;
 }
 .ats-brand-lockup{
@@ -14,8 +14,9 @@
 }
 .ats-brand-lockup > img.ats-logo-compact{
   display:block;
-  width:128px !important;
-  height:56px !important;
+  content:url('/assets/ats-logo-web.svg?v=1');
+  width:146px !important;
+  height:64px !important;
   max-width:none !important;
   flex:0 0 auto;
   object-fit:contain !important;
@@ -26,12 +27,12 @@
   border-radius:0 !important;
   background:transparent !important;
   box-shadow:none !important;
-  filter:drop-shadow(0 8px 18px rgba(0,0,0,.20));
+  filter:none;
   transition:transform .22s ease,filter .22s ease;
 }
 .ats-brand-lockup:hover > img.ats-logo-compact{
   transform:translateY(-1px);
-  filter:drop-shadow(0 10px 22px rgba(0,0,0,.28));
+  filter:drop-shadow(0 8px 16px rgba(0,0,0,.18));
 }
 .ats-brand-lockup > span,
 .ats-brand-lockup > div,
@@ -57,23 +58,24 @@
   opacity:.92;
 }
 .site-header .ats-brand-lockup{
-  min-height:56px;
+  min-height:64px;
 }
 .site-header .ats-brand-lockup > img.ats-logo-compact{
-  width:132px !important;
-  height:58px !important;
+  width:150px !important;
+  height:66px !important;
 }
 .portal-brand.ats-brand-lockup > img.ats-logo-compact,
 .studio-brand.ats-brand-lockup > img.ats-logo-compact,
 .admin-brand.ats-brand-lockup > img.ats-logo-compact{
-  width:112px !important;
-  height:50px !important;
+  width:126px !important;
+  height:55px !important;
 }
 .portal-auth-brand.ats-brand-lockup > img.ats-logo-compact{
-  width:124px !important;
-  height:54px !important;
+  width:136px !important;
+  height:59px !important;
 }
 .ats-logo-mark{
+  content:url('/assets/ats-logo-web-mark.svg?v=1');
   display:block;
   width:72px;
   height:72px;
@@ -105,22 +107,22 @@
 }
 @media(max-width:1180px){
   .site-header .ats-brand-lockup > img.ats-logo-compact{
-    width:122px !important;
-    height:54px !important;
+    width:140px !important;
+    height:61px !important;
   }
 }
 @media(max-width:700px){
   .ats-brand-lockup{gap:7px}
   .ats-brand-lockup > img.ats-logo-compact,
   .site-header .ats-brand-lockup > img.ats-logo-compact{
-    width:104px !important;
-    height:45px !important;
+    width:116px !important;
+    height:51px !important;
   }
   .portal-brand.ats-brand-lockup > img.ats-logo-compact,
   .studio-brand.ats-brand-lockup > img.ats-logo-compact,
   .admin-brand.ats-brand-lockup > img.ats-logo-compact{
-    width:106px !important;
-    height:46px !important;
+    width:118px !important;
+    height:51px !important;
   }
   .ats-brand-lockup > span > small,
   .ats-brand-lockup > div > span,
