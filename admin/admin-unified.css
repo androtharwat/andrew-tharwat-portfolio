@@ -548,3 +548,7 @@ linear-gradient(145deg,#081f2d,#061923)!important}
   opacity:1!important;
   visibility:visible!important;
 }
+
+/* v21 — exact user-approved compact A + hoopoe + red helmet */
+.sidebar .admin-brand-compact-only{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-height:96px!important;padding:8px 0 18px!important;opacity:1!important;visibility:visible!important;overflow:visible!important}
+.sidebar .admin-brand-compact-only>img.admin-compact-logo-approved{content:normal!important;display:block!important;width:82px!important;height:82px!important;min-width:82px!important;min-height:82px!important;max-width:82px!important;max-height:82px!important;object-fit:contain!important;object-position:center!important;opacity:1!important;visibility:visible!important;background:transparent!important;border:0!important;box-shadow:none!important;filter:none!important;transform:none!important}
