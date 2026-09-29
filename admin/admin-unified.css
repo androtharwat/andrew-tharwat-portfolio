@@ -322,3 +322,77 @@ linear-gradient(145deg,#081f2d,#061923)!important}
   .domain-lead-picker select{min-width:0;width:100%}
   .project-domain-progress progress{width:100%}
 }
+
+/* v15 — approved compact AT Studio mark: explicit admin sidebar rendering */
+.sidebar .admin-brand-fixed{
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  min-height:78px!important;
+  padding:4px 6px 10px!important;
+  overflow:visible!important;
+}
+.sidebar .admin-brand-fixed .admin-compact-logo{
+  display:block!important;
+  width:66px!important;
+  height:66px!important;
+  min-width:66px!important;
+  max-width:66px!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  opacity:1!important;
+  visibility:visible!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+}
+.sidebar .admin-brand-fixed div{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:3px!important;
+}
+.sidebar .admin-brand-fixed div>b{
+  display:block!important;
+  color:#fff!important;
+  font-size:13px!important;
+  line-height:1!important;
+  letter-spacing:.16em!important;
+}
+.sidebar .admin-brand-fixed div>span{
+  display:block!important;
+  margin:0!important;
+  color:#8296a5!important;
+  font-size:7px!important;
+  line-height:1.2!important;
+  letter-spacing:.18em!important;
+}
+@media(max-width:1050px){
+  .sidebar .admin-brand-fixed{
+    justify-content:center!important;
+    min-height:70px!important;
+    padding:2px!important;
+  }
+  .sidebar .admin-brand-fixed .admin-compact-logo{
+    width:56px!important;
+    height:56px!important;
+    min-width:56px!important;
+    max-width:56px!important;
+  }
+  .sidebar .admin-brand-fixed div{display:none!important}
+}
+@media(max-width:760px){
+  .sidebar .admin-brand-fixed{
+    min-height:48px!important;
+    width:52px!important;
+    flex:0 0 52px!important;
+  }
+  .sidebar .admin-brand-fixed .admin-compact-logo{
+    width:46px!important;
+    height:46px!important;
+    min-width:46px!important;
+    max-width:46px!important;
+  }
+}
