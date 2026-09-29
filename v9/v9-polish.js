@@ -24,12 +24,13 @@
   addScript('/v9/v9-home-v10.js?v=16');
 
   function applyOfficialBrandAssets(){
-    const logo=$('.site-header .brand img');
+    const logo=$('.site-header .ats-home-logo');
     if(logo){
-      logo.src='/assets/ats-logo-compact.webp?v=3';
-      logo.alt='ATS';
-      logo.classList.add('ats-logo-compact');
+      logo.src='/assets/at-studio-primary-header.webp?v=2';
+      logo.alt='AT Studio';
+      logo.classList.remove('ats-logo-compact');
       logo.decoding='async';
+      logo.fetchPriority='high';
     }
   }
 

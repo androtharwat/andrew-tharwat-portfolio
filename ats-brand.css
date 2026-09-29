@@ -212,3 +212,18 @@ svg.ats-logo-mark{width:72px;height:72px;overflow:visible;background:transparent
     max-width:156px!important;
   }
 }
+
+/* v6 homepage logo visibility lock */
+.site-header .ats-home-brand{
+  position:relative!important;
+  z-index:120!important;
+  isolation:isolate!important;
+  overflow:visible!important;
+}
+.site-header .ats-home-logo{
+  position:relative!important;
+  z-index:121!important;
+  opacity:1!important;
+  visibility:visible!important;
+  display:block!important;
+}
