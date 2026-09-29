@@ -44,6 +44,15 @@ body.v10-home .concierge-request-review small{
   opacity:1!important;
 }
 
+/* Headings take the full content width after explanatory asides are removed. */
+body.v10-home .section-head.split{
+  grid-template-columns:minmax(0,1fr)!important;
+  max-width:900px;
+}
+body.v10-home .section-head.split>div{
+  max-width:900px;
+}
+
 /* Header and shared icon navigation */
 body.v10-home .site-header{
   height:74px!important;
