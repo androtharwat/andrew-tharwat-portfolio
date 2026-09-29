@@ -523,3 +523,28 @@ linear-gradient(145deg,#081f2d,#061923)!important}
     max-width:46px!important;max-height:46px!important;
   }
 }
+
+/* v19 — exact approved compact image bytes, forced visible */
+.sidebar .admin-brand-compact-only{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-height:92px!important;
+  padding:8px 0 18px!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+.sidebar .admin-brand-compact-only>img.admin-compact-logo-approved{
+  content:normal!important;
+  display:block!important;
+  width:72px!important;
+  height:72px!important;
+  min-width:72px!important;
+  min-height:72px!important;
+  max-width:72px!important;
+  max-height:72px!important;
+  object-fit:contain!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
