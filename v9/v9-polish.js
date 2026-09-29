@@ -21,7 +21,8 @@
   addCss('/v9/v9-home-v10-responsive.css?v=1');
   addCss('/v9/v9-home-first-impression.css?v=7');
   addCss('/v9/v9-brand-bilingual.css?v=1');
-  addScript('/v9/v9-home-v10.js?v=16');
+  addCss('/v9/v9-public-clean.css?v=1');
+  addScript('/v9/v9-home-v10.js?v=17');
 
   function applyOfficialBrandAssets(){
     const logo=$('.site-header .ats-home-logo');
