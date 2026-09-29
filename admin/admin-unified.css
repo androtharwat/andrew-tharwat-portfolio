@@ -449,3 +449,41 @@ linear-gradient(145deg,#081f2d,#061923)!important}
     max-width:46px!important;max-height:46px!important;
   }
 }
+
+/* v17 — guaranteed compact mark from the already-approved primary logo asset */
+.sidebar .admin-brand-compact-only>img{display:none!important}
+.sidebar .admin-brand-compact-only .admin-compact-mark{
+  display:block!important;
+  width:72px!important;
+  height:72px!important;
+  min-width:72px!important;
+  min-height:72px!important;
+  max-width:72px!important;
+  max-height:72px!important;
+  background-image:url('/assets/at-studio-primary-header.webp?v=2')!important;
+  background-repeat:no-repeat!important;
+  background-size:216px 72px!important;
+  background-position:left center!important;
+  background-color:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+@media(max-width:1050px){
+  .sidebar .admin-brand-compact-only .admin-compact-mark{
+    width:58px!important;height:58px!important;
+    min-width:58px!important;min-height:58px!important;
+    max-width:58px!important;max-height:58px!important;
+    background-size:174px 58px!important;
+  }
+}
+@media(max-width:760px){
+  .sidebar .admin-brand-compact-only .admin-compact-mark{
+    width:46px!important;height:46px!important;
+    min-width:46px!important;min-height:46px!important;
+    max-width:46px!important;max-height:46px!important;
+    background-size:138px 46px!important;
+  }
+}
