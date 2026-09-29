@@ -14,7 +14,7 @@
 }
 .ats-brand-lockup > img.ats-logo-compact{
   display:block;
-  content:url('/assets/ats-logo-web.svg?v=1');
+  content:url('/assets/at-studio-logo-header.svg?v=4');
   width:146px !important;
   height:64px !important;
   max-width:none !important;
@@ -75,7 +75,7 @@
   height:59px !important;
 }
 .ats-logo-mark{
-  content:url('/assets/ats-logo-web-mark.svg?v=1');
+  content:url('/assets/at-studio-mark.svg?v=4');
   display:block;
   width:72px;
   height:72px;
@@ -92,11 +92,11 @@
   box-shadow:none;
 }
 /* Detailed ATS mark needs more visual area than the legacy icon. */
-.core-brand img[src*="ats-logo-mark"]{
+.core-brand img[src*="at-studio-mark"]{
   width:43px !important;
   height:43px !important;
 }
-.team-core-mark img[src*="ats-logo-mark"]{
+.team-core-mark img[src*="at-studio-mark"]{
   width:52px !important;
   height:52px !important;
 }
@@ -129,15 +129,27 @@
   .ats-brand-lockup .brand-copy > span{
     display:none !important;
   }
-  .core-brand img[src*="ats-logo-mark"]{
+  .core-brand img[src*="at-studio-mark"]{
     width:30px !important;
     height:30px !important;
   }
-  .team-core-mark img[src*="ats-logo-mark"]{
+  .team-core-mark img[src*="at-studio-mark"]{
     width:40px !important;
     height:40px !important;
   }
 }
 @media(prefers-reduced-motion:reduce){
   .ats-brand-lockup > img.ats-logo-compact{transition:none}
+}
+/* AT Studio approved master-derived identity v4 */
+.at-brand-full,.at-brand-header,.at-brand-compact,.at-brand-mark{display:block;object-fit:contain;object-position:center;max-width:100%;height:auto}
+.at-brand-full{content:url('/assets/at-studio-logo-full.svg?v=4')}
+.at-brand-header{content:url('/assets/at-studio-logo-header.svg?v=4')}
+.at-brand-compact{content:url('/assets/at-studio-logo-compact.svg?v=4')}
+.at-brand-mark{content:url('/assets/at-studio-mark.svg?v=4')}
+.ats-brand-lockup>img.ats-logo-compact{content:url('/assets/at-studio-logo-header.svg?v=4');width:190px!important;height:64px!important;object-fit:contain!important;box-shadow:none!important;background:transparent!important}
+.ats-logo-mark{content:url('/assets/at-studio-mark.svg?v=4');background:transparent!important}
+@media(max-width:700px){
+ .ats-brand-lockup>img.ats-logo-compact,.site-header .ats-brand-lockup>img.ats-logo-compact{content:url('/assets/at-studio-logo-compact.svg?v=4');width:98px!important;height:90px!important}
+ .portal-brand.ats-brand-lockup>img.ats-logo-compact,.studio-brand.ats-brand-lockup>img.ats-logo-compact,.admin-brand.ats-brand-lockup>img.ats-logo-compact{content:url('/assets/at-studio-logo-compact.svg?v=4');width:92px!important;height:84px!important}
 }
