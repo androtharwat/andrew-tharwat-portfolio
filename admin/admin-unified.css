@@ -487,3 +487,39 @@ linear-gradient(145deg,#081f2d,#061923)!important}
     background-size:138px 46px!important;
   }
 }
+
+/* v18 — exact saved compact logo asset, no crop and no fallback */
+.sidebar .admin-brand-compact-only .admin-compact-mark{display:none!important}
+.sidebar .admin-brand-compact-only>img.admin-compact-logo-approved{
+  display:block!important;
+  width:72px!important;
+  height:72px!important;
+  min-width:72px!important;
+  min-height:72px!important;
+  max-width:72px!important;
+  max-height:72px!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  opacity:1!important;
+  visibility:visible!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+}
+@media(max-width:1050px){
+  .sidebar .admin-brand-compact-only>img.admin-compact-logo-approved{
+    width:58px!important;height:58px!important;
+    min-width:58px!important;min-height:58px!important;
+    max-width:58px!important;max-height:58px!important;
+  }
+}
+@media(max-width:760px){
+  .sidebar .admin-brand-compact-only>img.admin-compact-logo-approved{
+    width:46px!important;height:46px!important;
+    min-width:46px!important;min-height:46px!important;
+    max-width:46px!important;max-height:46px!important;
+  }
+}
