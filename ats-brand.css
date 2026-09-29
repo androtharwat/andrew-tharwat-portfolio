@@ -227,3 +227,51 @@ svg.ats-logo-mark{width:72px;height:72px;overflow:visible;background:transparent
   visibility:visible!important;
   display:block!important;
 }
+
+/* v7 — hard-lock approved homepage logo above every header/background layer */
+.site-header{
+  z-index:1000!important;
+}
+.site-header .ats-home-brand{
+  position:relative!important;
+  z-index:1002!important;
+  display:block!important;
+  flex:0 0 240px!important;
+  width:240px!important;
+  min-width:240px!important;
+  height:72px!important;
+  min-height:72px!important;
+  overflow:visible!important;
+  isolation:isolate!important;
+  background-image:url('/assets/at-studio-primary-header.webp?v=2')!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:contain!important;
+}
+.site-header .ats-home-brand .ats-home-logo{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+@media(max-width:1180px){
+  .site-header .ats-home-brand{
+    flex-basis:210px!important;
+    width:210px!important;
+    min-width:210px!important;
+    height:66px!important;
+    min-height:66px!important;
+  }
+}
+@media(max-width:760px){
+  .site-header .ats-home-brand{
+    flex-basis:150px!important;
+    width:150px!important;
+    min-width:150px!important;
+    height:54px!important;
+    min-height:54px!important;
+  }
+}
