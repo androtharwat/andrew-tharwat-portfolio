@@ -6,22 +6,33 @@
 
   function header(){
     document.body.classList.add('v10-home');
-    set($('.brand small'),'PROBLEM-SOLVING STUDIO','استوديو لحل المشكلات');
+    document.title=ar()?'AT Studio — نبني ما يعمل':'AT Studio — Build What Works';
     const nav=$('#main-nav');
     if(nav){
+      nav.querySelector('[data-v10-hse]')?.remove();
       const links=$$('a',nav).filter(a=>!a.dataset.v10Hse);
-      const map=[['#home','Home','الرئيسية'],['#studio','How We Work','كيف نعمل'],['#capabilities','Capabilities','القدرات'],['#work','Projects','المشاريع'],['#contact','Contact','تواصل']];
-      links.forEach((a,i)=>{if(!map[i])return;a.href=map[i][0];set(a,map[i][1],map[i][2])});
-      let hse=nav.querySelector('[data-v10-hse]');
-      if(!hse){hse=document.createElement('a');hse.dataset.v10Hse='1';hse.href='/hse/';nav.querySelector('a[href="#work"]')?.insertAdjacentElement('afterend',hse)}
-      hse.textContent=ar()?'عالم HSE':'HSE World';
+      const map=[
+        ['#home','Home','الرئيسية','⌂'],
+        ['#studio','How','طريقتنا','↔'],
+        ['#capabilities','Expertise','خبراتنا','◇'],
+        ['#work','Projects','المشاريع','▣'],
+        ['#contact','Start','ابدأ','＋']
+      ];
+      links.forEach((a,i)=>{
+        if(!map[i])return;
+        a.href=map[i][0];
+        a.dataset.icon=map[i][3];
+        set(a,map[i][1],map[i][2]);
+      });
     }
-    const cta=$('.header-cta');set(cta,'START WITH THE PROBLEM →','ابدأ من المشكلة ←');if(cta)cta.href='#contact';
+    const cta=$('.header-cta');
+    set(cta,'START A PROJECT →','ابدأ مشروعك ←');
+    if(cta)cta.href='#contact';
   }
 
   function hero(){
     const h=$('.hero');if(!h)return;
-    set($('.hero .eyebrow'),'ATS · PROBLEM-SOLVING STUDIO','ATS · استوديو لحل المشكلات');
+    set($('.hero .eyebrow'),'AT STUDIO · CREATIVE-TECH STUDIO','AT STUDIO · استوديو إبداعي وتقني');
     set($('.hero h1'),'BRING THE PROBLEM.<br><span>WE BUILD THE SOLUTION.</span>','ابدأ بالمشكلة.<br><span>وإحنا نبني الحل.</span>',true);
     set($('#hero-subtitle'),'HSE · DIGITAL · BRAND · CONTENT · AI — one studio shaped around the problem.','HSE · حلول رقمية · هوية · محتوى · AI — استوديو واحد يتشكّل حول المشكلة.');
     const actions=$$('.hero-actions .btn');
@@ -31,7 +42,7 @@
     if(visual){
       visual.className='hero-visual v10-identity-visual v10-open-identity';
       visual.innerHTML=`
-        <div class="v10-open-system" role="img" aria-label="${ar()?'المشكلة تدخل إلى ATS، وتتجمع حولها خبرات HSE والأنظمة الرقمية والإبداع والذكاء الاصطناعي، ثم تتحول إلى حل متكامل':'A real problem flows into ATS, where HSE, digital, creative and AI expertise combine into a complete solution'}">
+        <div class="v10-open-system" role="img" aria-label="${ar()?'المشكلة تدخل إلى AT Studio، وتتجمع حولها خبرات HSE والأنظمة الرقمية والإبداع والذكاء الاصطناعي، ثم تتحول إلى حل متكامل':'A real problem flows into AT Studio, where HSE, digital, creative and AI expertise combine into a complete solution'}">
           <div class="v10-ambient-orbit orbit-1" aria-hidden="true"></div>
           <div class="v10-ambient-orbit orbit-2" aria-hidden="true"></div>
           <div class="v10-ambient-orbit orbit-3" aria-hidden="true"></div>
@@ -89,7 +100,7 @@
             <div class="core-orbit core-orbit-c"></div>
             <div class="core-pulse"></div>
             <div class="core-brand"><img class="ats-logo-mark at-brand-mark" src="/assets/at-studio-compact-approved.png?v=1" alt="AT Studio" /></div>
-            <small>ATS</small>
+            <small>AT STUDIO</small>
             <b>STUDIO CORE</b>
             <em>${ar()?'نفهم · نجمع · نبني':'UNDERSTAND · ASSEMBLE · BUILD'}</em>
           </div>
@@ -148,9 +159,9 @@
   function capabilities(){
     const h=$('#capabilities .section-head');
     if(h){
-      set($('.eyebrow',h),'CAPABILITIES · USED WHEN THEY ADD VALUE','القدرات · نستخدمها وقت ما تضيف قيمة');
-      set($('h2',h),'THE RIGHT CAPABILITY.<br><span>AT THE RIGHT MOMENT.</span>','القدرة المناسبة.<br><span>في الوقت المناسب.</span>',true);
-      set($('div>p',h),'Not four separate businesses. Four capability layers we can combine around the problem.','مش أربع خدمات منفصلة. أربع طبقات خبرة نقدر نجمعها حول المشكلة.');
+      set($('.eyebrow',h),'EXPERTISE','خبراتنا');
+      set($('h2',h),'WHAT WE CAN<br><span>BRING IN.</span>','الخبرة المناسبة.<br><span>وقت ما تحتاجها.</span>',true);
+      set($('div>p',h),'Four capability layers combined around the problem.','أربع خبرات نقدر نجمعها حول المشكلة.');
     }
     const cards=$$('.discipline-grid article');
     const data=[
@@ -159,19 +170,27 @@
       ['CREATIVE & BRAND','الإبداع والهوية','IDENTITY · CONTENT · DIRECTION','هوية · محتوى · توجيه'],
       ['AI & STORYTELLING','الذكاء الاصطناعي والسرد','INTELLIGENCE · STORY · SPEED','ذكاء · قصة · سرعة']
     ];
+    const icons=[
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 14v-2a7 7 0 0 1 14 0v2M3 14h18M9 5v4M15 5v4"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="1"/><path d="M9 20h6M12 16v4"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.5-1 10-10-3.5-3.5-10 10L4 20zM14 6l3.5 3.5"/></svg>',
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/></svg>'
+    ];
     cards.forEach((card,i)=>{
       card.tabIndex=0;
       card.classList.add('v10-capability-card');
+      const icon=$('i',card);
+      if(icon&&icons[i]){
+        icon.classList.add('v10-capability-icon');
+        icon.innerHTML=icons[i];
+        icon.setAttribute('aria-hidden','true');
+      }
       if(data[i]){
         set($('h3',card),data[i][0],data[i][1]);
         let line=$('.v10-capability-line',card);
         if(!line){line=document.createElement('small');line.className='v10-capability-line';card.querySelector('h3')?.insertAdjacentElement('afterend',line)}
         set(line,data[i][2],data[i][3]);
       }
-      if(card.dataset.v10Bound)return;
-      card.dataset.v10Bound='1';
-      card.addEventListener('click',e=>{if(!touch()||e.target.closest('a,button'))return;card.classList.toggle('is-open')});
-      card.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('a,button')){e.preventDefault();card.classList.toggle('is-open')}});
     });
   }
 
@@ -360,7 +379,7 @@
     section.classList.add('v10-team-system');
     if(h){
       set($('.eyebrow',h),'THE STUDIO NETWORK','شبكة الاستوديو');
-      set($('h2',h),'NOT A FIXED TEAM.<br><span>THE RIGHT TEAM.</span>','ليس فريقًا ثابتًا.<br><span>بل الفريق المناسب.</span>',true);
+      set($('h2',h),'ONE STUDIO.<br><span>THE RIGHT EXPERTISE.</span>','استوديو واحد.<br><span>والخبرة المناسبة.</span>',true);
       set($('div>p',h),'A focused studio core. Specialist expertise joins only when the problem needs it.','نواة واضحة للاستوديو، وتدخل الخبرات المتخصصة فقط عندما تحتاجها المشكلة.');
     }
 
@@ -384,8 +403,8 @@
         </div>
         <div class="v10-team-core-copy">
           <small>${ar()?'STUDIO CORE · توجيه واحد':'STUDIO CORE · ONE DIRECTION'}</small>
-          <h3>Andrew Tharwat</h3>
-          <b>${ar()?'توجيه الاستوديو وبناء الحل':'Studio Direction & Solution Architecture'}</b>
+          <h3>AT Studio</h3>
+          <b>${ar()?'نواة الاستوديو · توجيه الحل':'Studio Core · Solution Direction'}</b>
           <p>${ar()?'نحدد المشكلة، نربط التخصصات، ونحافظ على اتجاه واحد للحل من البداية للنهاية.':'Frames the problem, connects the disciplines, and keeps one direction from first question to final solution.'}</p>
           <div class="founder-focus">
             <span>${ar()?'تحديد المشكلة':'PROBLEM FRAMING'}</span>
@@ -398,7 +417,7 @@
     const panel=$('.specialist-panel',section);
     if(panel){
       set($('.eyebrow',panel),'SPECIALIST NETWORK','شبكة الخبرات');
-      set($('h3',panel),'EXPERTISE JOINS<br>WHEN THE PROBLEM NEEDS IT.','الخبرة تنضم<br>عندما تحتاجها المشكلة.',true);
+      set($('h3',panel),'EXPERTISE.<br>READY WHEN NEEDED.','خبرات جاهزة.<br>وقت ما يحتاجها المشروع.',true);
       set($('p',panel),'Select any area to explore a possible expertise mix. This is a flexible network, not a fixed staff list.','اختر أي مجال لاستكشاف مزيج الخبرات الممكن. هذه شبكة مرنة وليست قائمة موظفين ثابتة.');
       const selHead=$('.team-selection-head',panel);
       if(selHead){
