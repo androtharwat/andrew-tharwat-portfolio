@@ -1,28 +1,209 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#04121c" />
-  <meta name="robots" content="index,follow" />
+  <meta name="description" content="AT Studio — a multidisciplinary creative-tech studio built to solve real-world problems across HSE, digital systems, brand, content and AI." />
   <title>AT Studio — Build What Works</title>
-  <link rel="icon" href="/assets/logo-mark-official.png?v=24" />
-  <link rel="canonical" href="/v9/" />
-  <meta http-equiv="refresh" content="0;url=/v9/" />
-  <script>
-    (function(){
-      var target='/v9/'+(location.hash||'');
-      location.replace(target);
-    })();
-  </script>
+  <link rel="canonical" href="https://andrew-tharwat-portfolio.vercel.app/" />
+  <link rel="icon" href="/assets/at-studio-compact-approved.png?v=1" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/v9/v9.css?v=2" />
+  <link rel="stylesheet" href="/v9/v9-phase2.css?v=2" />
+  <link rel="stylesheet" href="/v9/v9-phase4.css?v=1" />
+  <link rel="stylesheet" href="/v9/v9-phase5.css?v=1" />
+  <link rel="stylesheet" href="/v9/v9-polish.css?v=1" />
+  <link rel="stylesheet" href="/v9/v9-concierge.css?v=6" />
+  <link rel="stylesheet" href="/ats-brand.css?v=8" />
 </head>
-<body style="margin:0;background:#04121c;color:#fff;font-family:Arial,sans-serif">
-  <main style="min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center">
-    <div>
-      <strong>AT Studio</strong>
-      <p style="opacity:.7">Opening AT Studio…</p>
-      <a href="/v9/" style="color:#fff">Continue</a>
+<body data-lang="en">
+  <a class="skip-link" href="#main-content" data-en="Skip to content" data-ar="انتقل إلى المحتوى">Skip to content</a>
+  <header class="site-header">
+    <a class="brand ats-brand-lockup ats-home-brand" href="#home" aria-label="AT Studio home">
+      <img class="ats-home-logo" src="/assets/at-studio-primary-header.webp?v=2" alt="AT Studio" width="240" height="80" />
+    </a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+      <a href="#home" data-en="HOME" data-ar="الرئيسية">HOME</a><a href="#studio" data-en="HOW WE WORK" data-ar="كيف نعمل">HOW WE WORK</a><a href="#capabilities" data-en="CAPABILITIES" data-ar="القدرات">CAPABILITIES</a><a href="#work" data-en="PROJECTS" data-ar="المشاريع">PROJECTS</a><a href="#contact" data-en="CONTACT" data-ar="تواصل">CONTACT</a>
+    </nav>
+    <div class="header-actions">
+      <button id="lang-toggle" type="button" aria-label="Change language">EN | عربي</button>
+      <a class="header-cta" href="#contact" data-en="BRING US THE PROBLEM →" data-ar="احكِ لنا عن المشكلة ←">BRING US THE PROBLEM →</a>
+      <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="main-nav"><span></span><span></span></button>
     </div>
+  </header>
+
+  <main id="main-content">
+    <section class="hero grid-bg" id="home">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow" data-en="AT STUDIO · CREATIVE-TECH STUDIO" data-ar="AT STUDIO · استوديو إبداعي وتقني">AT STUDIO · CREATIVE-TECH STUDIO</span>
+          <h1 data-en-html="BRING THE PROBLEM.<br><span>WE BUILD THE SOLUTION.</span>" data-ar-html="ابدأ بالمشكلة.<br><span>وإحنا نبني الحل.</span>">BRING THE PROBLEM.<br><span>WE BUILD THE SOLUTION.</span></h1>
+          <p id="hero-subtitle" data-en="HSE · DIGITAL · BRAND · CONTENT · AI — one studio shaped around the problem." data-ar="HSE · حلول رقمية · هوية · محتوى · AI — استوديو واحد يتشكّل حول المشكلة.">HSE · DIGITAL · BRAND · CONTENT · AI — one studio shaped around the problem.</p>
+          <div class="hero-actions"><a class="btn primary" href="#contact" data-en="START WITH YOUR PROBLEM →" data-ar="ابدأ من مشكلتك ←">START WITH YOUR PROBLEM →</a><a class="btn ghost" href="#work" data-en="EXPLORE THE WORK" data-ar="شوف الحلول اللي بنبنيها">EXPLORE THE WORK</a></div>
+          <div class="process-strip" aria-label="Studio process"><div><b data-en="THINK." data-ar="فكّر.">THINK.</b><small data-en="UNDERSTAND THE PROBLEM" data-ar="افهم المشكلة">UNDERSTAND THE PROBLEM</small></div><div><b data-en="CREATE." data-ar="ابتكر.">CREATE.</b><small data-en="SHAPE THE IDEA" data-ar="شكّل الفكرة">SHAPE THE IDEA</small></div><div><b data-en="BUILD." data-ar="ابنِ.">BUILD.</b><small data-en="MAKE IT USEFUL" data-ar="حوّلها لحل مفيد">MAKE IT USEFUL</small></div><div><b data-en="IMPROVE." data-ar="طوّر.">IMPROVE.</b><small data-en="REFINE THE RESULT" data-ar="طوّر النتيجة">REFINE THE RESULT</small></div></div>
+        </div>
+        <div class="hero-visual" aria-label="ATS problem-solving system"></div>
+      </div>
+    </section>
+
+    <section class="studio-intro" id="studio">
+      <div class="container studio-intro-grid">
+        <div class="studio-intro-copy">
+          <span class="eyebrow" data-en="THE STUDIO" data-ar="الاستوديو">THE STUDIO</span>
+          <h2 data-en-html="PROBLEM SOLVING<br><span>THROUGH CREATIVITY.</span>" data-ar-html="حل المشكلات<br><span>من خلال الإبداع.</span>">PROBLEM SOLVING<br><span>THROUGH CREATIVITY.</span></h2>
+          <p data-en="The studio starts with the problem, not the service. Safety expertise, digital systems, creative thinking, design and AI are brought together only where they help build a stronger solution." data-ar="الاستوديو يبدأ من المشكلة، وليس من نوع الخدمة. نستخدم خبرات السلامة والأنظمة الرقمية والتفكير الإبداعي والتصميم والذكاء الاصطناعي فقط عندما تساعد فعلًا في بناء حل أقوى.">The studio starts with the problem, not the service. Safety expertise, digital systems, creative thinking, design and AI are brought together only where they help build a stronger solution.</p>
+        </div>
+        <div class="studio-principles">
+          <article><span>01</span><div><b data-en="DIFFERENT EXPERTISE. ONE DIRECTION." data-ar="خبرات مختلفة. اتجاه واحد.">DIFFERENT EXPERTISE. ONE DIRECTION.</b><p data-en="The disciplines change with the challenge. The direction stays unified." data-ar="تتغير التخصصات حسب التحدي، بينما يظل الاتجاه موحدًا.">The disciplines change with the challenge. The direction stays unified.</p></div></article>
+          <article><span>02</span><div><b data-en="BRING US THE PROBLEM." data-ar="احكِ لنا عن المشكلة.">BRING US THE PROBLEM.</b><p data-en="You do not need to decide which department or discipline owns it first." data-ar="لا تحتاج أن تحدد مسبقًا أي قسم أو تخصص يملك المشكلة.">You do not need to decide which department or discipline owns it first.</p></div></article>
+          <article><span>03</span><div><b data-en="AI IS NOT THE IDEA. IT EXPANDS IT." data-ar="الذكاء الاصطناعي ليس الفكرة، بل يوسّع إمكانياتها.">AI IS NOT THE IDEA. IT EXPANDS IT.</b><p data-en="Technology supports the thinking. It does not replace the reason behind the work." data-ar="التكنولوجيا تدعم التفكير، ولا تستبدل سبب وجود العمل من الأساس.">Technology supports the thinking. It does not replace the reason behind the work.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section disciplines" id="capabilities">
+      <div class="container">
+        <div class="section-head split"><div><span class="eyebrow" data-en="CAPABILITIES" data-ar="القدرات">CAPABILITIES</span><h2 data-en-html="DIFFERENT DISCIPLINES.<br><span>ONE PURPOSE.</span>" data-ar-html="تخصصات مختلفة.<br><span>هدف واحد.</span>">DIFFERENT DISCIPLINES.<br><span>ONE PURPOSE.</span></h2><p data-en="A project may use one capability or several. The client should not have to decide which discipline owns the problem before starting the conversation." data-ar="قد يحتاج المشروع قدرة واحدة أو عدة قدرات. لا ينبغي أن يضطر العميل لتحديد التخصص الذي يملك المشكلة قبل بدء الحوار.">A project may use one capability or several. The client should not have to decide which discipline owns the problem before starting the conversation.</p></div><aside><b data-en="THE PROBLEM COMES FIRST." data-ar="المشكلة أولًا.">THE PROBLEM COMES FIRST.</b><p data-en="THE RIGHT CAPABILITIES FOLLOW." data-ar="ثم تأتي القدرات المناسبة.">THE RIGHT CAPABILITIES FOLLOW.</p></aside></div>
+        <div class="discipline-grid">
+          <article><span class="number">01</span><i>HSE</i><h3 data-en="SAFETY & HSE" data-ar="السلامة وHSE">SAFETY & HSE</h3><p data-en="Field knowledge, risk thinking, awareness, training and practical HSE systems." data-ar="خبرة ميدانية وتفكير في المخاطر وتوعية وتدريب وأنظمة HSE عملية.">Field knowledge, risk thinking, awareness, training and practical HSE systems.</p><ul><li data-en="PEOPLE" data-ar="الأشخاص">PEOPLE</li><li data-en="RISK" data-ar="المخاطر">RISK</li><li data-en="SYSTEMS" data-ar="الأنظمة">SYSTEMS</li></ul></article>
+          <article><span class="number">02</span><i>DEV</i><h3 data-en="DIGITAL SOLUTIONS" data-ar="الحلول الرقمية">DIGITAL SOLUTIONS</h3><p data-en="Web products, internal tools, workflows, automation and useful digital systems." data-ar="منتجات ويب وأدوات داخلية ومسارات عمل وأتمتة وأنظمة رقمية مفيدة.">Web products, internal tools, workflows, automation and useful digital systems.</p><ul><li data-en="SYSTEMS" data-ar="الأنظمة">SYSTEMS</li><li data-en="AUTOMATION" data-ar="الأتمتة">AUTOMATION</li><li data-en="DATA" data-ar="البيانات">DATA</li></ul></article>
+          <article><span class="number">03</span><i>DES</i><h3 data-en="CREATIVE & BRAND" data-ar="الإبداع والهوية">CREATIVE & BRAND</h3><p data-en="Brand identity, visual systems, communication and creative direction built around a clear idea." data-ar="هوية بصرية وأنظمة تصميم وتواصل وتوجيه إبداعي مبني حول فكرة واضحة.">Brand identity, visual systems, communication and creative direction built around a clear idea.</p><ul><li data-en="IDENTITY" data-ar="الهوية">IDENTITY</li><li data-en="DESIGN" data-ar="التصميم">DESIGN</li><li data-en="DIRECTION" data-ar="التوجيه">DIRECTION</li></ul></article>
+          <article><span class="number">04</span><i>AI</i><h3 data-en="AI & STORYTELLING" data-ar="الذكاء الاصطناعي والسرد">AI & STORYTELLING</h3><p data-en="AI-assisted visual production, storytelling and intelligent creative workflows that expand what the idea can become." data-ar="إنتاج بصري وسرد ومسارات إبداعية ذكية مدعومة بالذكاء الاصطناعي لتوسيع إمكانيات الفكرة.">AI-assisted visual production, storytelling and intelligent creative workflows that expand what the idea can become.</p><ul><li data-en="INNOVATION" data-ar="الابتكار">INNOVATION</li><li data-en="CONTENT" data-ar="المحتوى">CONTENT</li><li data-en="POSSIBILITY" data-ar="الإمكانيات">POSSIBILITY</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section work grid-bg" id="work">
+      <div class="container">
+        <div class="section-head split"><div><span class="eyebrow" data-en="SELECTED WORK" data-ar="أعمال مختارة">SELECTED WORK</span><h2 data-en-html="IDEAS BUILT INTO<br><span>REAL IMPACT.</span>" data-ar-html="أفكار تتحول إلى<br><span>أثر حقيقي.</span>">IDEAS BUILT INTO<br><span>REAL IMPACT.</span></h2><p data-en="Different disciplines. Different challenges. One standard — work that solves real problems." data-ar="تخصصات مختلفة وتحديات مختلفة، لكن بمعيار واحد: أعمال تحل مشكلات حقيقية.">Different disciplines. Different challenges. One standard — work that solves real problems.</p></div><aside><b data-en="NOT A GALLERY. A RECORD OF HOW IDEAS BECOME SOLUTIONS." data-ar="ليست مجرد معرض أعمال، بل سجل لكيف تتحول الأفكار إلى حلول.">NOT A GALLERY. A RECORD OF HOW IDEAS BECOME SOLUTIONS.</b><p data-en="SAFETY × DIGITAL × CREATIVE × AI" data-ar="السلامة × الرقمي × الإبداع × الذكاء الاصطناعي">SAFETY × DIGITAL × CREATIVE × AI</p></aside></div>
+        <div class="work-toolbar"><div class="filters" id="project-filters"><button class="active" data-filter="all">ALL</button></div><input id="project-search" type="search" placeholder="Search projects..." aria-label="Search projects" /></div>
+        <div id="featured-project" class="featured-project skeleton"></div>
+        <div id="project-grid" class="project-grid"></div>
+        <div id="project-empty" class="empty-state hidden">No matching projects.</div>
+      </div>
+    </section>
+
+    <section class="section team" id="team">
+      <div class="container">
+        <div class="section-head split"><div><span class="eyebrow" data-en="TEAM" data-ar="الفريق">TEAM</span><h2 data-en-html="DIFFERENT EXPERTISE.<br><span>ONE DIRECTION.</span>" data-ar-html="خبرات مختلفة.<br><span>اتجاه واحد.</span>">DIFFERENT EXPERTISE.<br><span>ONE DIRECTION.</span></h2><p data-en="A focused studio direction supported by a specialist network assembled around the needs of each project." data-ar="توجيه موحد للاستوديو تدعمه شبكة متخصصين يتم تشكيلها وفق احتياجات كل مشروع.">A focused studio direction supported by a specialist network assembled around the needs of each project.</p></div><aside><b data-en="THE RIGHT PEOPLE, TOOLS AND PERSPECTIVES AROUND THE PROBLEM." data-ar="الأشخاص والأدوات ووجهات النظر المناسبة حول المشكلة.">THE RIGHT PEOPLE, TOOLS AND PERSPECTIVES AROUND THE PROBLEM.</b><p data-en="FOCUSED CORE · FLEXIBLE SPECIALIST NETWORK" data-ar="اتجاه واضح · شبكة متخصصين مرنة">FOCUSED CORE · FLEXIBLE SPECIALIST NETWORK</p></aside></div>
+
+        <div class="team-model" aria-label="Studio operating model">
+          <article><span>01</span><div><b data-en="STUDIO DIRECTION" data-ar="اتجاه الاستوديو">STUDIO DIRECTION</b><p data-en="One point of direction keeps the problem, priorities and final outcome connected." data-ar="اتجاه واحد يربط المشكلة والأولويات والنتيجة النهائية طوال المشروع.">One point of direction keeps the problem, priorities and final outcome connected.</p></div></article>
+          <article><span>02</span><div><b data-en="SPECIALIST NETWORK" data-ar="شبكة متخصصين">SPECIALIST NETWORK</b><p data-en="Relevant specialists are brought in when the work needs deeper technical or creative expertise." data-ar="يتم إشراك المتخصصين المناسبين عندما يحتاج العمل لخبرة فنية أو إبداعية أعمق.">Relevant specialists are brought in when the work needs deeper technical or creative expertise.</p></div></article>
+          <article><span>03</span><div><b data-en="PROJECT-SPECIFIC MIX" data-ar="تشكيل حسب المشروع">PROJECT-SPECIFIC MIX</b><p data-en="The mix changes from project to project. The studio does not force every challenge through the same team structure." data-ar="يتغير التشكيل من مشروع لآخر، ولا نفرض نفس هيكل الفريق على كل تحدٍ.">The mix changes from project to project. The studio does not force every challenge through the same team structure.</p></div></article>
+        </div>
+
+        <div class="team-grid" id="team-grid">
+          <article class="founder-card"><img src="/assets/at-studio-compact-approved.png?v=1" alt="AT Studio" /><div><small data-en="AT STUDIO · STUDIO CORE" data-ar="AT STUDIO · نواة الاستوديو">AT STUDIO · STUDIO CORE</small><h3>AT Studio</h3><b data-en="Studio Direction & Solution Architecture" data-ar="توجيه الاستوديو وبناء الحلول">Studio Direction & Solution Architecture</b><p data-en="Connects safety expertise, systems thinking, technology and creative execution — shaping the problem, the direction and the final solution." data-ar="يربط خبرات السلامة والتفكير المنظومي والتكنولوجيا والتنفيذ الإبداعي، ويحدد المشكلة والاتجاه وشكل الحل النهائي.">Connects safety expertise, systems thinking, technology and creative execution — shaping the problem, the direction and the final solution.</p><div class="founder-focus"><span data-en="PROBLEM FRAMING" data-ar="تحديد المشكلة">PROBLEM FRAMING</span><span data-en="SYSTEMS THINKING" data-ar="التفكير المنظومي">SYSTEMS THINKING</span><span data-en="CREATIVE DIRECTION" data-ar="التوجيه الإبداعي">CREATIVE DIRECTION</span></div></div></article>
+          <div class="specialist-panel"><span class="eyebrow" data-en="SPECIALIST NETWORK" data-ar="شبكة المتخصصين">SPECIALIST NETWORK</span><h3 data-en="Expertise brought in around the problem." data-ar="خبرات تُجمع حول المشكلة.">Expertise brought in around the problem.</h3><p data-en="These are areas of expertise the studio can bring together as a project requires. They are not presented as a fixed staff list." data-ar="دي مجالات خبرة يقدر الاستوديو يجمعها حسب احتياج المشروع، وليست قائمة موظفين ثابتة.">These are areas of expertise the studio can bring together as a project requires. They are not presented as a fixed staff list.</p><div id="role-grid" class="role-grid"></div><div class="team-selection"><div class="team-selection-head"><b data-en="EXPLORE A POSSIBLE EXPERTISE MIX" data-ar="استكشف مزيج الخبرات الممكن">EXPLORE A POSSIBLE EXPERTISE MIX</b><small data-en="Tap areas to see how different expertise can combine. The final project mix is shaped after understanding the problem." data-ar="اختار مجالات لتشوف إزاي الخبرات ممكن تتجمع. التشكيل النهائي بيتحدد بعد فهم المشكلة.">Tap areas to see how different expertise can combine. The final project mix is shaped after understanding the problem.</small></div><div id="team-selection"><span data-en="Select areas of expertise above." data-ar="اختر مجالات الخبرة من الأعلى.">Select areas of expertise above.</span></div></div><p class="network-note" data-en="Flexible specialist network · assembled by project need" data-ar="شبكة متخصصين مرنة · يتم تشكيلها حسب احتياج المشروع">Flexible specialist network · assembled by project need</p><a class="btn primary" href="/join" style="margin-top:18px" data-en="JOIN AT STUDIO NETWORK →" data-ar="انضم لشبكة AT Studio ←">JOIN AT STUDIO NETWORK →</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section contact grid-bg" id="contact">
+      <div class="container">
+        <div class="section-head split concierge-section-head"><div><span class="eyebrow" data-en="START A PROJECT" data-ar="ابدأ مشروعك">START A PROJECT</span><h2 data-en-html="TELL US WHAT’S HAPPENING.<br><span>WE’LL FIGURE OUT THE REST.</span>" data-ar-html="احكي لنا إيه اللي حاصل.<br><span>وإحنا نفهم الباقي.</span>">TELL US WHAT’S HAPPENING.<br><span>WE’LL FIGURE OUT THE REST.</span></h2><p data-en="Tell us about your project, then review and send. We’ll work through the details with you after that." data-ar="احكي عن مشروعك، راجع كلامك وابعت. وبعدها نكمّل التفاصيل معاك.">Tell us about your project, then review and send. We’ll work through the details with you after that.</p></div><aside><b data-en="LESS FORM. MORE UNDERSTANDING." data-ar="أسئلة أقل. فهم أكتر.">LESS FORM. MORE UNDERSTANDING.</b><p data-en="TELL US → WE UNDERSTAND → WE CLARIFY → WE SHAPE THE PATH" data-ar="احكي لنا ← نفهم ← نوضح المهم ← نحدد الطريق">TELL US → WE UNDERSTAND → WE CLARIFY → WE SHAPE THE PATH</p></aside></div>
+
+        <section id="studio-concierge" class="concierge-shell" aria-live="polite">
+          <div class="concierge-progress" aria-label="Studio Concierge progress">
+            <span class="active" data-concierge-progress="tell"><b>01</b><i data-en="TELL US" data-ar="احكي لنا">TELL US</i></span>
+            <span data-concierge-progress="contact"><b>02</b><i data-en="REVIEW & SEND" data-ar="راجع وابعت">REVIEW & SEND</i></span>
+          </div>
+
+          <section class="concierge-stage active" data-concierge-stage="tell">
+            <div class="concierge-stage-copy">
+              <small data-en="START IN YOUR OWN WORDS" data-ar="ابدأ بطريقتك">START IN YOUR OWN WORDS</small>
+              <h3 data-en="What are you trying to do — or what isn’t working the way you want?" data-ar="إيه اللي بتحاول تعمله، أو إيه اللي مش ماشي بالشكل اللي أنت عايزه؟">What are you trying to do — or what isn’t working the way you want?</h3>
+            </div>
+            <div class="concierge-starters" aria-label="Optional starting points">
+              <button type="button" class="concierge-starter" data-starter="problem" data-starter-en="Something is not working the way I expected." data-starter-ar="عندي حاجة مش شغالة بالشكل اللي كنت متوقعه." aria-pressed="false"><span>01</span><b data-en="SOMETHING ISN'T WORKING" data-ar="في حاجة مش شغالة">SOMETHING ISN'T WORKING</b></button>
+              <button type="button" class="concierge-starter" data-starter="idea" data-starter-en="I have an idea, but I am not sure how to turn it into something real." data-starter-ar="عندي فكرة، بس مش عارف أحولها لحاجة حقيقية ومنظمة." aria-pressed="false"><span>02</span><b data-en="I HAVE AN IDEA" data-ar="عندي فكرة">I HAVE AN IDEA</b></button>
+              <button type="button" class="concierge-starter" data-starter="improve" data-starter-en="Something already exists, but I want to improve it." data-starter-ar="عندي حاجة موجودة بالفعل وعايز أحسنها." aria-pressed="false"><span>03</span><b data-en="I WANT TO IMPROVE SOMETHING" data-ar="عايز أحسن حاجة موجودة">I WANT TO IMPROVE SOMETHING</b></button>
+            </div>
+            <div class="concierge-input-card">
+              <label for="concierge-problem" data-en="START WITH WHAT YOU KNOW" data-ar="ابدأ باللي تعرفه">START WITH WHAT YOU KNOW</label>
+              <textarea id="concierge-problem" rows="7" maxlength="4500" data-en-placeholder="Tell us what you are seeing, what feels wrong, or what you are trying to make happen. It does not need to be organized." data-ar-placeholder="احكي اللي شايفه، أو إيه اللي مضايقك، أو إيه اللي بتحاول توصله. مش لازم الكلام يكون مرتب."></textarea>
+              <p class="concierge-honesty-note" data-en="If you are guessing or not sure about something, say that. It helps AT Studio separate facts from assumptions." data-ar="لو في حاجة مجرد توقع أو مش متأكد منها، قول ده عادي. ده بيساعد AT Studio يفرق بين الحقيقة والافتراض.">If you are guessing or not sure about something, say that. It helps AT Studio separate facts from assumptions.</p>
+              <div class="concierge-input-tools">
+                <button id="concierge-voice" type="button" class="concierge-tool"><span>◉</span><b data-en="VOICE" data-ar="صوت">VOICE</b></button>
+                <button id="concierge-context-toggle" type="button" class="concierge-tool"><span>＋</span><b data-en="ADD CONTEXT / FILES" data-ar="أضف معلومات أو ملفات">ADD CONTEXT / FILES</b></button>
+                <span class="concierge-reassurance" data-en="No polished brief needed." data-ar="مش محتاج تكتب بريف مرتب.">No polished brief needed.</span>
+              </div>
+              <div id="concierge-context" class="concierge-context hidden">
+                <label for="concierge-link" data-en="WEBSITE / INSTAGRAM / REFERENCE LINK — OPTIONAL" data-ar="موقع / إنستجرام / لينك مرجعي — اختياري">WEBSITE / INSTAGRAM / REFERENCE LINK — OPTIONAL</label>
+                <input id="concierge-link" type="url" inputmode="url" placeholder="https://" />
+                <label for="concierge-extra" data-en="ANY EXTRA CONTEXT — OPTIONAL" data-ar="أي سياق إضافي — اختياري">ANY EXTRA CONTEXT — OPTIONAL</label>
+                <textarea id="concierge-extra" rows="3" maxlength="1500" data-en-placeholder="Anything you think might help us understand." data-ar-placeholder="أي حاجة شايف إنها ممكن تساعدنا نفهم."></textarea>
+                <div class="concierge-file-context">
+                  <label for="concierge-files" data-en="PROJECT FILES — OPTIONAL" data-ar="ملفات تخص المشروع — اختياري">PROJECT FILES — OPTIONAL</label>
+                  <label class="concierge-file-picker" for="concierge-files">
+                    <input id="concierge-files" type="file" multiple accept=".pdf,.txt,.csv,.json,.xml,.md,.html,.rtf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg" />
+                    <b data-en="+ ADD PROJECT FILES" data-ar="+ أضف ملفات المشروع">+ ADD PROJECT FILES</b>
+                    <span data-en="Reports, screenshots, data, voice notes or references · up to 25 MB each" data-ar="تقارير، صور، بيانات، فويس نوت أو مراجع · حتى 25 ميجا للملف">Reports, screenshots, data, voice notes or references · up to 25 MB each</span>
+                  </label>
+                  <div id="concierge-file-list" class="concierge-file-list"></div>
+                </div>
+              </div>
+            </div>
+            <div id="concierge-tell-error" class="concierge-message hidden" role="alert"></div>
+            <div class="concierge-actions"><button id="concierge-understand" class="btn primary" type="button" data-en="REVIEW REQUEST →" data-ar="راجع الطلب ←">REVIEW REQUEST →</button></div>
+          </section>
+
+          <section class="concierge-stage" data-concierge-stage="contact">
+            <div class="concierge-stage-copy">
+              <small data-en="REVIEW & SEND" data-ar="راجع وابعت">REVIEW & SEND</small>
+              <h3 data-en="Your request, ready to send." data-ar="طلبك جاهز للإرسال.">Your request, ready to send.</h3>
+              <p data-en="Name and email are enough. Phone / WhatsApp is optional." data-ar="الاسم والإيميل كفاية. الهاتف / واتساب اختياري.">Name and email are enough. Phone / WhatsApp is optional.</p>
+            </div>
+            <div class="concierge-request-review">
+              <small data-en="YOUR PROJECT" data-ar="مشروعك">YOUR PROJECT</small>
+              <p id="concierge-request-review"></p>
+              <p id="concierge-review-context" hidden></p>
+            </div>
+            <div class="concierge-contact-grid">
+              <label><span data-en="NAME" data-ar="الاسم">NAME</span><input id="concierge-name" autocomplete="name" /></label>
+              <label><span data-en="EMAIL" data-ar="البريد الإلكتروني">EMAIL</span><input id="concierge-email" type="email" autocomplete="email" /></label>
+              <label><span data-en="PHONE / WHATSAPP — OPTIONAL" data-ar="الهاتف / واتساب — اختياري">PHONE / WHATSAPP — OPTIONAL</span><input id="concierge-phone" inputmode="tel" autocomplete="tel" /></label>
+              <label><span data-en="COMPANY / ORGANIZATION — OPTIONAL" data-ar="الشركة / الجهة — اختياري">COMPANY / ORGANIZATION — OPTIONAL</span><input id="concierge-company" autocomplete="organization" /></label>
+            </div>
+            <div id="concierge-submit-error" class="concierge-message hidden" role="alert"></div>
+            <div class="concierge-actions concierge-actions-split">
+              <button id="concierge-contact-back" class="btn ghost" type="button" data-en="← EDIT REQUEST" data-ar="تعديل الطلب →">← EDIT REQUEST</button>
+              <button id="concierge-submit" class="btn primary" type="button" data-en="SEND TO AT STUDIO →" data-ar="إرسال إلى AT Studio ←">SEND TO AT STUDIO →</button>
+            </div>
+          </section>
+
+          <section class="concierge-stage concierge-success" data-concierge-stage="success">
+            <div class="concierge-success-mark">✓</div>
+            <small data-en="REQUEST RECEIVED" data-ar="تم استلام الطلب">REQUEST RECEIVED</small>
+            <h3 data-en="We have enough to start." data-ar="عندنا معلومات كفاية نبدأ بيها.">We have enough to start.</h3>
+            <p data-en="AT Studio will review your request. Any follow-up questions will appear in your request workspace." data-ar="ATS هيراجع طلبك. لو محتاجين تفاصيل إضافية، هتظهر لك في صفحة متابعة الطلب.">AT Studio will review your request. Any follow-up questions will appear in your request workspace.</p>
+            <div class="concierge-request-id"><span data-en="REQUEST ID" data-ar="رقم الطلب">REQUEST ID</span><b id="concierge-request-code">—</b></div>
+            <div class="concierge-actions">
+              <a id="concierge-track" class="btn primary" href="/client-access/" data-en="TRACK REQUEST →" data-ar="متابعة الطلب ←">TRACK REQUEST →</a>
+              <button id="concierge-new" class="btn ghost" type="button" data-en="START ANOTHER REQUEST" data-ar="إرسال طلب آخر">START ANOTHER REQUEST</button>
+            </div>
+          </section>
+        </section>
+
+        <div class="brief-shell concierge-legacy-brief" hidden aria-hidden="true"><section class="brief-builder"><nav id="brief-progress" class="brief-progress" aria-label="Project brief progress"></nav><div id="brief-steps"></div><div class="brief-nav"><button id="brief-back" class="btn ghost" type="button">← BACK</button><button id="brief-next" class="btn primary" type="button">NEXT →</button></div></section><aside class="brief-summary"><small>LEGACY BRIEF</small><h3>Legacy brief compatibility layer.</h3><div id="brief-summary"></div><button id="copy-brief" class="btn ghost" type="button">COPY BRIEF</button><a id="send-brief" class="btn primary" href="#">SEND PROJECT BRIEF →</a><p class="summary-note">Legacy brief compatibility.</p></aside></div>
+      </div>
+    </section>
   </main>
+
+  <footer><div class="container footer-grid"><div><b>AT Studio</b><p data-en="PROBLEM SOLVING THROUGH CREATIVITY · SAFETY × DIGITAL × CREATIVE × AI" data-ar="حل المشكلات من خلال الإبداع · السلامة × الرقمي × الإبداع × الذكاء الاصطناعي">PROBLEM SOLVING THROUGH CREATIVITY · SAFETY × DIGITAL × CREATIVE × AI</p></div><nav><a href="#studio" data-en="How We Work" data-ar="كيف نعمل">How We Work</a><a href="#capabilities" data-en="Capabilities" data-ar="القدرات">Capabilities</a><a href="#work" data-en="Projects" data-ar="المشاريع">Projects</a><a href="/hse/" data-en="HSE World" data-ar="عالم HSE">HSE World</a><a href="#contact" data-en="Contact" data-ar="تواصل">Contact</a></nav><small data-en="© 2026 AT Studio" data-ar="© 2026 AT Studio">© 2026 AT Studio</small></div></footer>
+
+  <div id="toast" class="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/v9/v9.js?v=6"></script>
+  <script src="/v9/v9-brief-recovery.js?v=1"></script>
+  <script src="/v9/v9-phase2.js?v=4"></script>
+  <script src="/v9/v9-lead-submit.js?v=4"></script>
+  <script src="/v9/v9-concierge.js?v=6"></script>
+  <script src="/v9/v9-polish.js?v=16"></script>
 </body>
 </html>
