@@ -124,10 +124,10 @@ function buildSolveWeights(portrait,mask,likeness){
     const beard=Math.min(1.5,portrait.beardMap?.[p]||0);
     const actual=.25+.48*edge+.34*contrast;
     const base=m*(.20+.80*subject);
-    global[p]=base*(.55+.62*edge+.35*contrast+.18*feature);
-    structure[p]=base*(.46+.92*structureSignal+.78*hair+.42*beard+.36*edge);
-    identity[p]=base*(.44+.50*edge+.32*contrast+likeness*(1.28*feature+1.72*landmark*actual+.52*hair*actual+.34*beard*actual));
-    refine[p]=base*(.38+.92*edge+.66*contrast+likeness*(1.05*feature+1.22*landmark*actual));
+    global[p]=base*(.42+.72*edge+.42*contrast+.26*feature);
+    structure[p]=base*(.36+1.02*structureSignal+.86*hair+.46*beard+.44*edge);
+    identity[p]=base*(.28+.62*edge+.42*contrast+likeness*(1.72*feature+2.35*landmark*actual+.46*hair*actual+.30*beard*actual));
+    refine[p]=base*(.24+1.05*edge+.78*contrast+likeness*(1.48*feature+1.92*landmark*actual));
   }
   return {structure,identity,global,refine};
 }
@@ -203,15 +203,16 @@ function scoreCandidate({
   const lenNorm=Math.sqrt(Math.max(18,pixels.length));
   const hitRatio=hits/Math.max(1,pixels.length);
   let score=gain/lenNorm;
-  score+=.09*(positive/lenNorm)*Math.min(1,hitRatio*4.4);
-  score-=.038*(negative/lenNorm);
-  score-=.00048*(center/Math.max(EPS,weighted));
-  score-=.00028*(crowd/Math.max(EPS,weighted));
+  score+=.12*(positive/lenNorm)*Math.min(1,hitRatio*4.8);
+  score-=.16*(negative/lenNorm);
+  score-=.00062*(center/Math.max(EPS,weighted));
+  score-=.00034*(crowd/Math.max(EPS,weighted));
   score-=Math.max(0,crossingPenalty||0)*(avoid/Math.max(EPS,weighted));
-  score-=repeat*.00062;
+  score-=repeat*.00068;
   score-=pinPenalty*.000045;
   const lengthRatio=pixels.length/Math.max(1,size);
-  if(lengthRatio>1.20&&hitRatio<.15)score-=(lengthRatio-1.20)*.0010;
+  if(hitRatio<.075)score-=((.075-hitRatio)/.075)*.0016;
+  if(lengthRatio>1.10&&hitRatio<.20)score-=(lengthRatio-1.10)*.00145;
   return score;
 }
 
@@ -348,9 +349,9 @@ function residualPaletteMasses({
       const a=affinity?.[p*colors+ci]||0;
       let fit;
       if(ci===blackIndex){
-        fit=(.78+.34*(darkNeed/Math.max(.001,need)))*(.92-.28*chromaNeed*colorStrength);
+        fit=(.92+.42*(darkNeed/Math.max(.001,need)))*(.98-.10*chromaNeed*colorStrength);
       }else{
-        fit=(.30+1.72*a)*(.62+.78*colorStrength)*(.72+.42*chromaNeed);
+        fit=(.28+1.58*a)*(.72+.42*colorStrength)*(.72+.40*chromaNeed);
       }
       masses[ci]+=w*projected*fit;
     }
@@ -359,14 +360,14 @@ function residualPaletteMasses({
   const totalUsed=perColor.reduce((s,v)=>s+v,0);
   for(let ci=0;ci<colors;ci++){
     const share=perColor[ci]/Math.max(1,totalUsed);
-    const softCap=ci===blackIndex?.46:Math.max(.09,1/Math.max(3,colors)*1.28);
+    const softCap=ci===blackIndex?.58:Math.max(.08,1/Math.max(3,colors)*1.18);
     const over=Math.max(0,share-softCap);
     masses[ci]/=1+over*3.2;
     if(ci===blackIndex){
       if(progress<.18)masses[ci]*=1.12;
-      if(progress>.58)masses[ci]*=.70+.18*(1-colorStrength);
+      if(progress>.58)masses[ci]*=.90+.08*(1-colorStrength);
     }else{
-      masses[ci]*=.90+.72*colorStrength;
+      masses[ci]*=.88+.36*colorStrength;
       if(perColor[ci]<40)masses[ci]*=1.08;
     }
   }
@@ -377,7 +378,7 @@ function pickResidualColor(masses,perColor,totalLines,blackIndex,blocked){
   let best=-1,bestScore=0;
   for(let ci=0;ci<masses.length;ci++){
     if(blocked?.[ci]>0)continue;
-    const expected=totalLines*(ci===blackIndex?.44:Math.max(.08,.56/Math.max(1,masses.length-1)));
+    const expected=totalLines*(ci===blackIndex?.54:Math.max(.07,.46/Math.max(1,masses.length-1)));
     const balance=1+perColor[ci]/Math.max(120,expected);
     const score=masses[ci]/balance;
     if(score>bestScore){bestScore=score;best=ci}
@@ -444,20 +445,24 @@ export function solveFastLayeredPortrait({
   while(fibers<totalLines&&Date.now()<deadline){
     const progress=fibers/Math.max(1,totalLines);
     let stage,weight,affinityStrength,minScore,alphaScale;
-    if(progress<.20){
-      stage='structure';weight=weights.structure;affinityStrength=.22;minScore=6.5e-8;alphaScale=1.10;
-    }else if(progress<.57){
-      stage='identity';weight=weights.identity;affinityStrength=.46;minScore=4.0e-8;alphaScale=1.02;
-    }else if(progress<.82){
-      stage='color';weight=weights.global;affinityStrength=.96;minScore=3.0e-8;alphaScale=.94;
+    if(progress<.14){
+      stage='structure';weight=weights.structure;affinityStrength=.16;minScore=6.5e-8;alphaScale=1.08;
+    }else if(progress<.60){
+      stage='identity';weight=weights.identity;affinityStrength=.24;minScore=3.4e-8;alphaScale=1.00;
+    }else if(progress<.78){
+      stage='color';weight=weights.global;affinityStrength=.90;minScore=2.8e-8;alphaScale=.91;
     }else{
-      stage='refine';weight=weights.refine;affinityStrength=.72;minScore=1.9e-8;alphaScale=.80;
+      stage='refine';weight=weights.refine;affinityStrength=.34;minScore=1.5e-8;alphaScale=.76;
     }
     const lineAlpha=clamp(baseAlpha*alphaScale,.030,.074);
     const transmissions=selected.hex.map(h=>threadTransmission(h,lineAlpha));
     const masses=residualPaletteMasses({
       target,currentRgb,portrait,affinity,colors,blackIndex,weight,transmissions,perColor,progress,colorStrength
     });
+    if(stage==='structure')masses[blackIndex]*=1.32;
+    else if(stage==='identity')masses[blackIndex]*=1.72;
+    else if(stage==='color')masses[blackIndex]*=.78;
+    else if(stage==='refine')masses[blackIndex]*=1.88;
     const ci=pickResidualColor(masses,perColor,totalLines,blackIndex,blocked);
     if(ci<0){
       let anyBlocked=false;
@@ -469,7 +474,7 @@ export function solveFastLayeredPortrait({
     const before=fibers;
     const accepted=solvePass({
       g,state:states[ci],target,currentRgb,weight,trans:transmissions[ci],congestion,centerPenalty,
-      avoidance:portrait.avoidance,crossingPenalty:.0015+(stage==='refine'?.0012:.0004),
+      avoidance:portrait.avoidance,crossingPenalty:stage==='identity'?.0054:stage==='refine'?.0068:stage==='color'?.0032:.0038,
       colorAffinity:affinity,affinityStride:colors,affinityStrength,lineAlpha,
       budget:Math.min(blockSize,totalLines-fibers),candidateLimit,minGap,maxRepeat,deadline,minScore,
       allowRestart:true,
@@ -503,7 +508,7 @@ export function solveFastLayeredPortrait({
     metrics:{
       fibers,colorsUsed:perColor.reduce((n,v)=>n+(v>0?1:0),0),perColor:Array.from(perColor),
       elapsedMs:Date.now()-startedAt,targetFibers:totalLines,completion:fibers/Math.max(1,totalLines),
-      cachedLines:g.lines.size,method:'adaptive-continuous-residual-optical-v2',
+      cachedLines:g.lines.size,method:'feature-locked-continuous-residual-optical-v3',
       mse:finalMse,mseImprovement:initialMse>EPS?clamp01(1-finalMse/initialMse):1,
       featureCompletions:completionFrom(initialFeatureError,finalFeatureError),
       renderAlpha:baseAlpha,blackShare,colorShare:1-blackShare,
