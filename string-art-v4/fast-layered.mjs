@@ -8,6 +8,7 @@ import {
 
 const EPS=1e-9;
 const clamp01=v=>Math.max(0,Math.min(1,v));
+const clamp=(v,lo=0,hi=1)=>Math.max(lo,Math.min(hi,v));
 const GEOMETRY_CACHE=new Map();
 
 function circleGap(a,b,nails){
