@@ -153,8 +153,9 @@ function scanCandidatePins(nails,current,step,limit,minGap,visit){
 function createState(g,colorIndex){
   const start=Math.floor((g.nails*(.07+colorIndex*.173))%g.nails);
   return {
-    colorIndex,current:start,trail:[start],trails:[],edgeUse:new Uint8Array(g.nails*g.nails),
-    pinUse:new Uint16Array(g.nails),accepted:0,restarts:0,step:0
+    colorIndex,current:start,trail:[start],trails:[],segments:[],
+    edgeUse:new Uint8Array(g.nails*g.nails),pinUse:new Uint16Array(g.nails),
+    accepted:0,restarts:0,step:0
   };
 }
 
@@ -163,21 +164,26 @@ function restartTrail(state,g){
   state.restarts++;
   let best=(state.current+Math.floor(g.nails*(.137+.037*(state.restarts%9))))%g.nails;
   let bestUse=state.pinUse[best];
-  for(let k=1;k<=14;k++){
-    const pin=(best+Math.floor(k*g.nails/17))%g.nails;
+  for(let k=1;k<=18;k++){
+    const pin=(best+Math.floor(k*g.nails/19))%g.nails;
     if(state.pinUse[pin]<bestUse){best=pin;bestUse=state.pinUse[pin]}
   }
   state.current=best;state.trail=[best];
 }
 
 function scoreCandidate({
-  pixels,target,currentRgb,weight,trans,congestion,centerPenalty,repeat,pinPenalty,size
+  pixels,target,currentRgb,weight,trans,congestion,centerPenalty,avoidance,
+  crossingPenalty,repeat,pinPenalty,size,colorAffinity,affinityStride,colorIndex,affinityStrength
 }){
   if(!pixels.length)return -Infinity;
-  let gain=0,positive=0,negative=0,center=0,crowd=0,weighted=0,hits=0;
+  let gain=0,positive=0,negative=0,center=0,crowd=0,avoid=0,weighted=0,hits=0;
   for(let i=0;i<pixels.length;i++){
-    const p=pixels[i],w=weight[p]||0;
+    const p=pixels[i];let w=weight[p]||0;
     if(w<=.0001)continue;
+    if(colorAffinity&&affinityStride>0){
+      const affinity=colorAffinity[p*affinityStride+colorIndex]||0;
+      w*=.52+affinityStrength*(.35+1.42*affinity);
+    }
     const b=p*3;
     const cr=currentRgb[b],cg=currentRgb[b+1],cb=currentRgb[b+2];
     const tr=target[b],tg=target[b+1],tb=target[b+2];
@@ -189,24 +195,27 @@ function scoreCandidate({
     if(d>0){positive+=d;hits++}else negative-=d;
     center+=(centerPenalty[p]||0)*w;
     const q=congestion[p]||0;crowd+=q*(1+.35*q)*w;
+    const darkDelta=Math.max(0,(cr+cg+cb-nr-ng-nb)/3);
+    avoid+=(avoidance?.[p]||0)*darkDelta*w;
   }
   if(weighted<EPS||hits<2)return -Infinity;
   const lenNorm=Math.sqrt(Math.max(18,pixels.length));
   const hitRatio=hits/Math.max(1,pixels.length);
   let score=gain/lenNorm;
-  score+=.08*(positive/lenNorm)*Math.min(1,hitRatio*4.2);
-  score-=.035*(negative/lenNorm);
-  score-=.00055*(center/Math.max(EPS,weighted));
-  score-=.00032*(crowd/Math.max(EPS,weighted));
-  score-=repeat*.00075;
-  score-=pinPenalty*.00006;
+  score+=.09*(positive/lenNorm)*Math.min(1,hitRatio*4.4);
+  score-=.038*(negative/lenNorm);
+  score-=.00048*(center/Math.max(EPS,weighted));
+  score-=.00028*(crowd/Math.max(EPS,weighted));
+  score-=Math.max(0,crossingPenalty||0)*(avoid/Math.max(EPS,weighted));
+  score-=repeat*.00062;
+  score-=pinPenalty*.000045;
   const lengthRatio=pixels.length/Math.max(1,size);
-  if(lengthRatio>1.18&&hitRatio<.16)score-=(lengthRatio-1.18)*.0012;
+  if(lengthRatio>1.20&&hitRatio<.15)score-=(lengthRatio-1.20)*.0010;
   return score;
 }
 
 function applyLine(pixels,currentRgb,trans,congestion,colorIndex){
-  const crowd=colorIndex===0?.042:.030;
+  const crowd=colorIndex===0?.038:.026;
   for(let i=0;i<pixels.length;i++){
     const p=pixels[i],b=p*3;
     currentRgb[b]*=trans[0];
@@ -217,7 +226,9 @@ function applyLine(pixels,currentRgb,trans,congestion,colorIndex){
 }
 
 function solvePass({
-  g,state,target,currentRgb,weight,trans,congestion,centerPenalty,budget,candidateLimit,minGap,maxRepeat,deadline,minScore,onProgress
+  g,state,target,currentRgb,weight,trans,congestion,centerPenalty,avoidance,crossingPenalty,
+  colorAffinity,affinityStride,affinityStrength,lineAlpha,budget,candidateLimit,minGap,maxRepeat,
+  deadline,minScore,allowRestart=true,onProgress
 }){
   let accepted=0,stalled=0;
   for(let local=0;local<budget;local++,state.step++){
@@ -228,23 +239,25 @@ function solvePass({
       const repeat=state.edgeUse[edgeKey];if(repeat>=maxRepeat)return;
       const pixels=linePixels(g,state.current,pin);
       const score=scoreCandidate({
-        pixels,target,currentRgb,weight,trans,congestion,centerPenalty,repeat,
-        pinPenalty:state.pinUse[pin]+state.pinUse[state.current],size:g.size
+        pixels,target,currentRgb,weight,trans,congestion,centerPenalty,avoidance,crossingPenalty,repeat,
+        pinPenalty:state.pinUse[pin]+state.pinUse[state.current],size:g.size,
+        colorAffinity,affinityStride,colorIndex:state.colorIndex,affinityStrength
       });
       if(score>bestScore){bestScore=score;bestPin=pin;bestPixels=pixels}
     });
     if(bestPin<0||bestScore<=minScore){
-      stalled++;restartTrail(state,g);
-      if(stalled>14)break;
-      continue;
+      stalled++;
+      if(allowRestart&&stalled<=2){restartTrail(state,g);continue}
+      break;
     }
     stalled=0;
-    const lo=Math.min(state.current,bestPin),hi=Math.max(state.current,bestPin),edgeKey=lo*g.nails+hi;
+    const from=state.current,lo=Math.min(from,bestPin),hi=Math.max(from,bestPin),edgeKey=lo*g.nails+hi;
     state.edgeUse[edgeKey]++;
-    state.pinUse[state.current]++;state.pinUse[bestPin]++;
+    state.pinUse[from]++;state.pinUse[bestPin]++;
     applyLine(bestPixels,currentRgb,trans,congestion,state.colorIndex);
+    state.segments.push({a:from,b:bestPin,alpha:lineAlpha});
     state.current=bestPin;state.trail.push(bestPin);state.accepted++;accepted++;
-    if(onProgress&&(accepted%28===0||accepted===budget))onProgress(accepted,budget,bestScore);
+    if(onProgress&&(accepted%24===0||accepted===budget))onProgress(accepted,budget,bestScore);
   }
   return accepted;
 }
@@ -309,69 +322,97 @@ function routeDiagnostics(routes,g,portrait,centerPenalty){
   return {centerCrossingRate:fibers?center/fibers:0,brightFaceCrossingRate:fibers?bright/fibers:0};
 }
 
-function colorMasses(target,portrait,affinity,colors,blackIndex,weight){
+function residualPaletteMasses({
+  target,currentRgb,portrait,affinity,colors,blackIndex,weight,transmissions,perColor,progress,colorStrength
+}){
   const masses=new Float64Array(colors);
   for(let p=0;p<portrait.subjectMap.length;p++){
     const subject=clamp01(portrait.subjectMap[p]||0);
-    if(subject<=.01)continue;
-    const b=p*3,r=target[b],g=target[b+1],bb=target[b+2];
-    const max=Math.max(r,g,bb),min=Math.min(r,g,bb),chroma=max-min;
-    const darkness=clamp01(1-(.2126*r+.7152*g+.0722*bb));
-    const w=(weight[p]||0)*subject*(.22+.78*chroma)*(.22+.78*darkness);
+    if(subject<=.008)continue;
+    const w=(weight[p]||0)*(.12+.88*subject);
+    if(w<=.0001)continue;
+    const b=p*3;
+    const cr=currentRgb[b],cg=currentRgb[b+1],cb=currentRgb[b+2];
+    const tr=target[b],tg=target[b+1],tb=target[b+2];
+    const nr=Math.max(0,cr-tr),ng=Math.max(0,cg-tg),nb=Math.max(0,cb-tb);
+    const need=nr+ng+nb;
+    if(need<.002)continue;
+    const maxNeed=Math.max(nr,ng,nb),minNeed=Math.min(nr,ng,nb);
+    const chromaNeed=(maxNeed-minNeed)/Math.max(.02,maxNeed);
+    const darkNeed=.2126*nr+.7152*ng+.0722*nb;
     for(let ci=0;ci<colors;ci++){
-      if(ci===blackIndex)continue;
-      masses[ci]+=w*(affinity[p*colors+ci]||0);
+      const trans=transmissions[ci],ar=1-trans[0],ag=1-trans[1],ab=1-trans[2];
+      const projected=nr*ar+ng*ag+nb*ab;
+      if(projected<=0)continue;
+      const a=affinity?.[p*colors+ci]||0;
+      let fit;
+      if(ci===blackIndex){
+        fit=(.78+.34*(darkNeed/Math.max(.001,need)))*(.92-.28*chromaNeed*colorStrength);
+      }else{
+        fit=(.30+1.72*a)*(.62+.78*colorStrength)*(.72+.42*chromaNeed);
+      }
+      masses[ci]+=w*projected*fit;
+    }
+  }
+
+  const totalUsed=perColor.reduce((s,v)=>s+v,0);
+  for(let ci=0;ci<colors;ci++){
+    const share=perColor[ci]/Math.max(1,totalUsed);
+    const softCap=ci===blackIndex?.46:Math.max(.09,1/Math.max(3,colors)*1.28);
+    const over=Math.max(0,share-softCap);
+    masses[ci]/=1+over*3.2;
+    if(ci===blackIndex){
+      if(progress<.18)masses[ci]*=1.12;
+      if(progress>.58)masses[ci]*=.70+.18*(1-colorStrength);
+    }else{
+      masses[ci]*=.90+.72*colorStrength;
+      if(perColor[ci]<40)masses[ci]*=1.08;
     }
   }
   return masses;
 }
 
-function allocateColorBudgets(masses,total,blackIndex){
-  const out=new Int32Array(masses.length);
-  let sum=0;for(let i=0;i<masses.length;i++)if(i!==blackIndex)sum+=Math.sqrt(Math.max(0,masses[i]));
-  if(sum<EPS)return out;
-  let assigned=0;
-  for(let i=0;i<masses.length;i++){
-    if(i===blackIndex)continue;
-    out[i]=Math.floor(total*Math.sqrt(Math.max(0,masses[i]))/sum);assigned+=out[i];
+function pickResidualColor(masses,perColor,totalLines,blackIndex,blocked){
+  let best=-1,bestScore=0;
+  for(let ci=0;ci<masses.length;ci++){
+    if(blocked?.[ci]>0)continue;
+    const expected=totalLines*(ci===blackIndex?.44:Math.max(.08,.56/Math.max(1,masses.length-1)));
+    const balance=1+perColor[ci]/Math.max(120,expected);
+    const score=masses[ci]/balance;
+    if(score>bestScore){bestScore=score;best=ci}
   }
-  while(assigned<total){
-    let best=-1;
-    for(let i=0;i<masses.length;i++)if(i!==blackIndex&&(best<0||masses[i]>masses[best]))best=i;
-    if(best<0)break;out[best]++;assigned++;
-  }
-  return out;
+  return best;
 }
 
 export function solveFastLayeredPortrait({
-  size,nails=320,minGap=9,rgba,preprocess={},palette={},solve={},onProgress
+  size,nails=360,minGap=9,rgba,preprocess={},palette={},solve={},onProgress
 }){
   if(rgba.length!==size*size*4)throw new Error('RGBA size mismatch');
   const startedAt=Date.now(),g=geometryFor(size,nails),mask=makeCircularMask(size,1.5);
   const linearRgb=rgbaToLinearRgb(rgba);
   const portrait=buildPortraitPriorityMaps(linearRgb,size,{
     mask,faceBox:preprocess.faceBox||null,landmarks:preprocess.landmarks||null,
-    backgroundWeight:preprocess.backgroundWeight??.018,faceBoost:preprocess.faceBoost??1.6,
-    edgeBoost:preprocess.edgeBoost??1.9,featureBoost:preprocess.featureBoost??2.2,
-    darkDetailBoost:preprocess.darkDetailBoost??.72,avoidanceBoost:preprocess.avoidanceBoost??1.8
+    backgroundWeight:preprocess.backgroundWeight??.012,faceBoost:preprocess.faceBoost??1.68,
+    edgeBoost:preprocess.edgeBoost??2.0,featureBoost:preprocess.featureBoost??2.45,
+    darkDetailBoost:preprocess.darkDetailBoost??.78,avoidanceBoost:preprocess.avoidanceBoost??1.95
   });
   onProgress?.({phase:'preprocess',done:1,total:1});
 
-  const likeness=clamp01(solve.likeness??.90),detail=clamp01(solve.detail??.85),colorStrength=clamp01(solve.colorStrength??.40);
+  const likeness=clamp01(solve.likeness??.94),detail=clamp01(solve.detail??.90),colorStrength=clamp01(solve.colorStrength??.68);
   const rawSrgb=rgbaToSrgb(rgba);
-  const target=suppressBackgroundSrgb(rawSrgb,portrait.subjectMap,preprocess.backgroundSuppress??.86);
+  const target=suppressBackgroundSrgb(rawSrgb,portrait.subjectMap,preprocess.backgroundSuppress??.88);
   const paletteMask=new Float32Array(mask.length);
-  for(let p=0;p<mask.length;p++)paletteMask[p]=mask[p]*(.03+.97*clamp01(portrait.subjectMap[p]||0));
+  for(let p=0;p<mask.length;p++)paletteMask[p]=mask[p]*(.025+.975*clamp01(portrait.subjectMap[p]||0));
   const targetLinear=new Float32Array(linearRgb.length);
   for(let p=0;p<linearRgb.length/3;p++){
-    const subject=clamp01(portrait.subjectMap[p]||0),fade=(preprocess.backgroundSuppress??.86)*Math.pow(1-subject,1.65),b=p*3;
+    const subject=clamp01(portrait.subjectMap[p]||0),fade=(preprocess.backgroundSuppress??.88)*Math.pow(1-subject,1.68),b=p*3;
     targetLinear[b]=linearRgb[b]*(1-fade)+fade;
     targetLinear[b+1]=linearRgb[b+1]*(1-fade)+fade;
     targetLinear[b+2]=linearRgb[b+2]*(1-fade)+fade;
   }
   const selected=chooseThreadPaletteSimulation(targetLinear,size,{
     candidateHex:palette.candidateHex,nColors:palette.nColors??5,fixedHex:palette.fixedHex??['#111111'],
-    mask:paletteMask,simulationSize:Math.min(size,palette.simulationSize??36),maxCombinations:palette.maxCombinations??180
+    mask:paletteMask,simulationSize:Math.min(size,palette.simulationSize??40),maxCombinations:palette.maxCombinations??240
   });
   onProgress?.({phase:'palette',done:1,total:1});
 
@@ -381,82 +422,99 @@ export function solveFastLayeredPortrait({
     let best=Infinity;blackIndex=0;
     selected.hex.forEach((h,i)=>{const c=hexToSrgb(h),y=.2126*c[0]+.7152*c[1]+.0722*c[2];if(y<best){best=y;blackIndex=i}});
   }
-  const affinity=buildPaletteAffinityMap(targetLinear,selected.linearRgb,portrait.importance,{temperature:preprocess.colorAffinityTemperature??.060});
+  const affinity=buildPaletteAffinityMap(targetLinear,selected.linearRgb,portrait.importance,{temperature:preprocess.colorAffinityTemperature??.056});
   const weights=buildSolveWeights(portrait,mask,likeness);
   const currentRgb=new Float32Array(target.length);currentRgb.fill(1);
   const congestion=new Float32Array(mask.length),centerPenalty=buildCenterPenalty(size,portrait);
-  const renderAlpha=.055;
-  const transmissions=selected.hex.map(h=>threadTransmission(h,renderAlpha));
   const states=Array.from({length:colors},(_,ci)=>createState(g,ci));
-  const perColor=new Int32Array(colors);
+  const perColor=new Int32Array(colors),blocked=new Uint8Array(colors);
   const initialFeatureError=featureErrorSnapshot(currentRgb,target,portrait);
   const initialMse=mse(currentRgb,target,mask);
 
-  const totalLines=Math.max(1800,solve.maxFibers??Math.round(5200+detail*1800));
-  const colorShare=.10+.25*colorStrength;
-  const blackBudget=Math.round(totalLines*(1-colorShare));
-  const structureBudget=Math.round(blackBudget*.31);
-  const identityBudget=Math.round(blackBudget*.47);
-  const refineBudget=Math.max(0,blackBudget-structureBudget-identityBudget);
-  const colorBudget=Math.max(0,totalLines-blackBudget);
-  const timeBudgetMs=Math.max(3000,solve.timeBudgetMs??Math.round(6500+detail*4200));
-  const deadline=Date.now()+timeBudgetMs;
-  const candidateLimit=Math.max(52,solve.candidateLimit??Math.round(78+detail*34));
+  const totalLines=Math.max(3200,solve.maxFibers??Math.round(6900+detail*1600));
+  const candidateLimit=Math.max(84,solve.candidateLimit??Math.round(98+detail*34));
   const maxRepeat=Math.max(1,solve.maxRepeat??2);
-  let fibers=0;
+  const baseAlpha=clamp(solve.renderAlpha??(.050+.010*detail),.038,.068);
+  const blockSize=Math.max(28,Math.min(84,solve.blockSize??56));
+  const timeBudgetMs=Math.max(0,Number(solve.timeBudgetMs||0));
+  const deadline=timeBudgetMs>0?startedAt+timeBudgetMs:Number.POSITIVE_INFINITY;
+  let fibers=0,idleRounds=0;
 
-  const runBlack=(stage,weight,budget,minScore)=>{
-    if(Date.now()>=deadline||budget<=0)return;
-    const accepted=solvePass({
-      g,state:states[blackIndex],target,currentRgb,weight,trans:transmissions[blackIndex],congestion,centerPenalty,
-      budget,candidateLimit,minGap,maxRepeat,deadline,minScore,
-      onProgress:(done,total)=>onProgress?.({phase:'portrait-stage',stage,colorIndex:blackIndex,colorHex:selected.hex[blackIndex],done:fibers+done,total:totalLines,stageDone:done,stageTotal:total})
-    });
-    perColor[blackIndex]+=accepted;fibers+=accepted;
-  };
-
-  runBlack('structure',weights.structure,structureBudget,1e-7);
-  runBlack('identity',weights.identity,identityBudget,1e-7);
-
-  if(Date.now()<deadline&&colorBudget>0&&colors>1){
-    const masses=colorMasses(target,portrait,affinity,colors,blackIndex,weights.global);
-    const budgets=allocateColorBudgets(masses,colorBudget,blackIndex);
-    for(let ci=0;ci<colors;ci++){
-      if(ci===blackIndex||budgets[ci]<=0||Date.now()>=deadline)continue;
-      const accepted=solvePass({
-        g,state:states[ci],target,currentRgb,weight:weights.global,trans:transmissions[ci],congestion,centerPenalty,
-        budget:budgets[ci],candidateLimit,minGap,maxRepeat,deadline,minScore:1e-7,
-        onProgress:(done,total)=>onProgress?.({phase:'portrait-stage',stage:'color',colorIndex:ci,colorHex:selected.hex[ci],done:fibers+done,total:totalLines,stageDone:done,stageTotal:total})
-      });
-      perColor[ci]+=accepted;fibers+=accepted;
+  while(fibers<totalLines&&Date.now()<deadline){
+    const progress=fibers/Math.max(1,totalLines);
+    let stage,weight,affinityStrength,minScore,alphaScale;
+    if(progress<.20){
+      stage='structure';weight=weights.structure;affinityStrength=.22;minScore=6.5e-8;alphaScale=1.10;
+    }else if(progress<.57){
+      stage='identity';weight=weights.identity;affinityStrength=.46;minScore=4.0e-8;alphaScale=1.02;
+    }else if(progress<.82){
+      stage='color';weight=weights.global;affinityStrength=.96;minScore=3.0e-8;alphaScale=.94;
+    }else{
+      stage='refine';weight=weights.refine;affinityStrength=.72;minScore=1.9e-8;alphaScale=.80;
     }
-  }
+    const lineAlpha=clamp(baseAlpha*alphaScale,.030,.074);
+    const transmissions=selected.hex.map(h=>threadTransmission(h,lineAlpha));
+    const masses=residualPaletteMasses({
+      target,currentRgb,portrait,affinity,colors,blackIndex,weight,transmissions,perColor,progress,colorStrength
+    });
+    const ci=pickResidualColor(masses,perColor,totalLines,blackIndex,blocked);
+    if(ci<0){
+      let anyBlocked=false;
+      for(let k=0;k<blocked.length;k++)if(blocked[k]>0){blocked[k]--;anyBlocked=true}
+      if(anyBlocked&&idleRounds++<colors*3)continue;
+      break;
+    }
 
-  runBlack('refine',weights.refine,refineBudget,6e-8);
+    const before=fibers;
+    const accepted=solvePass({
+      g,state:states[ci],target,currentRgb,weight,trans:transmissions[ci],congestion,centerPenalty,
+      avoidance:portrait.avoidance,crossingPenalty:.0015+(stage==='refine'?.0012:.0004),
+      colorAffinity:affinity,affinityStride:colors,affinityStrength,lineAlpha,
+      budget:Math.min(blockSize,totalLines-fibers),candidateLimit,minGap,maxRepeat,deadline,minScore,
+      allowRestart:true,
+      onProgress:(done,total,bestScore)=>onProgress?.({
+        phase:'portrait-stage',stage,colorIndex:ci,colorHex:selected.hex[ci],
+        done:before+done,total:totalLines,stageDone:done,stageTotal:total,bestScore
+      })
+    });
+
+    if(accepted<=0){
+      blocked[ci]=3;idleRounds++;
+      if(idleRounds>colors*5)break;
+      continue;
+    }
+    perColor[ci]+=accepted;fibers+=accepted;idleRounds=0;
+    for(let k=0;k<blocked.length;k++)if(blocked[k]>0)blocked[k]--;
+    onProgress?.({phase:'portrait-stage',stage,colorIndex:ci,colorHex:selected.hex[ci],done:fibers,total:totalLines,stageDone:accepted,stageTotal:blockSize});
+  }
 
   for(const state of states)finishState(state);
   const routes=states.map((state,ci)=>({
-    colorIndex:ci,selectedFibers:state.accepted,trails:state.trails,
+    colorIndex:ci,selectedFibers:state.accepted,trails:state.trails,segments:state.segments,
     sequence:state.trails.flatMap(t=>t),connectors:[],trailStarts:[]
   }));
   const finalFeatureError=featureErrorSnapshot(currentRgb,target,portrait);
   const diagnostics=routeDiagnostics(routes,g,portrait,centerPenalty);
+  const finalMse=mse(currentRgb,target,mask);
+  const blackShare=fibers?perColor[blackIndex]/fibers:0;
   return {
     mode:'color-global',routes,palette:selected,renderedRgb:null,
     metrics:{
       fibers,colorsUsed:perColor.reduce((n,v)=>n+(v>0?1:0),0),perColor:Array.from(perColor),
       elapsedMs:Date.now()-startedAt,targetFibers:totalLines,completion:fibers/Math.max(1,totalLines),
-      cachedLines:g.lines.size,method:'image-residual-identity-hybrid-v1',
-      mse:mse(currentRgb,target,mask),mseImprovement:initialMse>EPS?clamp01(1-mse(currentRgb,target,mask)/initialMse):1,
+      cachedLines:g.lines.size,method:'adaptive-continuous-residual-optical-v2',
+      mse:finalMse,mseImprovement:initialMse>EPS?clamp01(1-finalMse/initialMse):1,
       featureCompletions:completionFrom(initialFeatureError,finalFeatureError),
-      renderAlpha,blackShare:blackBudget/totalLines,colorShare:colorBudget/totalLines,...diagnostics
+      renderAlpha:baseAlpha,blackShare,colorShare:1-blackShare,
+      timedOut:Number.isFinite(deadline)&&Date.now()>=deadline,
+      trails:routes.reduce((s,r)=>s+(r.trails?.length||0),0),...diagnostics
     },
     portrait:{
       enabled:true,faceBox:portrait.faceBox,landmarksUsed:portrait.landmarksUsed,
       orientationCorrected:Boolean(preprocess.landmarks?.orientationCorrected),
       orientationEvidence:preprocess.landmarks?.orientationEvidence||null
     },
-    backgroundSuppression:preprocess.backgroundSuppress??.86,
-    colorLayering:{enabled:true,method:'image-residual-after-likeness-scaffold'}
+    backgroundSuppression:preprocess.backgroundSuppress??.88,
+    colorLayering:{enabled:true,method:'joint-residual-optical-competition'}
   };
 }

@@ -18,7 +18,7 @@
       const pathSlug = location.pathname.match(/\/projects\/([^/?#]+)/)?.[1];
       const slug = decodeURIComponent(pathSlug || new URLSearchParams(location.search).get('slug') || '');
       const stringArt = slug === 'magic-of-string-art';
-      const engineV4 = stringArt && new URLSearchParams(location.search).get('engine') === 'v4';
+      const engineV4 = stringArt && new URLSearchParams(location.search).get('engine') !== 'legacy';
       window.__ATS_PROJECT_SLUG = slug;
       window.__ATS_STRING_ART_PAGE = stringArt;
       window.__ATS_STRING_ART_V4_PAGE = engineV4;
@@ -42,7 +42,7 @@
         document.head.appendChild(link);
       }
       if (engineV4) {
-        for (const href of ['/project-string-art-v4-lab.mjs?v=11','/string-art-v4/core.mjs']) {
+        for (const href of ['/project-string-art-v4-lab.mjs?v=12','/string-art-v4/core.mjs']) {
           const link = document.createElement('link');
           link.rel = 'modulepreload';
           link.href = href;
@@ -79,10 +79,10 @@
         return promise;
       };
 
-      window.__ATS_LOAD_STRING_ART_RUNTIME = () => loadScript('/project-string-art.js?v=7');
+      window.__ATS_LOAD_STRING_ART_RUNTIME = () => loadScript('/project-string-art.js?v=8');
       window.__ATS_LOAD_STRING_ART_V4 = () => {
         if (!engineV4) return Promise.resolve();
-        if (!window.__atsV4ModulePromise) window.__atsV4ModulePromise = import('/project-string-art-v4-lab.mjs?v=11');
+        if (!window.__atsV4ModulePromise) window.__atsV4ModulePromise = import('/project-string-art-v4-lab.mjs?v=12');
         return window.__atsV4ModulePromise;
       };
 

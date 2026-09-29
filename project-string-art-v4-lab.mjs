@@ -1,7 +1,7 @@
 import { makeCirclePins } from './string-art-v4/core.mjs';
 
 const params = new URLSearchParams(location.search);
-if (params.get('engine') === 'v4') {
+if (params.get('engine') !== 'legacy') {
   const $ = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
   let worker = null;
@@ -16,7 +16,7 @@ if (params.get('engine') === 'v4') {
   let faceDetector = null;
   let mediaPipeFaceLandmarker = null;
   let mediaPipeLoading = null;
-  const tuning = { likeness:92, detail:90, color:35 };
+  const tuning = { likeness:94, detail:92, color:68 };
   let faceDetectToken = 0;
   let faceDetectTimer = 0;
 
@@ -33,12 +33,12 @@ if (params.get('engine') === 'v4') {
 
   const FIXED_PROFILE = Object.freeze({
     key:'portrait',
-    size:196,
-    nails:336,
-    colorFibers:6800,
-    candidates:108,
+    size:204,
+    nails:360,
+    colorFibers:8400,
+    candidates:128,
     palette:5,
-    detail:.84,
+    detail:.90,
     crossingColor:.15,
     opacityColor:.35,
     repeatColor:2,
@@ -483,13 +483,17 @@ if (params.get('engine') === 'v4') {
       const palette=result.palette?.hex||[];
       for(const route of result.routes||[]){
         const color=palette[route.colorIndex]||'#111111'; let n=0;
-        for(const trail of route.trails||[]) for(let i=1;i<trail.length;i++){lines.push({a:trail[i-1],b:trail[i],color,colorIndex:route.colorIndex});n++}
+        if(route.segments?.length){
+          for(const segment of route.segments){lines.push({a:segment.a,b:segment.b,color,colorIndex:route.colorIndex,alpha:segment.alpha});n++}
+        }else{
+          for(const trail of route.trails||[]) for(let i=1;i<trail.length;i++){lines.push({a:trail[i-1],b:trail[i],color,colorIndex:route.colorIndex});n++}
+        }
         perColor[route.colorIndex]=n;
       }
     }
     const palette=result.mode==='mono-global'?['#111111']:(result.palette?.hex||[]);
     const colorsUsed=Math.max(1,perColor.filter((n)=>Number(n||0)>0).length);
-    return {pins,lines,size,renderedRgb:result.renderedRgb||null,meta:{mode:result.mode,pins:p.nails,lines:lines.length,palette,perColor,colorsUsed,selectedColors:palette.length,mse:result.metrics?.mse||0,engine:'ATS-image-residual-identity-hybrid'}};
+    return {pins,lines,size,renderedRgb:result.renderedRgb||null,meta:{mode:result.mode,pins:p.nails,lines:lines.length,palette,perColor,colorsUsed,selectedColors:palette.length,mse:result.metrics?.mse||0,engine:'ATS-adaptive-continuous-residual-optical-v2'}};
   }
 
   function linearToSrgb(v){
@@ -534,7 +538,7 @@ if (params.get('engine') === 'v4') {
     const lineWidth=data.meta.mode==='color-global'?.50:.54;
     for(let i=0;i<Math.min(count,data.lines.length);i++){
       const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
-      ctx.strokeStyle=hexWithAlpha(l.color,alpha);ctx.lineWidth=lineWidth;
+      ctx.strokeStyle=hexWithAlpha(l.color,l.alpha??alpha);ctx.lineWidth=lineWidth;
       ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
     }
     ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.fillStyle='#9a6a16';
@@ -554,7 +558,7 @@ if (params.get('engine') === 'v4') {
 
   function getWorker(){
     if(worker)return worker;
-    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=5',import.meta.url),{type:'module'});
+    worker=new Worker(new URL('./string-art-v4/worker.mjs?v=6',import.meta.url),{type:'module'});
     worker.onmessage=e=>{
       const msg=e.data,job=pending.get(msg.id);if(!job)return;
       if(msg.type==='progress'){job.onProgress?.(msg);return}
@@ -640,9 +644,9 @@ if (params.get('engine') === 'v4') {
       const target=capturePortraitTarget(p.size,face);
       const rgba=target.rgba,nColors=requestedPaletteSize(rgba,p);
       const likeness=clamp(tuning.likeness/100),detail=clamp(tuning.detail/100),colorStrength=clamp(tuning.color/100);
-      const maxFibers=Math.round(4800+detail*2200);
-      const candidateLimit=Math.round(72+detail*40);
-      const timeBudgetMs=Math.round(6500+detail*4500);
+      const maxFibers=Math.round(6600+detail*1800);
+      const candidateLimit=Math.round(96+detail*34);
+      const timeBudgetMs=0;
       setStatus(tr('قراءة هندسة الوجه والملامح…','READING FACIAL GEOMETRY + CONTOURS…'),16);
       setStatus(tr('تشغيل محرك مطابقة الصورة…','RUNNING SOURCE-MATCH SOLVER…'),18);
       const response=await withTimeout(sendWorker({
@@ -662,7 +666,7 @@ if (params.get('engine') === 'v4') {
           simulationSize:36,maxCombinations:180
         },
         solve:{
-          maxFibers,timeBudgetMs,candidateLimit,maxRepeat:p.repeatColor,
+          maxFibers,timeBudgetMs,candidateLimit,maxRepeat:p.repeatColor,blockSize:56,
           likeness,detail,colorStrength
         },
         useDither:true
@@ -670,10 +674,10 @@ if (params.get('engine') === 'v4') {
         const total=msg.total||1,done=msg.done||0,phase=msg.phase||'';
         const pct=phase==='palette'?28:phase==='preprocess'?22:Math.min(97,31+done/total*66);
         setStatus(progressText(msg),pct);
-      }),22000,'portrait solver');
+      }),60000,'portrait solver');
       const result=response.result;
       lastResult=result;lastRender=extractLines(result,p,p.size);
-      lastRender.meta.engine='ATS-image-residual-identity-hybrid';
+      lastRender.meta.engine='ATS-adaptive-continuous-residual-optical-v2';
       lastRender.meta.renderAlpha=Number(result.metrics?.renderAlpha||.055);
       lastRender.meta.featureCompletions=result.metrics?.featureCompletions||null;
       window.__saV4LastResult=result;window.__saV4LastRender=lastRender;
@@ -709,7 +713,7 @@ if (params.get('engine') === 'v4') {
     const alpha=data.meta.renderAlpha||.055;
     for(let i=0;i<Math.min(count,data.lines.length);i++){
       const l=data.lines[i],p0=data.pins[l.a],p1=data.pins[l.b];
-      ctx.strokeStyle=hexWithAlpha(l.color,alpha);ctx.lineWidth=.46;
+      ctx.strokeStyle=hexWithAlpha(l.color,l.alpha??alpha);ctx.lineWidth=.46;
       ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
     }
     ctx.globalCompositeOperation='source-over';ctx.fillStyle='#9a6a16';

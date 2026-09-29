@@ -5,7 +5,7 @@ import {
   solveColorGlobalOptical,
 } from './core.mjs';
 import { buildColorRoutesFromCounts } from './path.mjs';
-import { solveFastLayeredPortrait } from './fast-layered.mjs?v=4';
+import { solveFastLayeredPortrait } from './fast-layered.mjs?v=6';
 
 const cache = new Map();
 

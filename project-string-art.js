@@ -4,7 +4,7 @@
   const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
   const wait=(ms=0)=>new Promise(r=>setTimeout(r,ms));
   const AR=()=>document.documentElement.lang==='ar';
-  const v4Enabled=new URLSearchParams(location.search).get('engine')==='v4';
+  const v4Enabled=Boolean(window.__ATS_STRING_ART_V4_PAGE)||new URLSearchParams(location.search).get('engine')==='v4';
 
   let frame=0,raf=0,portrait=null;
   let userImage=null,userResult=null,userSequence=[],userRaf=0;
