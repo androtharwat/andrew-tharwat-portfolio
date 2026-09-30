@@ -36,6 +36,12 @@ async function harness(kind, options = {}) {
       signOut: async () => { calls.push(['signOut']); },
       onAuthStateChange: () => ({data:{subscription:{unsubscribe(){}}}})
     },
+    functions: {
+      invoke: async (name,args) => {
+        calls.push(['invoke',name,args]);
+        return {error:options.invokeError || null,data:options.invokeData || {token_hash:'test-token-hash'}};
+      }
+    },
     rpc: async name => { calls.push(['rpc',name]); return {error:options.lookupError || null, data: kind==='access' ? {mode:options.mode || 'prospect',lead:{full_name:'Test'}} : 'test-client'}; },
     from: table => {
       const result = {data:table==='studio_clients'?{id:'test-client',full_name:'Test Client',email:'test@example.com'}:[],error:null};
@@ -53,7 +59,33 @@ async function harness(kind, options = {}) {
   const e = Object.fromEntries(Object.entries(ids).map(([k,v])=>[k,element(v)]));
   return {e,calls,logs,window,context,focused:()=>focused,timers,async send(){e.email.value='test@example.com';await e.send.fire('click');},async enter(value){e.otp.value=value;await e.otp.fire('input');},run:file=>vm.runInContext(source(file),context,{filename:file})};
 }
-for (const kind of ['access','portal']) {
+test('access: 5 rejected, 6 verified, 7 truncated, non-digits removed',async()=>{
+  const h=await harness('access');h.e.email.value='test@example.com';
+  assert.equal(h.e.otp.maxLength,6);assert.equal(h.e.otp.minLength,6);assert.equal(h.e.otp.pattern,'[0-9]{6}');assert.equal(h.e.otp.placeholder,'000000');
+  await h.enter('12345');await h.e.verify.fire('click');
+  assert.equal(h.calls.filter(x=>x[0]==='invoke').length,0);assert.match(h.e.state.textContent,/6-digit/);
+  await h.enter('1234567');assert.equal(h.e.otp.value,'123456');
+  await h.enter('a12b34-56z');assert.equal(h.e.otp.value,'123456');
+  await h.enter('012345');await h.e.verify.fire('click');
+  const invocation=h.calls.find(x=>x[0]==='invoke');
+  assert.equal(invocation[1],'ats-client-code-login');assert.equal(invocation[2].body.email,'test@example.com');assert.equal(invocation[2].body.code,'012345');
+  const verification=h.calls.find(x=>x[0]==='verify')[1];assert.equal(verification.token_hash,'test-token-hash');assert.equal(verification.type,'email');
+  assert.ok(h.calls.some(x=>x[0]==='rpc'));
+});
+test('access: invalid email focuses the email field and sends nothing',async()=>{
+  const h=await harness('access');h.e.email.value='bad@';await h.enter('123456');await h.e.verify.fire('click');
+  assert.equal(h.focused(),h.e.email.id);assert.equal(h.calls.filter(x=>x[0]==='invoke').length,0);
+});
+test('access: rejected Studio code never performs a lookup',async()=>{
+  const h=await harness('access',{invokeError:{code:'invalid_code',message:'Expired'}});h.e.email.value='test@example.com';await h.enter('123456');await h.e.verify.fire('click');
+  assert.match(h.e.state.textContent,/invalid, expired/);assert.ok(h.logs.some(x=>x[0]==='ATS auth: access-code'));assert.equal(h.calls.filter(x=>x[0]==='rpc').length,0);
+});
+test('access: database error is not mislabeled as an invalid Studio code',async()=>{
+  const h=await harness('access',{lookupError:{code:'42883',message:'function min(uuid) does not exist'}});h.e.email.value='test@example.com';await h.enter('123456');await h.e.verify.fire('click');
+  assert.match(h.e.state.textContent,/signed in.*couldn’t load/);assert.ok(h.logs.some(x=>x[0]==='ATS auth: lookup'));assert.equal(h.calls.filter(x=>x[0]==='signOut').length,0);
+});
+
+for (const kind of ['portal']) {
   test(`${kind}: 7 rejected, 8 verified, 9 truncated, non-digits removed`,async()=>{
     const h=await harness(kind);await h.send();
     assert.equal(h.e.otp.maxLength,8);assert.equal(h.e.otp.minLength,8);assert.equal(h.e.otp.pattern,'[0-9]{8}');assert.equal(h.e.otp.placeholder,'00000000');
@@ -86,13 +118,14 @@ test('portal: prospect retains session and is routed to request lookup',async()=
   const h=await harness('portal',{lookupError:{code:'P0002'}});await h.send();await h.enter('12345678');await h.e.verify.fire('click');assert.ok(h.calls.some(x=>x[0]==='redirect'&&x[1]==='/client-access/'));assert.equal(h.calls.filter(x=>x[0]==='signOut').length,0);
 });
 test('access: client routes to full portal',async()=>{
-  const h=await harness('access',{mode:'client'});await h.send();await h.enter('12345678');await h.e.verify.fire('click');h.timers.forEach(fn=>fn());assert.ok(h.calls.some(x=>x[0]==='redirect'&&x[1]==='/client-v9/'));
+  const h=await harness('access',{mode:'client'});h.e.email.value='test@example.com';await h.enter('123456');await h.e.verify.fire('click');h.timers.forEach(fn=>fn());assert.ok(h.calls.some(x=>x[0]==='redirect'&&x[1]==='/client-v9/'));
 });
 test('portal extensions share one Supabase client',async()=>{
   const h=await harness('portal');h.run('client-v9/portal-hse.js');h.run('client-v9/portal-files-live.js');assert.equal(h.calls.filter(x=>x[0]==='createClient').length,1);
 });
 test('entry points load the shared runtime first and pin the SDK',()=>{
   for(const file of ['client-access/index.html','client-v9/index.html']){
-    const html=source(file);assert.match(html,/@supabase\/supabase-js@2\.117\.1"/);assert.ok(html.indexOf('/auth-client.js?v=1')<html.indexOf(file.startsWith('client-access')?'/client-access/access.js?v=5':'/client-v9/portal-live.js?v=6'));
+    const html=source(file),entry=file.startsWith('client-access')?'/client-access/access.js':'/client-v9/portal-live.js';
+    assert.match(html,/@supabase\/supabase-js@2\.117\.1"/);assert.match(html,new RegExp(entry.replaceAll('/','\\/')+'\\?v=\\d+'));assert.ok(html.indexOf('/auth-client.js?v=1')<html.indexOf(entry));
   }
 });
