@@ -18,7 +18,7 @@ export default function CallCenter({email}:{email:string;owner:boolean}){
  const [locked,setLocked]=useState<string[]>(call.locked||call.analysis?.locked||[]);const [enabled,setEnabled]=useState(true);const [run,setRun]=useState(0);const [analysisState,setAnalysisState]=useState('idle');const [analysisError,setAnalysisError]=useState('');
  const [busy,setBusy]=useState(false);const [saved,setSaved]=useState('');const [error,setError]=useState('');const [history,setHistory]=useState<Call[]|null>(null);const [historyBusy,setHistoryBusy]=useState(false);const [copied,setCopied]=useState('');
  const sequence=useRef(0);const latest=useRef({crm,locked});latest.current={crm,locked};const historyDialog=useRef<HTMLElement>(null);
- const completed=call.stage==='completed';const uncertain=result?.uncertain||[];const visual=view(crm,uncertain);const current=result&&JSON.stringify(result.crm)===JSON.stringify(crm);
+ const completed=call.stage==='completed';const uncertain=(result?.uncertain||[]).filter(key=>Boolean(crm[key]));const visual=view(crm,uncertain);const current=result&&JSON.stringify(result.crm)===JSON.stringify(crm);
  const nudge=current?result.nudge:visual.nudge;const recap=current?result.recap:visual.recap;
  const status=analysisState==='waiting'?'في انتظار توقف الكتابة…':analysisState==='running'?'جاري تحليل الملاحظات…':analysisState==='ready'?'تم تحديث التحليل':analysisState==='error'?'التحليل متوقف — الحقول متاحة يدويًا':enabled?'جاهز للملاحظات':'التحليل موقوف';
  useEffect(()=>{if(completed){sessionStorage.removeItem('move-now-call:'+email);return;}try{sessionStorage.setItem('move-now-call:'+email,JSON.stringify({...call,raw_notes:notes,crm,analysis:result,locked}));}catch{}},[call,notes,crm,result,locked,email,completed]);

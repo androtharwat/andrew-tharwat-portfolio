@@ -1,6 +1,6 @@
 const {catalog}=require('./move-now-services.cjs');
 const fields=[
- ['clientName','اسم العميل'],['title','اللقب'],['phone','الهاتف / الواتساب'],
+ ['clientName','اسم العميل'],['title','اللقب',['','أ/','م/','د/']],['phone','الهاتف / الواتساب'],
  ['financialClass','تصنيف العميل المالي',['','cash','installments']],
  ['route','مسار الطلب',['','buy','finish','sale','rent']],
  ['service','الخدمة المحددة',['',...Object.keys(catalog),'sell','rent']],
@@ -11,7 +11,7 @@ const fields=[
  ['whatsappConfirmed','موافقة التواصل على واتساب',['','yes','no']],['followupTime','موعد المتابعة المتفق عليه']
 ];
 const keys=fields.map(f=>f[0]);
-const choices={financialClass:{'':'غير محدد',cash:'Class A — كاش / استثمار',installments:'تسهيلات وتقسيط'},route:{'':'غير محدد',buy:'شراء',finish:'تشطيب وتجهيز',sale:'إعادة بيع',rent:'تأجير وإدارة'},service:{'':'يحتاج تحديد',...Object.fromEntries(Object.entries(catalog).map(([k,v])=>[k,v.label])),sell:'بيع وحدة جاهزة',rent:'تأجير وإدارة وحدة جاهزة'},whatsappConfirmed:{'':'لم يُؤكد',yes:'موافق',no:'غير موافق'}};
+const choices={title:{'':'غير محدد','أ/':'أ/','م/':'م/','د/':'د/'},financialClass:{'':'غير محدد',cash:'Class A — كاش / استثمار',installments:'تسهيلات وتقسيط'},route:{'':'غير محدد',buy:'شراء',finish:'تشطيب وتجهيز',sale:'إعادة بيع',rent:'تأجير وإدارة'},service:{'':'يحتاج تحديد',...Object.fromEntries(Object.entries(catalog).map(([k,v])=>[k,v.label])),sell:'بيع وحدة جاهزة',rent:'تأجير وإدارة وحدة جاهزة'},whatsappConfirmed:{'':'لم يُؤكد',yes:'موافق',no:'غير موافق'}};
 function emptyCRM(){return Object.fromEntries(keys.map(k=>[k,'']));}
 function cleanCRM(value){if(!value||typeof value!=='object'||Array.isArray(value))throw Error('راجع حقول المكالمة.');const crm=emptyCRM();for(const k of Object.keys(value)){if(!keys.includes(k)||typeof value[k]!=='string'||value[k].length>600)throw Error('راجع حقول المكالمة.');crm[k]=value[k].trim();}for(const [key,,options] of fields)if(options&&!options.includes(crm[key]))throw Error('اختيار غير صحيح.');return crm;}
 function phoneNumber(value){let p=value.replace(/[\s()\-]/g,'').replace(/^00/,'+');if(/^01[0125]\d{8}$/.test(p))p='+20'+p.slice(1);if(/^20\d{10}$/.test(p))p='+'+p;return /^\+[1-9]\d{7,14}$/.test(p)?p:'';}
