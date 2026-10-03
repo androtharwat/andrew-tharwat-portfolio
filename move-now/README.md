@@ -20,7 +20,7 @@ Call completion and lead creation/update happen in one database transaction. Exp
 
 ## Actual AI integration
 
-`server/move-now-ai.cjs` uses the AI SDK with AI Gateway and `openai/gpt-6-luna` structured output. Vercel runtime OIDC is used by default; an optional server-only `AI_GATEWAY_API_KEY` is supported by the SDK. No key reaches the browser. Never commit credentials or purchase credits automatically.
+`server/move-now-ai.cjs` uses the AI SDK with AI Gateway and `openai/gpt-5.4-nano` structured output. Vercel runtime OIDC is used by default; an optional server-only `AI_GATEWAY_API_KEY` is supported by the SDK. This model is eligible for the current free AI Gateway credits; the live catalog must be checked before changing models. No key reaches the browser. Never commit credentials or purchase credits automatically.
 
 Analysis starts after 1.1 seconds without typing. It receives cumulative notes, previous CRM data, and employee-locked fields. The prompt covers Egyptian Arabic, Franco, the free ROI/valuation and engineering-visit hook, all service paths, and explicit confirmation of timing/WhatsApp. Notes are treated as data, not instructions. Financial offers and returns are never guaranteed.
 
