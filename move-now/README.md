@@ -1,6 +1,6 @@
 # Move Now inside ATS
 
-Routes: `/move-now` for customers, `/move-now/admin` for the team. The supplied React screens, styles, brand assets, statuses, and follow-up workflow are retained. The footer of ATS links to the customer route.
+Routes: `/move-now` for customers, `/move-now/admin` for the team. The supplied React screens, styles, brand assets, statuses, and follow-up workflow are retained. Move Now is an independent service hosted on the official infrastructure. ATS homepage navigation and footer contain no Move Now links.
 
 ## Build
 
@@ -24,6 +24,8 @@ For Move Now exports, keep a private JSON file with complete `leads` and `admins
 
 Export all original Move Now leads and team members through an authenticated owner session. Preserve UUIDs, details, statuses, assignments, notes, follow-up dates, and timestamps. Import and compare every row before switching traffic. Run an authenticated follow-up save and a customer request on a preview deployment. The original Site remains live until these checks pass; do not delete its database or silently move only new submissions.
 
-All 29 repository/API tests pass, including native Vercel request URL parsing with a modern Supabase secret key. Live admin sign-in and delivery remain unverified. The dashboard currently shows email OTP length 8 and custom Gmail SMTP enabled. Auth Site URL and the sole allowed redirect still point to the legacy Vercel domain; add the exact official `/move-now/admin` redirect while preserving existing redirects before launch.
+The customer form now offers six distinct services: cash purchase, installment purchase, finishing only, finishing then sale, finishing then rental, and finishing/furnishing then rental. A shared service catalog defines the form and API field checks; changing services clears previous details. New service codes are added to the existing database constraint. Original `buy`, `rent`, and `both` records remain readable in the dashboard and filters, without changing source data. Follow-up details and WhatsApp summaries use service-specific Arabic field labels.
 
-Vercel's connected access returned 403 for team `at-studio4`; no server credential has been configured or new production deployment made. Server environment setup, a real customer submission and authenticated dashboard/follow-up checks are still required before merging. Existing public Move Now links remain on the working subdomain until launch.
+Vercel project `ats` in official team `at-studio4` has server-only `SUPABASE_SECRET_KEY` for Preview/Production and `MOVE_NOW_OWNER_EMAIL`. Supabase Auth Site URL is `https://atstudioimpact.com`; the exact official `/move-now/admin` redirect is configured and the legacy redirect is preserved. OTP is eight digits; custom Gmail SMTP is enabled. Actual email receipt and admin sign-in remain a release check.
+
+All 37 repository/API tests pass. The official e409559 preview was redeployed with saved environment variables and successfully accepted a synthetic customer request, verified in Supabase. The six-path update still needs fresh preview/browser validation and authenticated dashboard/follow-up checks before launch. The original Site remains live until cutover reconciliation.

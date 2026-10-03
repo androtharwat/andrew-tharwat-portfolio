@@ -1,7 +1,7 @@
 const {createHash}=require('node:crypto');
 const CONFIG=require('../config.js');
-const services=['buy','finish','rent','both'];const statuses=['new','contacted','visit','offer','active','done','closed'];
-const detailKeys=['location','type','area','rooms','bathrooms','condition','budget','purpose','timeline','style','works','furnished','rentType','brief','contactTime'];
+const {services:serviceLabels,detailKeys,fieldsFor,numericMax,legacyDetailKeys,works}=require('./move-now-services.cjs');
+const services=Object.keys(serviceLabels);const statuses=['new','contacted','visit','offer','active','done','closed'];
 const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 class ClientError extends Error{constructor(message,status=400){super(message);this.status=status;}}
 function validateLead(body){if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['id','name','phone','service','details','consent','website'].includes(k)))throw new ClientError('راجع بيانات الطلب.');
@@ -10,7 +10,13 @@ function validateLead(body){if(!body||typeof body!=='object'||Array.isArray(body
  if(Object.entries(d).some(([k,v])=>!detailKeys.includes(k)||typeof v!=='string'||v.trim().length>1500))throw new ClientError('راجع تفاصيل العقار.');const details=Object.fromEntries(Object.entries(d).map(([k,v])=>[k,v.trim()]));
  if(!details.location||!details.type||!details.timeline||!details.contactTime)throw new ClientError('كمّل المنطقة ونوع العقار والوقت المناسب.');
  if(service==='buy'&&(!details.budget||!details.purpose))throw new ClientError('كمّل الميزانية والغرض من الشراء.');
- if(service!=='buy'&&(!details.area||!details.condition))throw new ClientError('كمّل مساحة العقار وحالته.');
+ if(!service.startsWith('buy')&&(!details.area||!details.condition))throw new ClientError('كمّل مساحة العقار وحالته.');
+ const fields=fieldsFor(service);
+ if(fields.length){const allowed=new Set([...fields.map(f=>f.key),'brief',...(service.startsWith('finish')?['works']:[])]);
+  if(Object.entries(details).some(([k,v])=>v&&!allowed.has(k)))throw new ClientError('راجع تفاصيل الخدمة المختارة.');
+  for(const f of fields){const value=details[f.key];if(f.required&&!value)throw new ClientError('كمّل '+f.label+'.');if(value&&f.options&&!f.options.includes(value))throw new ClientError('راجع '+f.label+'.');if(value&&f.type==='number'&&(!/^\d+(\.\d+)?$/.test(value)||Number(value)<=0||Number(value)>numericMax(f.key)))throw new ClientError('راجع '+f.label+'.');}
+  if(details.works&&details.works.split('، ').some(v=>!works.includes(v)))throw new ClientError('راجع الأعمال المطلوبة.');
+ }else if(Object.entries(details).some(([k,v])=>v&&!legacyDetailKeys.includes(k)))throw new ClientError('راجع تفاصيل الطلب.');
  for(const k of ['area','rooms','bathrooms'])if(details[k]&&(!/^\d+(\.\d+)?$/.test(details[k])||Number(details[k])<=0||Number(details[k])>(k==='area'?100000:100)))throw new ClientError('راجع المساحة وعدد الغرف والحمامات.');
  phone=phone.replace(/[\s()\-]/g,'').replace(/^00/,'+');if(/^01[0125]\d{8}$/.test(phone))phone='+20'+phone.slice(1);if(/^20\d{10}$/.test(phone))phone='+'+phone;if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new ClientError('اكتب رقم واتساب صحيح مع كود الدولة.');
  const now=Date.now();return {id,name,phone,service,details:JSON.stringify(details),status:'new',assigned:'',notes:'',next_followup:'',created_at:now,updated_at:now};}
