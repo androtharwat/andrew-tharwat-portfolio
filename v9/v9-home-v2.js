@@ -14,7 +14,8 @@
     rendering: false,
     workObserver: null,
     renderTimer: null,
-    refreshTimer: null,
+    expanded: false,
+    workLayout: {},
   };
 
   const escapeHTML = (value) => String(value ?? '')
@@ -38,6 +39,8 @@
     if (!element) return;
     const enKey = html ? 'data-en-html' : 'data-en';
     const arKey = html ? 'data-ar-html' : 'data-ar';
+    element.removeAttribute(html ? 'data-en' : 'data-en-html');
+    element.removeAttribute(html ? 'data-ar' : 'data-ar-html');
     element.setAttribute(enKey, english);
     element.setAttribute(arKey, arabic || english);
     if (html) element.innerHTML = isArabic() ? (arabic || english) : english;
@@ -61,7 +64,7 @@
     if ($('link[href*="v9-home-v2.css"]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/v9/v9-home-v2.css?v=1';
+    link.href = '/v9/v9-home-v2.css?v=2';
     document.head.appendChild(link);
   };
 
@@ -70,7 +73,7 @@
   };
 
   function updateHeader() {
-    const header = $('#site-header');
+    const header = $('.site-header');
     if (!header) return;
     addClass(header, 'ats-header-v2');
 
@@ -79,9 +82,9 @@
       const links = $$('a', nav).filter((link) => !link.classList.contains('nav-client-access'));
       const linkConfig = [
         { match: /#home|^\/$/, en: 'HOME', ar: 'الرئيسية', href: '#home' },
-        { match: /#studio|#how/i, en: 'HOW ATS THINKS', ar: 'كيف نفكر', href: '#studio' },
+        { match: /#studio|#how/i, en: 'METHOD', ar: 'المنهج', href: '#studio' },
         { match: /#capabilities|#expertise/i, en: 'CAPABILITIES', ar: 'القدرات', href: '#capabilities' },
-        { match: /#work|#projects/i, en: 'SELECTED WORK', ar: 'أعمال مختارة', href: '#work' },
+        { match: /#work|#projects/i, en: 'WORK', ar: 'الأعمال', href: '#work' },
         { match: /#contact|#start/i, en: 'START', ar: 'ابدأ', href: '#contact' },
       ];
 
@@ -89,6 +92,8 @@
         const config = linkConfig.find((item) => item.match.test(link.getAttribute('href') || '')) || linkConfig[index];
         if (!config) return;
         link.href = config.href;
+        link.classList.toggle('nav-home', config.href === '#home');
+        link.removeAttribute('data-icon');
         copy(link, config.en, config.ar);
       });
 
@@ -98,15 +103,21 @@
         access.className = 'nav-client-access';
         access.href = '/client-access/';
         nav.appendChild(access);
+        access.addEventListener('click', () => {
+          if ($('#menu-toggle')?.getAttribute('aria-expanded') === 'true') $('#menu-toggle').click();
+        });
       }
       copy(access, 'CLIENT ACCESS', 'دخول العميل');
-      access.addEventListener('click', () => $('#menu-toggle')?.click(), { once: true });
+      ['#studio', '#work', '#capabilities', '#contact'].forEach((href) => {
+        const link = $(`a[href="${href}"]`, nav);
+        if (link) nav.insertBefore(link, access);
+      });
     }
 
-    const headerCTA = $('#header-cta');
+    const headerCTA = $('.header-cta');
     if (headerCTA) {
       headerCTA.href = '#contact';
-      copy(headerCTA, 'BRING US THE PROBLEM', 'أحضر المشكلة');
+      copy(headerCTA, 'BRING US THE PROBLEM', 'احكِ لنا المشكلة');
     }
   }
 
@@ -116,7 +127,7 @@
     addClass(hero, 'v2-hero');
 
     const title = $('#hero-title', hero) || $('h1', hero);
-    copy(title, 'BRING THE PROBLEM.<br>WE BUILD THE SOLUTION.', 'أحضر المشكلة.<br>نبني الحل.', true);
+    copy(title, 'BRING THE PROBLEM.<br><span>WE BUILD THE SOLUTION.</span>', 'ابدأ بالمشكلة.<br><span>وإحنا نبني الحل.</span>', true);
 
     const subtitle = $('#hero-subtitle', hero) || $('.hero-subtitle', hero) || $('p', hero);
     copy(subtitle, 'Different minds. Different tools. One direction.', 'عقول مختلفة. أدوات مختلفة. اتجاه واحد.');
@@ -129,7 +140,7 @@
     if (primary) {
       primary.href = '#contact';
       primary.removeAttribute('data-scroll-target');
-      copy(primary, 'BRING US THE PROBLEM', 'أحضر المشكلة');
+      copy(primary, 'BRING US THE PROBLEM', 'احكِ لنا المشكلة');
     }
     if (secondary) {
       secondary.href = '#work';
@@ -137,6 +148,12 @@
       copy(secondary, 'EXPLORE THE WORK', 'استكشف الأعمال');
     }
     $('.process-strip', hero)?.setAttribute('hidden', 'hidden');
+    copy($('.problem-sphere span', hero), 'PROBLEM', 'المشكلة');
+    copy($('.solution-sphere span', hero), 'SOLUTION', 'الحل');
+    const visual = $('.v10-open-system', hero);
+    if (visual) visual.setAttribute('aria-label', isArabic()
+      ? 'AT Studio يجمع الخبرات المناسبة حول المشكلة لبناء الحل.'
+      : 'AT Studio assembles the right expertise around the problem to build a solution.');
   }
 
   function buildMethod() {
@@ -145,10 +162,9 @@
     section.dataset.atsV2Built = 'true';
     addClass(section, 'v2-method-section');
     section.innerHTML = `
-      <div class="section-head v2-section-head">
+      <div class="container"><div class="section-head v2-section-head">
         <p class="eyebrow" data-en="HOW ATS THINKS" data-ar="كيف يفكر ATS">HOW ATS THINKS</p>
-        <h2 data-en="Start with the problem. Build what works." data-ar="نبدأ من المشكلة. نبني ما يعمل.">Start with the problem. Build what works.</h2>
-        <p class="section-intro" data-en="The method is simple: understand what is really happening, then bring together the right minds and tools." data-ar="المنهج بسيط: نفهم ما يحدث فعلًا، ثم نجمع العقول والأدوات المناسبة.">The method is simple: understand what is really happening, then bring together the right minds and tools.</p>
+        <h2 data-en="One connected process." data-ar="منهج واحد مترابط.">One connected process.</h2>
       </div>
       <div class="v2-method-flow" aria-label="AT Studio method">
         <article class="v2-method-step"><span>01</span><h3 data-en="THE PROBLEM" data-ar="المشكلة">THE PROBLEM</h3><p data-en="What is really happening?" data-ar="ما الذي يحدث فعلًا؟">What is really happening?</p></article>
@@ -156,8 +172,7 @@
         <article class="v2-method-step"><span>03</span><h3 data-en="ASSEMBLE" data-ar="نجمع">ASSEMBLE</h3><p data-en="Bring the right expertise." data-ar="نجمع الخبرة المناسبة.">Bring the right expertise.</p></article>
         <article class="v2-method-step"><span>04</span><h3 data-en="BUILD" data-ar="نبني">BUILD</h3><p data-en="Make it useful." data-ar="نجعله مفيدًا.">Make it useful.</p></article>
         <article class="v2-method-step"><span>05</span><h3 data-en="REAL SOLUTION" data-ar="حل حقيقي">REAL SOLUTION</h3><p data-en="Work that holds up." data-ar="حل يصمد في الواقع.">Work that holds up.</p></article>
-      </div>`;
-    syncLanguage();
+      </div></div>`;
   }
 
   function buildCapabilities() {
@@ -166,7 +181,7 @@
     section.dataset.atsV2Built = 'true';
     addClass(section, 'v2-capabilities-section');
     section.innerHTML = `
-      <div class="section-head v2-section-head">
+      <div class="container"><div class="section-head v2-section-head">
         <p class="eyebrow" data-en="CAPABILITIES" data-ar="القدرات">CAPABILITIES</p>
         <h2 data-en="Capabilities are tools." data-ar="القدرات أدوات.">Capabilities are tools.</h2>
         <p class="section-intro" data-en="The problem sets the mix. We assemble only what the work needs." data-ar="المشكلة تحدد المزيج. نجمع فقط ما يحتاجه العمل.">The problem sets the mix. We assemble only what the work needs.</p>
@@ -176,8 +191,7 @@
         <article class="v2-capability-item"><span class="v2-capability-index">02</span><h3 data-en="DIGITAL" data-ar="رقمي">DIGITAL</h3><p data-en="Web · Automation · Data" data-ar="ويب · أتمتة · بيانات">Web · Automation · Data</p></article>
         <article class="v2-capability-item"><span class="v2-capability-index">03</span><h3 data-en="AI &amp; SYSTEMS" data-ar="الذكاء الاصطناعي والأنظمة">AI &amp; SYSTEMS</h3><p data-en="Intelligence · Workflows · Production" data-ar="ذكاء · مسارات عمل · إنتاج">Intelligence · Workflows · Production</p></article>
         <article class="v2-capability-item"><span class="v2-capability-index">04</span><h3 data-en="OPERATIONAL / HSE" data-ar="التشغيل / السلامة">OPERATIONAL / HSE</h3><p data-en="People · Risk · Systems" data-ar="أفراد · مخاطر · أنظمة">People · Risk · Systems</p></article>
-      </div>`;
-    syncLanguage();
+      </div></div>`;
   }
 
   function updateWorkIntro() {
@@ -191,7 +205,8 @@
     const intro = $('.section-intro', head) || $('p:not(.eyebrow)', head);
     copy(eyebrow, 'SELECTED PROOF', 'أعمال تثبت المنهج');
     copy(title, 'REAL WORK. DIFFERENT PROBLEMS.', 'أعمال حقيقية. مشاكل مختلفة.');
-    copy(intro, 'Each case shows the need, the thinking, and what was built. Outcomes appear only where the case has been documented.', 'كل مشروع يوضح الاحتياج، وطريقة التفكير، وما تم بناؤه. نعرض النتائج فقط عندما تكون موثقة.');
+    copy(intro, 'The problem. The thinking. What was built.', 'المشكلة. طريقة التفكير. وما تم بناؤه.');
+    if (intro) intro.classList.add('v2-work-intro');
   }
 
   function buildClientAccess() {
@@ -202,16 +217,15 @@
     section.id = 'client-access';
     section.className = 'v2-client-access-section';
     section.innerHTML = `
-      <div>
+      <div class="container v2-client-access-inner"><div>
         <p class="eyebrow" data-en="EXISTING CLIENT" data-ar="عميل حالي">EXISTING CLIENT</p>
         <h2 data-en="CLIENT ACCESS" data-ar="دخول العميل">CLIENT ACCESS</h2>
       </div>
       <div class="v2-client-access-copy">
         <p data-en="Already working with AT Studio? Return to your request workspace and continue where you left off." data-ar="تعمل بالفعل مع AT Studio؟ عد إلى مساحة طلبك وتابع من حيث توقفت.">Already working with AT Studio? Return to your request workspace and continue where you left off.</p>
-        <a class="btn btn-secondary v2-client-access-link" href="/client-access/" data-en="OPEN CLIENT ACCESS" data-ar="فتح دخول العميل">OPEN CLIENT ACCESS</a>
-      </div>`;
-    contact.parentNode.insertBefore(section, contact);
-    syncLanguage();
+        <a class="btn ghost v2-client-access-link" href="/client-access/" data-en="OPEN CLIENT ACCESS" data-ar="فتح بوابة العميل">OPEN CLIENT ACCESS</a>
+      </div></div>`;
+    contact.insertAdjacentElement('afterend', section);
   }
 
   function updateContact() {
@@ -221,17 +235,10 @@
     const head = $('.section-head', section) || $('header', section);
     const title = head && ($('h2', head) || $('h3', head));
     const intro = head && ($('.section-intro', head) || $('p:not(.eyebrow)', head));
-    copy(title, 'START WITH THE REAL PROBLEM.<br><span>BRING US THE PROBLEM.</span>', 'ابدأ من المشكلة الحقيقية.<br><span>أحضر المشكلة.</span>', true);
+    copy(title, 'BRING US<br><span>THE PROBLEM.</span>', 'احكِ لنا<br><span>المشكلة.</span>', true);
     copy(intro, 'Tell us what needs to work. We will shape the next step with you.', 'أخبرنا بما يجب أن يعمل. سنحدد معك الخطوة التالية.');
 
-    if (!section.querySelector('.v2-start-link')) {
-      const link = document.createElement('a');
-      link.className = 'btn btn-primary v2-start-link';
-      link.href = '#studio-concierge';
-      copy(link, 'BRING US THE PROBLEM', 'أحضر المشكلة');
-      const concierge = $('#studio-concierge', section);
-      if (concierge) concierge.parentNode.insertBefore(link, concierge);
-    }
+    // The existing intake begins immediately below this heading; keep its DOM and handlers.
     $('.concierge-legacy-brief', section)?.setAttribute('hidden', 'hidden');
   }
 
@@ -250,7 +257,7 @@
     };
     ensureLink('/client-access/', 'footer-client-access', 'CLIENT ACCESS', 'دخول العميل');
     ensureLink('/join/', 'footer-specialist-network', 'SPECIALIST NETWORK', 'شبكة المتخصصين');
-    syncLanguage();
+    copy($('p', footer), 'AT Studio — Build what works.', 'AT Studio — نبني ما يعمل.');
   }
 
   function hideInternalUI() {
@@ -269,7 +276,7 @@
   function reorderJourney() {
     const main = $('main');
     if (!main) return;
-    ['home', 'studio', 'work', 'capabilities', 'client-access', 'contact', 'team']
+    ['home', 'studio', 'work', 'capabilities', 'contact', 'client-access', 'team']
       .map((id) => document.getElementById(id))
       .filter(Boolean)
       .forEach((section) => main.appendChild(section));
@@ -323,7 +330,9 @@
 
   function imageMarkup(project, featured = false) {
     const title = escapeHTML(textFor(project, 'title'));
-    const url = clean(project.cover_url);
+    const source = clean(project.cover_url);
+    const url = /^https?:\/\//i.test(source) ? source : source && !/^[a-z][a-z0-9+.-]*:/i.test(source)
+      ? `/${source.replace(/^\/+/, '')}` : '';
     return url
       ? `<div class="v2-case-image"><img src="${escapeHTML(url)}" alt="${title}" loading="${featured ? 'eager' : 'lazy'}"></div>`
       : '<div class="v2-case-image v2-case-image-empty" aria-hidden="true"></div>';
@@ -341,23 +350,23 @@
     const hasCaseFields = Boolean(problem || thinking || built || result);
     const fields = hasCaseFields
       ? [
-        fieldBlock('THE PROBLEM', problem),
-        fieldBlock('THE THINKING', thinking),
-        fieldBlock('WHAT WE BUILT', built),
-        fieldBlock('THE RESULT', result),
+        fieldBlock(isArabic() ? 'المشكلة' : 'THE PROBLEM', problem),
+        fieldBlock(isArabic() ? 'طريقة التفكير' : 'THE THINKING', thinking),
+        fieldBlock(isArabic() ? 'ما بنيناه' : 'WHAT WE BUILT', built),
+        fieldBlock(isArabic() ? 'النتيجة' : 'THE RESULT', result),
       ].join('')
-      : fieldBlock('PROJECT CONTEXT', context, 'v2-case-context');
+      : fieldBlock(isArabic() ? 'عن المشروع' : 'PROJECT CONTEXT', context, 'v2-case-context');
 
     return `
       <article class="v2-case-card ${featured ? 'v2-case-card-featured' : ''}" data-project-slug="${escapeHTML(project.slug || '')}">
-        <a class="v2-case-card-link" href="${hrefFor(project)}" aria-label="Open ${escapeHTML(title)}">
+        <a class="v2-case-card-link" href="${hrefFor(project)}" aria-label="${isArabic() ? 'عرض' : 'Open'} ${escapeHTML(title)}">
           ${imageMarkup(project, featured)}
           <div class="v2-case-card-body">
-            <div class="v2-case-card-meta"><span>${featured ? 'FEATURED CASE' : 'SELECTED WORK'}</span>${project.featured ? '<span class="v2-featured-dot" aria-hidden="true"></span>' : ''}</div>
+            <div class="v2-case-card-meta"><span>${isArabic() ? (featured ? 'مشروع مميز' : 'أعمال مختارة') : (featured ? 'FEATURED CASE' : 'SELECTED WORK')}</span></div>
             <h3>${escapeHTML(title)}</h3>
             <div class="v2-case-fields">${fields}</div>
             ${tags.length ? `<div class="v2-case-tags">${tags.map((tag) => `<span>${escapeHTML(tag)}</span>`).join('')}</div>` : ''}
-            <span class="v2-case-open">OPEN CASE</span>
+            <span class="v2-case-open">${isArabic() ? 'تفاصيل المشروع' : 'OPEN CASE'}</span>
           </div>
         </a>
       </article>`;
@@ -376,25 +385,19 @@
 
   function matchesFilter(project, filter) {
     if (!filter || filter === 'all' || filter === 'all-projects') return true;
-    const category = clean(project.portfolio_categories?.name || project.category || '').toLowerCase();
-    const tags = tagsFor(project).join(' ').toLowerCase();
-    const haystack = `${category} ${tags}`;
-    const aliases = {
-      'safety-hse': ['safety', 'hse'],
-      'digital': ['digital', 'web'],
-      'creative': ['creative', 'brand'],
-      'ai-storytelling': ['ai', 'storytelling', 'intelligence'],
-      'ai-systems': ['ai', 'systems', 'intelligence'],
-    };
-    return (aliases[filter] || [filter]).some((term) => haystack.includes(term));
+    // Match the existing CMS filter rules rather than matching arbitrary substrings in tags.
+    const name = clean(project.portfolio_categories?.name || '').toLowerCase();
+    const category = name.includes('safety') ? 'safety' : name.includes('digital') ? 'digital'
+      : /creative|design/.test(name) ? 'creative' : /story|ai/.test(name) ? 'ai' : 'other';
+    return filter === category;
   }
 
   function matchesSearch(project, query) {
     if (!query) return true;
     const haystack = [
-      textFor(project, 'title'),
+      project.title, project.title_ar,
       project.slug,
-      textFor(project, 'excerpt'),
+      project.excerpt, project.excerpt_ar,
       textFor(project, 'description'),
       tagsFor(project).join(' '),
     ].join(' ').toLowerCase();
@@ -412,22 +415,43 @@
     const featuredRoot = $('#featured-project');
     const grid = $('#project-grid');
     if (!featuredRoot || !grid) return;
-    const featured = state.projects.find((project) => project.featured) || state.projects[0];
-    const visible = visibleProjects();
+    const all = visibleProjects();
+    const defaultView = activeFilter() === 'all' && !activeSearch();
+    const featured = defaultView && (state.projects.find((project) => project.featured) || state.projects[0]);
+    const ordered = featured ? [featured, ...all.filter(project => project.id !== featured.id)] : all;
+    const visible = defaultView && !state.expanded ? ordered.slice(0, 3) : ordered;
     const visibleFeatured = featured && visible.some((project) => String(project.id) === String(featured.id)) ? featured : null;
     const cards = visible.filter((project) => !visibleFeatured || String(project.id) !== String(visibleFeatured.id));
 
     state.rendering = true;
+    state.workObserver?.disconnect();
     try {
+      featuredRoot.classList.remove('skeleton', 'v10-featured-proof');
+      featuredRoot.classList.toggle('hidden', !visibleFeatured);
       featuredRoot.innerHTML = visibleFeatured ? cardMarkup(visibleFeatured, true) : '';
       featuredRoot.hidden = !visibleFeatured;
       grid.innerHTML = cards.map((project) => cardMarkup(project)).join('');
       const empty = $('#project-empty');
-      if (empty) empty.hidden = Boolean(visibleFeatured || cards.length);
+      if (empty) {
+        empty.hidden = Boolean(visibleFeatured || cards.length);
+        empty.classList.toggle('hidden', !empty.hidden ? false : true);
+      }
       addClass(grid, 'v2-project-grid');
       addClass(featuredRoot, 'v2-featured-project');
+      let more = $('#v2-more-work');
+      if (!more) {
+        more = document.createElement('button');
+        more.type = 'button';
+        more.id = 'v2-more-work';
+        more.className = 'btn ghost v2-more-work';
+        grid.insertAdjacentElement('afterend', more);
+        more.addEventListener('click', () => { state.expanded = true; renderProjects(); });
+      }
+      more.hidden = !defaultView || state.expanded || all.length <= visible.length;
+      copy(more, 'EXPLORE MORE WORK', 'استكشف باقي الأعمال');
     } finally {
-      window.setTimeout(() => { state.rendering = false; }, 0);
+      state.rendering = false;
+      [grid, featuredRoot].forEach(target => state.workObserver?.observe(target, { childList: true }));
     }
   }
 
@@ -439,9 +463,9 @@
 
     try {
       const client = window.supabase.createClient(supabaseUrl, supabaseKey, {
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        auth: { storageKey: 'ats-home-proof-readonly', persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
       });
-      const [projectsResponse, casesResponse] = await Promise.all([
+      const [projectsResponse, casesResponse, settingsResponse] = await Promise.all([
         client.from('portfolio_projects')
           .select('id,slug,title,title_ar,excerpt,excerpt_ar,description,description_ar,cover_url,tags,tags_ar,featured,sort_order,status,portfolio_categories(name,color)')
           .eq('status', 'published')
@@ -449,11 +473,19 @@
         client.from('portfolio_project_case_studies')
           .select('*')
           .eq('case_study_status', 'published'),
+        client.from('portfolio_site_settings').select('key,value').eq('key', 'v9_layout'),
       ]);
 
       const projects = projectsResponse.data || [];
-      if (!projects.length) return;
-      state.projects = projects;
+      if (projectsResponse.error || settingsResponse.error || !projects.length) return;
+      state.workLayout = settingsResponse.data?.[0]?.value?.work || {};
+      const hidden = new Set(state.workLayout.hidden || []);
+      const bySlug = new Map(projects.filter(project => !hidden.has(project.slug)).map(project => [project.slug, project]));
+      const ordered = [];
+      (state.workLayout.order || []).forEach(slug => {
+        if (bySlug.has(slug)) { ordered.push(bySlug.get(slug)); bySlug.delete(slug); }
+      });
+      state.projects = [...ordered, ...bySlug.values()];
       (casesResponse.data || []).forEach((item) => {
         if (item.project_id !== undefined && item.project_id !== null) state.caseById.set(String(item.project_id), item);
         const slug = item.project_slug || item.slug || item.project?.slug;
@@ -474,9 +506,9 @@
       window.clearTimeout(state.renderTimer);
       state.renderTimer = window.setTimeout(renderProjects, 30);
     });
-    targets.forEach((target) => state.workObserver.observe(target, { childList: true, subtree: true }));
-    $('#project-filters')?.addEventListener('click', () => window.setTimeout(renderProjects, 80));
-    $('#project-search')?.addEventListener('input', () => window.setTimeout(renderProjects, 80));
+    targets.forEach((target) => state.workObserver.observe(target, { childList: true }));
+    $('#project-filters')?.addEventListener('click', () => { state.expanded = false; window.setTimeout(renderProjects, 0); });
+    $('#project-search')?.addEventListener('input', () => { state.expanded = false; window.setTimeout(renderProjects, 0); });
   }
 
   function applyStaticLayer() {
@@ -493,6 +525,7 @@
     reorderJourney();
     updateFooter();
     watchWork();
+    syncLanguage();
   }
 
   function boot() {
@@ -500,15 +533,7 @@
     loadProjectData();
     $('#lang-toggle')?.addEventListener('click', () => window.setTimeout(() => {
       applyStaticLayer();
-      syncLanguage();
-    }, 80));
-
-    let attempts = 0;
-    state.refreshTimer = window.setInterval(() => {
-      applyStaticLayer();
-      attempts += 1;
-      if (attempts > 24) window.clearInterval(state.refreshTimer);
-    }, 250);
+    }, 100));
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });

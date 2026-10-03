@@ -272,6 +272,7 @@
   }
 
   function work(){
+    if(window.__ATS_HOME_V2__)return;
     const h=$('#work .section-head');
     if(h){
       set($('.eyebrow',h),'SELECTED PROOF','أعمال تثبت الفكرة');
@@ -537,7 +538,7 @@
 
   function reorder(){const main=$('#main-content');if(!main)return;['home','studio','capabilities','work','team','contact'].forEach(id=>{const el=document.getElementById(id);if(el)main.appendChild(el)})}
   function performance(){$$('img').forEach(img=>{if(!img.closest('.hero')){img.loading='lazy';img.decoding='async'}})}
-  function applyStatic(){header();hero();capabilities();work();about();team();contact();reorder();performance()}
+  function applyStatic(){if(window.__ATS_HOME_V2__)return;header();hero();capabilities();work();about();team();contact();reorder();performance()}
 
   function observeDynamicWork(){
     const grid=$('#project-grid');if(grid&&!grid.dataset.v10Observed){grid.dataset.v10Observed='1';new MutationObserver(()=>requestAnimationFrame(()=>{work();performance()})).observe(grid,{childList:true})}

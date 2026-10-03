@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>AT Studio — Responsive preview check</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#e5e9ef;color:#102332;font:16px system-ui,sans-serif}
+    header{padding:14px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:white;border-bottom:1px solid #bac4ce}
+    select,button{font:inherit;min-height:44px;padding:6px 12px}label{display:flex;gap:10px;align-items:center}
+    #stage{overflow:auto;padding:18px;min-height:calc(100vh - 74px)}iframe{display:block;border:0;background:#031018;margin-inline:auto;box-shadow:0 4px 18px #10233230}
+    #status{font-size:14px;margin-left:auto;max-width:540px}a{color:inherit}
+  </style>
+</head>
+<body>
+  <header>
+    <b>Responsive preview check</b>
+    <label>Viewport<select id="viewport"><option value="1440,900">Desktop — 1440 × 900</option><option value="768,1024">Tablet — 768 × 1024</option><option value="390,844">Mobile — 390 × 844</option><option value="320,812">Small mobile — 320 × 812</option></select></label>
+    <button id="check" type="button">Check layout</button>
+    <a href="/">Open homepage</a>
+    <output id="status" aria-live="polite">Loading preview…</output>
+  </header>
+  <div id="stage"><iframe id="preview" title="AT Studio homepage preview" src="/" width="1440" height="900"></iframe></div>
+  <script>
+    const frame=document.getElementById('preview'),viewport=document.getElementById('viewport'),status=document.getElementById('status');
+    function check(){
+      const doc=frame.contentDocument,win=frame.contentWindow;
+      if(!doc?.body){status.textContent='Waiting for homepage.';return;}
+      const width=doc.documentElement.clientWidth,overflow=doc.documentElement.scrollWidth>width+1;
+      const outside=[...doc.querySelectorAll('h1,h2,h3,a,button,input,textarea,article')].filter(el=>{
+        const rect=el.getBoundingClientRect(),css=win.getComputedStyle(el);
+        return rect.width>0&&rect.height>0&&css.visibility!=='hidden'&&(rect.left < -1 || rect.right > width+1);
+      });
+      status.textContent=`${width}px · ${overflow?'PAGE OVERFLOW':'No page overflow'} · ${outside.length} clipped elements · ${doc.querySelectorAll('.v2-case-card').length} project cards`;
+    }
+    viewport.addEventListener('change',()=>{const [width,height]=viewport.value.split(',');frame.width=width;frame.height=height;requestAnimationFrame(()=>requestAnimationFrame(check));});
+    document.getElementById('check').addEventListener('click',check);
+    frame.addEventListener('load',check);
+  </script>
+</body>
+</html>

@@ -22,9 +22,9 @@
   addCss('/v9/v9-home-first-impression.css?v=7');
   addCss('/v9/v9-brand-bilingual.css?v=1');
   addCss('/v9/v9-public-clean.css?v=1');
-  addCss('/v9/v9-home-v2.css?v=1');
-  addScript('/v9/v9-home-v10.js?v=17');
-  addScript('/v9/v9-home-v2.js?v=1');
+  addCss('/v9/v9-home-v2.css?v=2');
+  addScript('/v9/v9-home-v10.js?v=18');
+  addScript('/v9/v9-home-v2.js?v=2');
 
   function applyOfficialBrandAssets(){
     const logo=$('.site-header .ats-home-logo');
