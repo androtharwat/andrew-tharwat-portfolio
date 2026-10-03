@@ -25,8 +25,8 @@ async function main() {
   if (mode === '--check-file') return console.log(JSON.stringify({valid:true,leads:data.leads.length,admins:data.admins.length}));
   const url = process.env.SUPABASE_URL || config.supabaseUrl;
   assert.equal(url.replace(/\/$/,''), config.supabaseUrl, 'Destination must be the existing ATS database');
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  assert.ok(key, 'SUPABASE_SERVICE_ROLE_KEY is required');
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  assert.ok(key, 'SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY is required');
   async function rest(table, method = 'GET', rows) {
     const response = await fetch(url+'/rest/v1/move_now_'+table+(method === 'GET' ? '?select=*' : ''), {
       method, headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'resolution=ignore-duplicates'},
