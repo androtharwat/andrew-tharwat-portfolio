@@ -3,6 +3,10 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/move-now/call-center",
+      "destination": "/move-now/call-center/index.html"
+    },
+    {
       "source": "/move-now/admin",
       "destination": "/move-now/admin/index.html"
     },
