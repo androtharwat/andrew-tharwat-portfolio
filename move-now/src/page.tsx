@@ -31,7 +31,7 @@ export default function Page(){
  function reset(){setDone('');setStep(0);setService(null);setDetails({});setName('');setPhone('');setConsent(false);setWebsite('');setError('');id.current='';}
  const purchase=service?.startsWith('buy');
  return <div className="customer-view" data-step={done?'complete':step}>
-  <header className="topbar"><Brand/><span className="header-tag">شراء · تشطيب · بيع · فرش · تأجير</span><a className="staff-link" href="/move-now/admin">دخول الفريق</a></header>
+  <header className="topbar"><Brand/><span className="header-tag">شراء · تشطيب · بيع · فرش · تأجير</span></header>
   <main className="intake-shell">
    <aside className="intro"><img className="story-image" src="/move-now/assets/property-transition.webp" width="1536" height="1024" fetchPriority="high" alt="تصور بصري للانتقال من وحدة خام إلى مساحة مجهزة"/><div className="story-shade"/><div className="story-content"><span className="eyebrow" dir="ltr">FROM PROPERTY TO MARKET</span><h1>مساحة جديدة.<br/><em>احتمالات أكبر.</em></h1><p>من شراء العقار كاش أو قسط، لتشطيبه وتجهيزه للبيع أو التأجير. اختار احتياجك، وفريق Move Now يكمل معاك.</p></div><div className="story-foot"><span className="story-signature" dir="ltr">Plan. Finish. Prepare. Move.</span><div className="intro-note"><ShieldCheck size={18}/><span>تفاصيلك لفريق Move Now لمتابعة طلبك.</span></div></div></aside>
    <section className="form-panel" aria-label="تقديم طلب">
