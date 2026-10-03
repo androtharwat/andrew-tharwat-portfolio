@@ -20,3 +20,4 @@
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
 .service-group{border:0;padding:0;margin:24px 0}.service-group legend{font-size:.9375rem;color:#d8c2a3}.service-choices{gap:10px;margin:12px 0 0}.service-choices .choice{min-height:88px;padding:16px}.service-choices .choice strong{font-size:1rem}.service-choices .choice small{font-size:.8125rem;line-height:1.8}.service-choices .choice>svg{width:25px;height:25px}
+.request-owner{min-width:215px;display:flex;flex-direction:column;gap:8px}.request-owner select{width:100%;max-width:270px;min-height:42px;border:1px solid #68513a;border-radius:5px;background:#191715;color:#eadbc7;padding:8px;font-size:.8125rem}.request-owner .small{align-self:flex-start}.request-owner .saved,.request-owner .error{margin:0;white-space:normal}.filters{flex-wrap:wrap}.filters form{flex-basis:320px}.filters>select{flex:0 1 200px}

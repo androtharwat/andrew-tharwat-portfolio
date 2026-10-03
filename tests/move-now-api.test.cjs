@@ -56,3 +56,27 @@ test('Move Now: required payment, sale, rental and furnishing details cannot be 
 test('Move Now: rejects details from other service paths and invalid payment numbers',()=>{
  for(const [service,extra] of [['buy_cash',{downPayment:'100000'}],['finish_sale',{rentType:'إيجار طويل المدة'}],['finish_rent',{furnitureScope:'فرش كامل من البداية'}],['buy_installments',{downPayment:'-1'}],['buy_installments',{monthlyInstallment:'0'}],['buy_installments',{installmentYears:'99'}],['finish_rent',{rentType:'unknown'}]])assert.throws(()=>validateLead({...lead(),service,details:{...scenarios[service],...extra}}));
 });
+test('Move Now: saves a registered team account together with follow-up data',async()=>{
+ let write;const body={id:lead().id,status:'contacted',assigned:'agent@example.com',notes:'Follow-up recorded',nextFollowup:'2026-10-04',updatedAt:123};
+ const result=await run({method:'PATCH',token:'owner',body,fetchImpl:async(url,init)=>{
+  if(url.includes('/auth/v1/user'))return owner();
+  if(url.includes('/move_now_admins'))return fakeResponse([{email:'agent@example.com'}]);
+  const params=new URL(url).searchParams;assert.equal(params.get('updated_at'),'eq.123');write=JSON.parse(init.body);return fakeResponse([{id:lead().id}]);
+ }});
+ assert.equal(result.status,200);assert.equal(write.assigned,body.assigned);assert.equal(write.next_followup,body.nextFollowup);assert.equal(write.notes,body.notes);
+});
+test('Move Now: assigning an unknown account is rejected before updating the request',async()=>{
+ let updated=false;const result=await run({method:'PATCH',token:'owner',body:{id:lead().id,status:'contacted',assigned:'unknown@example.com',notes:'',nextFollowup:'',updatedAt:123},fetchImpl:async(url,init)=>{
+  if(url.includes('/auth/v1/user'))return owner();if(init.method==='PATCH')updated=true;return fakeResponse([]);
+ }});assert.equal(result.status,400);assert.equal(updated,false);
+});
+test('Move Now: team-account and unassigned filters are applied by the authenticated API',async()=>{
+ const prior=process.env.SUPABASE_SERVICE_ROLE_KEY;process.env.SUPABASE_SERVICE_ROLE_KEY='unit-test-server-key';
+ try{for(const [assigned,expected] of [['agent@example.com','eq.agent@example.com'],['unassigned','eq.']]){
+  let result;await createHandler({fetchImpl:async(url)=>{
+   if(url.includes('/auth/v1/user'))return fakeResponse({id:'u',email:'atstudioimpact@gmail.com',email_confirmed_at:'yes'});
+   if(url.includes('/rpc/'))return fakeResponse([]);
+   assert.equal(new URL(url).searchParams.get('assigned'),expected);return fakeResponse([]);
+  }})({method:'GET',url:'/api/move-now?resource=leads&assigned='+encodeURIComponent(assigned),headers:{host:'atstudioimpact.com',authorization:'Bearer owner'}},{setHeader(){},status(status){return {json(data){result={status,data}}}}});assert.equal(result.status,200);
+ }}finally{if(prior===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=prior;}
+});
