@@ -3,6 +3,14 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/move-now/admin",
+      "destination": "/move-now/admin/index.html"
+    },
+    {
+      "source": "/move-now",
+      "destination": "/move-now/index.html"
+    },
+    {
       "source": "/",
       "destination": "/v9/index.html"
     },
