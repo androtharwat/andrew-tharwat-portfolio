@@ -18,7 +18,7 @@ async function handleCalls({req,user,rest,reply,bodyOf,queryValue,uuid,ClientErr
  if(resource==='copilot'&&method==='POST'){
   const p=bodyOf(req,30000);if(!uuid(p.callId)||typeof p.notes!=='string'||!p.notes.trim()||p.notes.length>12000||!Array.isArray(p.locked)||p.locked.some(k=>!keys.includes(k)))throw new ClientError('راجع ملاحظات المكالمة.');
   let previous;try{previous=cleanCRM(p.previous)}catch(e){throw new ClientError(e.message)}
-  const hash=createHash('sha256').update(JSON.stringify({model:ai.model,notes:p.notes,previous,locked:p.locked})).digest('hex');
+  const hash=createHash('sha256').update(JSON.stringify({model:ai.model,revision:ai.revision,notes:p.notes,previous,locked:p.locked})).digest('hex');
   const cached=await rest('move_now_ai_runs',{agent_email:'eq.'+user.email,call_id:'eq.'+p.callId,input_hash:'eq.'+hash,state:'eq.complete',select:'id,result',order:'created_at.desc',limit:'1'});
   if(cached.rows.length)return reply(200,{...cached.rows[0].result,id:cached.rows[0].id});
   const {rows:allowed}=await rest('rpc/move_now_ai_attempt',{}, {method:'POST',body:JSON.stringify({p_agent:user.email})});if(!allowed)throw new ClientError('وصلت لحد التحليل. تقدر تكمّل الحقول وتحفظ المكالمة يدويًا.',429);
