@@ -1,0 +1,520 @@
+/* AT Studio Homepage V2: compact journey, documented proof, and a clear start. */
+
+.ats-home-v2 {
+  --ats-v2-line: rgba(255, 255, 255, 0.13);
+  --ats-v2-muted: rgba(232, 237, 246, 0.68);
+  --ats-v2-soft: rgba(255, 255, 255, 0.05);
+  overflow-x: hidden;
+}
+
+.ats-home-v2 .concierge-legacy-brief,
+.ats-home-v2 [data-development-only],
+.ats-home-v2 [data-dev-only],
+.ats-home-v2 .debug-content,
+.ats-home-v2 .development-label,
+.ats-home-v2 .technical-placeholder,
+.ats-home-v2 #team[hidden],
+.ats-home-v2 #team.v2-specialist-hidden {
+  display: none !important;
+}
+
+.ats-home-v2 #home.v2-hero {
+  min-height: min(760px, 88vh);
+  padding: clamp(7.5rem, 14vw, 11.5rem) 0 clamp(5rem, 9vw, 8rem);
+}
+
+.ats-home-v2 #home.v2-hero .hero-content,
+.ats-home-v2 #home.v2-hero .hero-inner {
+  max-width: 760px;
+}
+
+.ats-home-v2 #home.v2-hero h1 {
+  max-width: 760px;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+
+.ats-home-v2 #home.v2-hero #hero-subtitle,
+.ats-home-v2 #home.v2-hero .hero-subtitle {
+  max-width: 560px;
+  margin-top: 1.5rem;
+  color: var(--ats-v2-muted);
+  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  letter-spacing: 0.015em;
+}
+
+.ats-home-v2 #home.v2-hero .process-strip {
+  display: none !important;
+}
+
+.ats-home-v2 #home.v2-hero .hero-actions,
+.ats-home-v2 #home.v2-hero .hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 2.25rem;
+}
+
+.ats-home-v2 .ats-header-v2 .nav-client-access {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ats-home-v2 .ats-header-v2 .nav-client-access:hover,
+.ats-home-v2 .ats-header-v2 .nav-client-access:focus-visible {
+  color: #fff;
+}
+
+.ats-home-v2 #studio.v2-method-section,
+.ats-home-v2 #work.v2-work-section,
+.ats-home-v2 #capabilities.v2-capabilities-section,
+.ats-home-v2 #contact.v2-start-section {
+  padding-block: clamp(5.5rem, 10vw, 9rem);
+}
+
+.ats-home-v2 .v2-section-head {
+  max-width: 720px;
+}
+
+.ats-home-v2 .v2-section-head h2 {
+  max-width: 700px;
+  text-wrap: balance;
+}
+
+.ats-home-v2 .v2-section-head .section-intro {
+  max-width: 620px;
+  color: var(--ats-v2-muted);
+}
+
+.ats-home-v2 .v2-method-flow {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin-top: clamp(3rem, 6vw, 5rem);
+  border-top: 1px solid var(--ats-v2-line);
+}
+
+.ats-home-v2 .v2-method-flow::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(230, 56, 65, 0.85), rgba(230, 56, 65, 0));
+  transform-origin: left;
+}
+
+.ats-home-v2 .v2-method-step {
+  position: relative;
+  min-height: 170px;
+  padding: 1.25rem clamp(0.8rem, 2.2vw, 1.6rem) 0 0;
+  border-right: 1px solid var(--ats-v2-line);
+}
+
+.ats-home-v2 .v2-method-step + .v2-method-step {
+  padding-left: clamp(0.8rem, 2.2vw, 1.6rem);
+}
+
+.ats-home-v2 .v2-method-step:last-child {
+  border-right: 0;
+}
+
+.ats-home-v2 .v2-method-step::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--red, #e63841);
+  box-shadow: 0 0 0 5px var(--deep, #071426);
+}
+
+.ats-home-v2 .v2-method-step span,
+.ats-home-v2 .v2-capability-index {
+  display: block;
+  color: var(--red, #e63841);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.13em;
+}
+
+.ats-home-v2 .v2-method-step h3 {
+  margin: 1.35rem 0 0.7rem;
+  font-size: clamp(0.9rem, 1.3vw, 1.1rem);
+  letter-spacing: 0.08em;
+}
+
+.ats-home-v2 .v2-method-step p {
+  max-width: 150px;
+  color: var(--ats-v2-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.ats-home-v2 .v2-work-section .project-toolbar,
+.ats-home-v2 .v2-work-section .work-toolbar,
+.ats-home-v2 .v2-work-section #project-filters,
+.ats-home-v2 .v2-work-section #project-search {
+  position: relative;
+  z-index: 1;
+}
+
+.ats-home-v2 #featured-project.v2-featured-project {
+  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.ats-home-v2 .v2-case-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ats-v2-line);
+  background: rgba(255, 255, 255, 0.025);
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.ats-home-v2 .v2-case-card:hover,
+.ats-home-v2 .v2-case-card:focus-within {
+  border-color: rgba(230, 56, 65, 0.62);
+  background: rgba(255, 255, 255, 0.045);
+  transform: translateY(-3px);
+}
+
+.ats-home-v2 .v2-case-card-link {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ats-home-v2 .v2-case-card-featured {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.08fr);
+  min-height: 360px;
+}
+
+.ats-home-v2 .v2-case-card-featured .v2-case-card-link {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+
+.ats-home-v2 .v2-case-image {
+  min-height: 230px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(230, 56, 65, 0.25), rgba(9, 25, 47, 0.8));
+}
+
+.ats-home-v2 .v2-case-card-featured .v2-case-image {
+  min-height: 100%;
+}
+
+.ats-home-v2 .v2-case-image-empty {
+  background: radial-gradient(circle at 25% 20%, rgba(230, 56, 65, 0.25), transparent 45%), #0c1c31;
+}
+
+.ats-home-v2 .v2-case-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
+  filter: saturate(0.85);
+  transition: transform 300ms ease, filter 300ms ease;
+}
+
+.ats-home-v2 .v2-case-card:hover .v2-case-image img,
+.ats-home-v2 .v2-case-card:focus-within .v2-case-image img {
+  filter: saturate(1);
+  transform: scale(1.025);
+}
+
+.ats-home-v2 .v2-case-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: clamp(1.3rem, 3vw, 2.25rem);
+}
+
+.ats-home-v2 .v2-case-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--red, #e63841);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.13em;
+}
+
+.ats-home-v2 .v2-featured-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ats-home-v2 .v2-case-card h3 {
+  margin: 1rem 0 1.2rem;
+  color: #fff;
+  font-size: clamp(1.35rem, 3vw, 2.2rem);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.ats-home-v2 .v2-case-card:not(.v2-case-card-featured) h3 {
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+}
+
+.ats-home-v2 .v2-case-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.2rem;
+  width: 100%;
+}
+
+.ats-home-v2 .v2-case-field {
+  min-width: 0;
+}
+
+.ats-home-v2 .v2-case-field span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.11em;
+}
+
+.ats-home-v2 .v2-case-field p {
+  margin: 0;
+  color: var(--ats-v2-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.ats-home-v2 .v2-case-context {
+  grid-column: 1 / -1;
+}
+
+.ats-home-v2 .v2-case-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1.4rem;
+}
+
+.ats-home-v2 .v2-case-tags span {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--ats-v2-line);
+  color: rgba(255, 255, 255, 0.62);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.ats-home-v2 .v2-case-open {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 1.5rem;
+  color: #fff;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+}
+
+.ats-home-v2 #project-grid.v2-project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 1.75rem);
+  margin-top: clamp(1.2rem, 3vw, 2.2rem);
+}
+
+.ats-home-v2 .v2-capability-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: clamp(3rem, 6vw, 5rem);
+  border: 1px solid var(--ats-v2-line);
+  background: var(--ats-v2-line);
+}
+
+.ats-home-v2 .v2-capability-item {
+  min-height: 180px;
+  padding: clamp(1.4rem, 3vw, 2.4rem);
+  background: var(--deep, #071426);
+}
+
+.ats-home-v2 .v2-capability-item h3 {
+  margin: 1.4rem 0 0.7rem;
+  color: #fff;
+  font-size: clamp(1rem, 1.7vw, 1.35rem);
+  letter-spacing: 0.04em;
+}
+
+.ats-home-v2 .v2-capability-item p {
+  margin: 0;
+  color: var(--ats-v2-muted);
+  font-size: 0.95rem;
+}
+
+.ats-home-v2 .v2-client-access-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(2rem, 7vw, 7rem);
+  align-items: center;
+  padding-block: clamp(3.5rem, 7vw, 6rem);
+  border-top: 1px solid var(--ats-v2-line);
+  border-bottom: 1px solid var(--ats-v2-line);
+}
+
+.ats-home-v2 .v2-client-access-section h2 {
+  margin: 0.75rem 0 0;
+  color: #fff;
+  font-size: clamp(2rem, 4vw, 3.8rem);
+  letter-spacing: -0.05em;
+}
+
+.ats-home-v2 .v2-client-access-copy p {
+  max-width: 560px;
+  margin: 0 0 1.5rem;
+  color: var(--ats-v2-muted);
+  font-size: clamp(1rem, 1.7vw, 1.2rem);
+  line-height: 1.6;
+}
+
+.ats-home-v2 .v2-client-access-link,
+.ats-home-v2 .v2-start-link {
+  min-height: 44px;
+}
+
+.ats-home-v2 #contact.v2-start-section .section-head h2 span {
+  color: var(--red, #e63841);
+}
+
+.ats-home-v2 #contact.v2-start-section .v2-start-link {
+  display: inline-flex;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.ats-home-v2 .ats-footer-v2 a.footer-client-access,
+.ats-home-v2 .ats-footer-v2 a.footer-specialist-network {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ats-home-v2 a:focus-visible,
+.ats-home-v2 button:focus-visible,
+.ats-home-v2 input:focus-visible,
+.ats-home-v2 textarea:focus-visible {
+  outline: 2px solid var(--red, #e63841);
+  outline-offset: 4px;
+}
+
+@media (max-width: 900px) {
+  .ats-home-v2 #home.v2-hero {
+    min-height: auto;
+  }
+
+  .ats-home-v2 .v2-method-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .ats-home-v2 .v2-method-step {
+    min-height: 155px;
+    border-bottom: 1px solid var(--ats-v2-line);
+  }
+
+  .ats-home-v2 .v2-method-step:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .ats-home-v2 .v2-method-step:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .ats-home-v2 .v2-case-card-featured {
+    grid-template-columns: 1fr;
+  }
+
+  .ats-home-v2 .v2-case-card-featured .v2-case-card-link {
+    display: block;
+  }
+
+  .ats-home-v2 .v2-case-card-featured .v2-case-image {
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ats-home-v2 #home.v2-hero {
+    padding-top: 6.5rem;
+  }
+
+  .ats-home-v2 #home.v2-hero h1 {
+    font-size: clamp(2.55rem, 12vw, 4.4rem);
+  }
+
+  .ats-home-v2 #home.v2-hero .hero-actions,
+  .ats-home-v2 #home.v2-hero .hero-ctas {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ats-home-v2 #home.v2-hero .hero-actions a,
+  .ats-home-v2 #home.v2-hero .hero-actions button,
+  .ats-home-v2 #home.v2-hero .hero-ctas a,
+  .ats-home-v2 #home.v2-hero .hero-ctas button {
+    width: 100%;
+  }
+
+  .ats-home-v2 .v2-method-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .ats-home-v2 .v2-method-step,
+  .ats-home-v2 .v2-method-step:nth-child(2n),
+  .ats-home-v2 .v2-method-step:nth-last-child(-n + 2) {
+    min-height: auto;
+    padding-block: 1.25rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--ats-v2-line);
+  }
+
+  .ats-home-v2 .v2-method-step:last-child {
+    border-bottom: 0;
+  }
+
+  .ats-home-v2 #project-grid.v2-project-grid,
+  .ats-home-v2 .v2-capability-grid,
+  .ats-home-v2 .v2-client-access-section {
+    grid-template-columns: 1fr;
+  }
+
+  .ats-home-v2 .v2-capability-item {
+    min-height: auto;
+  }
+
+  .ats-home-v2 .v2-case-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .ats-home-v2 .v2-case-context {
+    grid-column: auto;
+  }
+
+  .ats-home-v2 .v2-client-access-section {
+    gap: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ats-home-v2 .v2-case-card,
+  .ats-home-v2 .v2-case-image img {
+    transition: none;
+  }
+}
