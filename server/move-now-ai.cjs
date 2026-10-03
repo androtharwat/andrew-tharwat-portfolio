@@ -6,7 +6,7 @@ const system=`أنت Move Now AI Real-Time Copilot لموظف الكول سنت�
 async function analyze({notes,previous,locked},email){
  const {generateText,Output,jsonSchema}=await import('ai');
  const schema={type:'object',additionalProperties:false,properties:{crm:{type:'object',additionalProperties:false,properties:Object.fromEntries(fields.map(([k,label,options])=>[k,{type:'string',description:label,...(options?{enum:options}:{})}])),required:keys},uncertain:{type:'array',items:{type:'string',enum:keys}},nudge:{type:'string'},recap:{type:'string'}},required:['crm','uncertain','nudge','recap']};
- const result=await generateText({model,system,prompt:JSON.stringify({notes,previous,locked}),output:Output.object({schema:jsonSchema(schema)}),maxOutputTokens:2400,maxRetries:0,abortSignal:AbortSignal.timeout(25000),providerOptions:{openai:{reasoningEffort:'none'},gateway:{user:email,tags:['move-now-call-copilot']}}});
+ const result=await generateText({model,system,prompt:JSON.stringify({notes,previous,locked}),output:Output.object({schema:jsonSchema(schema)}),maxOutputTokens:2400,maxRetries:0,abortSignal:AbortSignal.timeout(25000),providerOptions:{openai:{reasoningEffort:'none'},gateway:{}}});
  const output=result.output;const crm=cleanCRM(output.crm);const changedLock=locked.some(key=>crm[key]!==previous[key]);for(const key of locked)crm[key]=previous[key];
  const uncertain=output.uncertain.filter(k=>keys.includes(k)&&!locked.includes(k));
  if(typeof output.nudge!=='string'||output.nudge.length>600||typeof output.recap!=='string'||output.recap.length>2200)throw Error('Invalid analysis');
