@@ -1,31 +1,33 @@
-# Move Now inside ATS
+# Move Now on official ATS infrastructure
 
-Routes: `/move-now` for customers, `/move-now/admin` for the team. The supplied React screens, styles, brand assets, statuses, and follow-up workflow are retained. Move Now is an independent service hosted on the official infrastructure. ATS homepage navigation and footer contain no Move Now links.
+Move Now operates independently of the ATS homepage. Customer intake is `/move-now`, team requests and follow-up are `/move-now/admin`, and the call-center copilot is `/move-now/call-center`. Team authentication uses the existing ATS Supabase email OTP session and server-verified membership. Only the official owner manages the team.
 
-## Build
+## Build and server setup
 
-The checked-in `assets/app.js` is the browser build; ATS remains a static site with Vercel Functions. To update the screens, run `npm install` then `npm run build` in this folder. No Site/Cloudflare runtime is required by the new code.
+Run `npm ci` at the repository root for server dependencies. Run `npm ci --prefix move-now`, `npm run build --prefix move-now`, and `move-now/node_modules/.bin/tsc -p move-now/tsconfig.json` for the React browser build. The checked-in `assets/app.js` is served by static Vercel routes; API resources run through `/api/move-now`.
 
-## Server setup
+The official Supabase project is `sivyynuhluhvjcdicwxn`, transferred to the official organization without changing its reference. Server-only Vercel `SUPABASE_SECRET_KEY` is configured for Production and Preview; the legacy service-role variable remains supported. Owner email is `atstudioimpact@gmail.com`. The official `/move-now/admin` Auth redirect is approved and preserves existing ATS redirects. Email code sign-in also works directly on the call-center page.
 
-Apply `supabase/migrations/20261002170000_move_now_ats.sql` to the existing ATS Supabase project. Set Vercel's `SUPABASE_SECRET_KEY` as a server-only secret; the legacy `SUPABASE_SERVICE_ROLE_KEY` remains supported as a fallback. Reuse ATS's `SUPABASE_URL` and public key. Set `MOVE_NOW_OWNER_EMAIL=atstudioimpact@gmail.com`. All client and team data lives in separate `move_now_*` tables; anonymous and authenticated database roles have no direct table access. The API checks authenticated emails against the Move Now allowlist, and only the owner manages it. Both legacy `req.query` and native request URLs preserve API routing, search filters and pagination.
+Migrations in `supabase/migrations` define isolated `move_now_*` tables. Direct access is revoked from `anon` and `authenticated`; RLS is enabled with intentionally no client policies. Invoker RPCs are executable only by the server role. API operations independently verify the authenticated email against the team allowlist.
 
-Team sign-in now uses ATS's Supabase email authentication. It shares the existing ATS session and OTP length, and accepts the configured email link flow. Verify `/move-now/admin` is an approved redirect URL without changing existing ATS redirects or templates.
+## Requests and calls
 
-## Migration status — 2026-10-03
+The customer form retains six distinct service paths with service-specific required fields. Ready-unit sale and rental are additional staff CRM choices. Old `buy`, `rent`, and `both` requests remain readable. Existing request assignments are preserved when a call is linked to them; unassigned requests and newly created requests are assigned to the verified employee who completes the call.
 
-The existing ATS project `sivyynuhluhvjcdicwxn` has been transferred to the official `atstudioimpact` organization (`wfqtzdihbebqpkktansh`). The official email is confirmed as Owner and the project is `ACTIVE_HEALTHY`. Its reference and region are unchanged.
+Each call has a UUID, raw notes, editable CRM fields, five compass stations, the next question, a recap, and the verified employee identity. Drafts can be saved and reopened from the employee's last 50 calls. Session-local recovery supplements server draft saving. Manual edits lock the field against later AI updates and persist across reopen. Uncertain fields are excluded from completed stations and fallback recaps; critical uncertain contact/service/payment fields block publishing.
 
-The Move Now migration is applied. A complete, untruncated snapshot of the original Site's D1 database was imported using the authenticated database connection in one transaction. Existing conflicting records would have aborted the transaction. Exact JSON comparison verified all fields in one lead, zero additional admin rows, and one submission counter (`window` maps to `window_start`). The original Site is still live; repeat export and reconcile any new submissions or follow-up edits before cutting over traffic.
+Call completion and lead creation/update happen in one database transaction. Expected timestamps and completed-call checks reject stale or repeated saves. Completed calls are read-only; follow-up continues in the request dashboard. No calls or WhatsApp messages are sent automatically.
 
-Permissions were verified: RLS is enabled, direct table access is revoked from `anon` and `authenticated`, and the rate-limit/stats functions are invoker functions executable only by `service_role`. The advisor's informational no-policy findings are intentional for these server-only tables. Other existing ATS advisor findings are outside this migration.
+## Actual AI integration
 
-For Move Now exports, keep a private JSON file with complete `leads` and `admins` arrays outside Git. Run `node scripts/import-move-now.cjs --check-file <export.json>` before connecting to a destination. Once the official destination is confirmed and configured, `--apply` inserts missing records without overwriting differing existing records and verifies every imported field. `--verify` performs read-only comparison. These commands never print client records or credentials.
+`server/move-now-ai.cjs` uses the AI SDK with AI Gateway and `openai/gpt-6-luna` structured output. Vercel runtime OIDC is used by default; an optional server-only `AI_GATEWAY_API_KEY` is supported by the SDK. No key reaches the browser. Never commit credentials or purchase credits automatically.
 
-Export all original Move Now leads and team members through an authenticated owner session. Preserve UUIDs, details, statuses, assignments, notes, follow-up dates, and timestamps. Import and compare every row before switching traffic. Run an authenticated follow-up save and a customer request on a preview deployment. The original Site remains live until these checks pass; do not delete its database or silently move only new submissions.
+Analysis starts after 1.1 seconds without typing. It receives cumulative notes, previous CRM data, and employee-locked fields. The prompt covers Egyptian Arabic, Franco, the free ROI/valuation and engineering-visit hook, all service paths, and explicit confirmation of timing/WhatsApp. Notes are treated as data, not instructions. Financial offers and returns are never guaranteed.
 
-The customer form now offers six distinct services: cash purchase, installment purchase, finishing only, finishing then sale, finishing then rental, and finishing/furnishing then rental. A shared service catalog defines the form and API field checks; changing services clears previous details. New service codes are added to the existing database constraint. Original `buy`, `rent`, and `both` records remain readable in the dashboard and filters, without changing source data. Follow-up details and WhatsApp summaries use service-specific Arabic field labels.
+Before model generation, a unique pending run is stored. Results, token usage, model, estimated cost, and state are persisted, with authenticated access at the copilot resource's run ID. Exact repeated inputs use a stored result. Server limits are 20 attempts per employee per minute and 500 per team per Cairo day, with a 25-second generation timeout and no retries. These are usage limits, not a provider spending guarantee. Credit/provider failures display a clear error while preserving manual CRM and draft saving.
 
-Vercel project `ats` in official team `at-studio4` has server-only `SUPABASE_SECRET_KEY` for Preview/Production and `MOVE_NOW_OWNER_EMAIL`. Supabase Auth Site URL is `https://atstudioimpact.com`; the exact official `/move-now/admin` redirect is configured and the legacy redirect is preserved. OTP is eight digits; custom Gmail SMTP is enabled. Actual email receipt and admin sign-in remain a release check.
+## Validation
 
-All 37 repository/API tests pass. The official e409559 preview was redeployed with saved environment variables and successfully accepted a synthetic customer request, verified in Supabase. The six-path update still needs fresh preview/browser validation and authenticated dashboard/follow-up checks before launch. The original Site remains live until cutover reconciliation.
+Repository tests cover authentication, the six customer flows, call actor verification, pending/result persistence, caching, rate limiting, CRM validation, and uncertain fields. A rolled-back database integration check verifies draft saving, optimistic concurrency, atomic lead creation, and completed-call immutability. Runtime browser verification must additionally confirm actual model access and the authenticated save/reopen/dashboard flow.
+
+The original Site now redirects visitors to the official routes; its database remains preserved. Imported source records and follow-up values were reconciled at cutover. Private exports belong outside Git. `scripts/import-move-now.cjs --check-file`, `--apply`, and `--verify` preserve IDs and reject divergent records rather than silently overwriting them.
