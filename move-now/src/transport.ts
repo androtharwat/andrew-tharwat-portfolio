@@ -1,0 +1,4 @@
+export function authClient(){const w=window as any;if(!w.ATS_AUTH_CLIENT)throw new Error('تعذر تحميل تسجيل الدخول. حدّث الصفحة وحاول مرة أخرى.');return w.ATS_AUTH_CLIENT.getClient();}
+export async function apiFetch(url:string,init:RequestInit={}){const original=new URL(url,window.location.origin);const headers=new Headers(init.headers);if(!(original.pathname==='/api/leads'&&init.method==='POST')){const {data,error}=await authClient().auth.getSession();if(error)throw new Error('تعذر التحقق من جلسة الدخول.');if(data.session)headers.set('Authorization','Bearer '+data.session.access_token);}
+ const mapped=new URL('/api/move-now',window.location.origin);mapped.search=original.search;mapped.searchParams.set('resource',original.pathname.split('/').at(-1)||'session');return window.fetch(mapped.toString(),{...init,headers,cache:'no-store'});}
+export async function signOut(){await authClient().auth.signOut();window.location.assign('/move-now/admin');}

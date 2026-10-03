@@ -1,0 +1,4 @@
+export const services = {buy:'شراء عقار',finish:'تشطيب عقار',rent:'تأجير عقار',both:'تشطيب وتأجير'} as const;
+export const statuses = {new:'طلب جديد',contacted:'تم التواصل',visit:'معاينة / مقابلة',offer:'عرض سعر / خيارات',active:'جاري التنفيذ',done:'مكتمل',closed:'مغلق'} as const;
+export const labels:Record<string,string>={location:'المنطقة / المدينة',type:'نوع العقار',area:'المساحة بالمتر',rooms:'عدد الغرف',bathrooms:'عدد الحمامات',condition:'حالة العقار',budget:'الميزانية المتاحة',purpose:'هدفك من العقار',timeline:'الوقت المناسب',style:'ستايل التشطيب',works:'الأعمال المطلوبة',furnished:'حالة الأثاث',rentType:'نوع الإيجار',brief:'تفاصيل إضافية',contactTime:'وقت التواصل المفضل'};
+export type Lead={id:string;name:string;phone:string;service:keyof typeof services;details:string;status:keyof typeof statuses;assigned:string;notes:string;next_followup:string;created_at:number;updated_at:number};
